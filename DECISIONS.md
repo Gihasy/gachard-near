@@ -1205,7 +1205,8 @@ the code does not do:
 
 ## ADR-042: NEAR Hackathon Scope, Settled Against the Published Rules
 
-**Status**: Accepted, 5 November 2026. **Nothing in this ADR is built.** It
+**Status**: Accepted, 5 November 2026, **scope and track replaced by ADR-043
+the same day** (decisions 1, 3, 4 and 7). **Nothing in this ADR is built.** It
 settles what ADR-041 left open and amends it where the rules have since
 answered. ADR-041's reasoning about NEAR itself still stands.
 
@@ -1381,3 +1382,108 @@ rule of the hackathon.
   has not been done.
 - **The 13 November target costs features.** Decision 3 fixes the order they are
   dropped in, so a late cut is a planned one.
+
+## ADR-043: The Hackathon MVP Is a Creator Release Platform With No Wallet
+
+**Status**: Accepted, 5 November 2026. **Nothing in this ADR is built.** It
+replaces the scope and track choice in ADR-042 (decisions 1, 3, 4 and 7). The
+rest of ADR-042 stands: the repository and tags, the README rules, sub-account
+names, the Scan rule, human confirmation, and the honest limits. It applies to
+this hackathon only. ADR-038, ADR-039 and ADR-040 are not amended for the
+product beyond it.
+
+**Context**: ADR-042 carried a store, a Crystal economy and a fast-forward
+simulation. A judge has minutes, and that scope makes them learn an economy
+before seeing the point. The point is one sentence:
+
+A creator or IP owner releases their own TCG, every card is a digital-native
+token whose origin and history can be verified and which can be printed, and
+their community collects it without meeting a wallet, a gas fee or a chain word.
+
+**Decision**:
+
+1. **The MVP is one path.** Each step leaves something a judge can check.
+   1. A creator signs in with no wallet, creates a Series, uploads cards, and
+      sets rates and prices by rarity.
+   2. A collector signs in, opens a pack, and buys it with simulated Credits
+      (ADR-008).
+   3. The card page shows the creator, the Series and the history, each history
+      row with a "check independently" link to NearBlocks (ADR-042 decision 6).
+   4. The collector downloads a print-ready PDF, and the card locks on chain.
+   5. The QR in the PDF opens the history of that same token.
+   6. The redeem code in the PDF returns the card to digital, with the same token
+      id.
+
+2. **Packs: rates from the old system, the purchase rule from the new one.**
+   - The creator sets the rates and prices by rarity. The rates are published.
+   - Opening is free and card by card. A pack is 5 cards. Its price is the sum of
+     its cards' prices and appears only once all five are open (ADR-038).
+   - The collector buys or skips. Cards are minted on purchase only.
+   - Each account gets a limited number of packs per day, proposed at 3. Without
+     a limit a collector could skip until a Legendary appears.
+   - **Why not the paid random pack**: a creator platform should not hand every
+     creator the pay-random-prize shape ADR-038 exists to remove. This is a design
+     argument, not legal advice.
+   - **Why not the full ADR-038 store**: a judge will not wait for a 6-hour
+     rotation, and slots, refills and Crystal items add nothing to this story.
+   - **Consequence, stated plainly**: a buyer sees what they pay for, so the
+     purchase needs no verifiable randomness, and none is built. **Do not claim
+     the rates are provably fair.** They are published, not proven. No oracle and
+     no commit-reveal are in this MVP.
+
+3. **The PDF simulates the print pipeline, and says so.** Page and card follow
+   ADR-039: 63 x 88 mm with 3 mm bleed, and the QR in the reserved corner zone.
+   - The notice appears before download, in the PDF margin, on the card back in
+     the PDF, in the Scan status ("Printed (hackathon demo PDF)"), in the README
+     and in the demo post. The card face stays clean, as ADR-039 asks.
+   - Scan is the one that counts, because margins can be cropped and files edited.
+   - **A PDF can be copied, and its redeem code is visible.** A printed copy proves
+     a link to a token, not ownership of it. Scan therefore shows the current
+     holder and print cycle. A code from an earlier cycle no longer redeems
+     (ADR-005). In production the platform prints and ships, and the code is
+     hidden under a scratch layer.
+   - The redeem rules in ADR-042 decision 4 carry over: the contract checks the
+     code itself, and a locked card rejects every transfer and burn.
+
+4. **Tokens record their origin.** Each token records `seriesId` and `templateId`
+   (ADR-039), and each Series records its creator's account. A content hash of the
+   artwork on the template is added if time allows, so a silent art change becomes
+   detectable (ADR-039 section 7).
+
+5. **Track: `open` and `nfts`. `games` only if player trading ships.**
+   - `open` asks for new ways for money and ownership to work together, with chain
+     abstraction named as a hint. This is the closest fit.
+   - `nfts`: a card carries a print state and a right to redeem, which is ownership
+     with behaviour. This reverses ADR-042 decision 1, and only because print and
+     redeem are now the centre. It is not an NFT that holds money, so the README
+     does not imply one.
+   - `games` is judged on the game loop. Without an economy there is little loop.
+
+6. **Out**: Crystal, dismantle, rotation, albums, Limited cards, Crystal items, the
+   shelf discount, the fast-forward simulation, the admin console, Privy, AI risk
+   scoring, and Series review. ADR-042 had the economy in scope; it goes.
+
+7. **Cut order if time runs short**: player trading first, replaced by sending a
+   card to another account, because a history with one owner shows little. Then
+   the artwork hash, then hosting, then Google sign-in, leaving demo login only.
+   The six steps of decision 1 and the one-command local mode are never cut.
+
+**Honest limits, in addition to ADR-042's**:
+- **Provenance is not proof of rights.** The chain shows that a card was released
+  by a given creator account, not that this person owns the IP. Series review
+  (ADR-039) is out of scope, so anyone in the demo can upload anything. The README
+  says so. Hosted, this also means uploads need a decision before it goes public.
+- **The creator is custodial too.** "No wallet" means Gachard holds the key.
+- The demo's creators and art are demo content. Only 8 artworks exist.
+
+**Not decided here**:
+- The packs-per-day number, default rates and price bands.
+- Whether Series need any bounds on rates in the MVP.
+- Where uploaded artwork is stored, which affects local mode and hosting.
+
+**Consequences**:
+- **Less of the existing code is reused, and it matters less.** Only NEAR work is
+  judged (Q-002), and this path touches far fewer routes than the store plan.
+- **The Economy Lab and the v2 store are unused here.** They remain the product's
+  plan. If this MVP's pack rule is adopted beyond the hackathon, that needs its own
+  ADR, since it drops rotation and commit-reveal from ADR-038 and ADR-040.
