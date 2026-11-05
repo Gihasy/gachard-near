@@ -1,0 +1,4 @@
+[env]
+# near-sdk unit tests pull in aws-lc-sys. Use its prebuilt objects so Windows
+# needs no NASM install.
+AWS_LC_SYS_PREBUILT_NASM = "1"
