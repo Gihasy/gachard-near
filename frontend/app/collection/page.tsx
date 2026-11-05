@@ -1,10 +1,12 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import CrystalShop from "@/components/CrystalShop";
 import UsernameForm from "@/components/UsernameForm";
 import TiltCard from "@/components/TiltCard";
 import { ArrowIcon, PrintIcon } from "@/components/icons";
 import { CardImage, Eyebrow, Page, Rarity, primaryBtn } from "@/components/ui";
 import { cardsOf } from "@/lib/cards";
+import { CRYSTAL_BY_RARITY, EXTRA_PACK_PRICE } from "@/lib/economy";
 import { defaultUsername } from "@/lib/near";
 import { currentUser } from "@/lib/users";
 
@@ -15,6 +17,12 @@ export default async function Collection() {
   if (!user) redirect("/login?next=/collection");
   const cards = await cardsOf(user.accountId);
   const username = user.username ?? defaultUsername(user.accountId);
+  // Only a digital card can be dismantled, so only those count as spare copies.
+  const copies = new Map<string, number>();
+  for (const c of cards) copies.set(c.design, (copies.get(c.design) ?? 0) + 1);
+  const spare = new Map<string, number>();
+  for (const c of cards) if (c.status === "Digital") spare.set(c.design, (spare.get(c.design) ?? 0) + 1);
+  const duplicates = [...spare].reduce((sum, [design, count]) => sum + Math.min(count, (copies.get(design) ?? 1) - 1), 0);
   return (
     <Page wide>
       <div className="flex flex-wrap items-end justify-between gap-5 mb-8">
@@ -25,6 +33,14 @@ export default async function Collection() {
         </div>
         <UsernameForm username={username} />
       </div>
+
+      <CrystalShop
+        crystal={user.crystal ?? 0}
+        extraPacks={user.extraPacks ?? 0}
+        price={EXTRA_PACK_PRICE}
+        yields={CRYSTAL_BY_RARITY.join(", ")}
+        duplicates={duplicates}
+      />
 
       {cards.length === 0 ? (
         <div className="panel p-8 sm:p-12 text-center">
@@ -46,7 +62,10 @@ export default async function Collection() {
               <TiltCard src={c.media} alt={c.name} rarity={c.rarity} />
               <p className="mt-3 text-sm font-semibold truncate group-hover:text-cn-lavender transition">{c.name}</p>
               <div className="flex justify-between items-center gap-2">
-                <Rarity value={c.rarity} />
+                <span className="inline-flex items-center gap-1.5 min-w-0">
+                  <Rarity value={c.rarity} />
+                  {(copies.get(c.design) ?? 1) > 1 ? <span className="text-[11px] font-semibold text-cn-text-3 tabular" data-testid="duplicate">x{copies.get(c.design)}</span> : null}
+                </span>
                 {c.status !== "Digital" ? (
                   <span className="text-[11px] font-semibold rounded-full bg-white/10 px-2 py-0.5 text-cn-text-2">{c.status === "Printed" ? "Printed" : "Returning"}</span>
                 ) : (

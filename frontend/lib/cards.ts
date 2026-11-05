@@ -6,6 +6,7 @@ import { createHash, randomBytes } from "node:crypto";
 import { artMatches } from "./art.ts";
 import { RARITIES } from "./catalog.ts";
 import { readDb, withDb, type User } from "./db.ts";
+import { creditDismantle, CRYSTAL_BY_RARITY } from "./economy.ts";
 import { ContractRefused, platformCall, userCall, view } from "./near.ts";
 import { cleanUsername } from "./users.ts";
 
@@ -15,7 +16,7 @@ interface ChainCard {
   series_id: number;
   template_id: number;
   creator: string;
-  status: "Digital" | "Printed" | "ReturnPending";
+  status: "Digital" | "Printed" | "ReturnPending" | "Burned";
   print_cycle: number;
   minted_at_ms: number;
   history: { kind: string; from: string | null; to: string; block_height: number; at_ms: number }[];
@@ -54,6 +55,8 @@ export interface OwnedCard {
   media: string;
   rarity: string;
   status: string;
+  /** Same series and template, so copies of one card share it. */
+  design: string;
 }
 
 export async function cardsOf(accountId: string): Promise<OwnedCard[]> {
@@ -68,6 +71,7 @@ export async function cardsOf(accountId: string): Promise<OwnedCard[]> {
       media: t.token_metadata.media,
       rarity: extra.rarity,
       status: extra.status,
+      design: `${extra.series_id}:${extra.template_id}`,
     };
   });
 }
@@ -105,7 +109,7 @@ export async function printCard(user: User, tokenId: string) {
 
 /** The serial for the holder's PDF, or null if this user has no print to download. */
 export async function serialForHolder(user: User, card: { owner_id: string; token_id: string; status: string }) {
-  if (card.owner_id !== user.accountId || card.status === "Digital") return null;
+  if (card.owner_id !== user.accountId || card.status === "Digital" || card.status === "Burned") return null;
   return (await readDb()).prints[card.token_id]?.serial ?? null;
 }
 
@@ -124,6 +128,24 @@ export async function simulateReturnAnswer(user: User, tokenId: string, accepted
   await requireHolder(user, tokenId);
   const { hash } = await platformCall(accepted ? "confirm_return" : "reject_return", { token_id: tokenId });
   await logTx(tokenId, hash);
+}
+
+/**
+ * Burns the card, then credits its Crystal. If the answer to the burn was lost, asking
+ * again finds the card already burned by this user, and credits it once.
+ */
+export async function dismantleCard(user: User, tokenId: string) {
+  const card = await requireHolder(user, tokenId);
+  const crystal = CRYSTAL_BY_RARITY[RARITIES.indexOf(card.rarity)];
+  if (card.status === "Burned") {
+    if (await creditDismantle(tokenId, user.id, crystal)) return crystal;
+    throw new ContractRefused("This card was already destroyed.");
+  }
+  if (card.status !== "Digital") throw new ContractRefused("A printed card must return to digital first.");
+  const { hash } = await userCall(user, "burn", { token_id: tokenId }, 1n);
+  await logTx(tokenId, hash);
+  await creditDismantle(tokenId, user.id, crystal);
+  return crystal;
 }
 
 export async function sendCard(user: User, tokenId: string, to: string) {

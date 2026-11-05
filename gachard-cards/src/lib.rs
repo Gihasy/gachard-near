@@ -19,6 +19,8 @@
 //!   and confirming never changes who holds the card.
 //! - Each print has its own serial, carried in its QR code. The chain keeps a hash
 //!   of every serial, so anyone can tell a current print from a cancelled one.
+//! - Only the holder can burn a card, and only a digital one, so a physical card
+//!   never outlives its token. A burned card keeps its public record (ADR-046).
 
 use near_sdk::json_types::{Base64VecU8, U128};
 use near_sdk::serde_json::json;
@@ -49,6 +51,9 @@ pub enum CardStatus {
     Printed,
     /// The holder asked to return it, and the physical card is on its way.
     ReturnPending,
+    /// Destroyed by its holder. Its record stays, and `owner` is who burned it.
+    /// Added last: Borsh stores these by index, so existing cards keep their meaning.
+    Burned,
 }
 
 /// What a QR code's serial means for its card, as of now.
@@ -74,6 +79,7 @@ pub enum HistoryKind {
     ReturnRequested,
     ReturnRejected,
     Returned,
+    Burned,
 }
 
 #[near(serializers = [json, borsh])]
@@ -262,6 +268,16 @@ fn emit_mt_mint(owner: &AccountId, token_ids: &[String], memo: &str) {
     ));
 }
 
+fn emit_mt_burn(owner: &AccountId, token_id: &str) {
+    env::log_str(&format!(
+        "EVENT_JSON:{}",
+        json!({
+            "standard": "nep245", "version": "1.0.0", "event": "mt_burn",
+            "data": [{"owner_id": owner, "token_ids": [token_id], "amounts": ["1"]}]
+        })
+    ));
+}
+
 fn emit_mt_transfer(from: &AccountId, to: &AccountId, token_ids: &[String], memo: Option<&str>) {
     let mut data = json!({
         "old_owner_id": from,
@@ -368,6 +384,7 @@ impl Contract {
             let id = require_token_id(token_id);
             let card = self.card(id);
             require!(card.owner == sender, "Only the holder can transfer a card");
+            require!(card.status != CardStatus::Burned, "Card was destroyed");
             require!(
                 card.status != CardStatus::ReturnPending,
                 "Card is being returned"
@@ -810,6 +827,7 @@ impl Contract {
             card.owner == caller,
             "Only the holder can print a card"
         );
+        require!(card.status != CardStatus::Burned, "Card was destroyed");
         require!(
             card.status == CardStatus::Digital,
             "Card is already printed"
@@ -845,6 +863,29 @@ impl Contract {
             "return_requested",
             json!({"token_id": token_id, "holder": caller, "print_cycle": card.print_cycle}),
         );
+    }
+
+    /// Destroys a digital card. Its supply becomes 0 and it leaves the holder's list,
+    /// but its record stays readable, so the burn itself can be checked.
+    #[payable]
+    pub fn burn(&mut self, token_id: String) {
+        assert_one_yocto();
+        let id = require_token_id(&token_id);
+        let caller = env::predecessor_account_id();
+        let card = self
+            .cards
+            .get_mut(&id)
+            .unwrap_or_else(|| env::panic_str("Card not found"));
+        require!(card.owner == caller, "Only the holder can destroy a card");
+        require!(card.status != CardStatus::Burned, "Card was destroyed");
+        require!(
+            card.status == CardStatus::Digital,
+            "A printed card must return to digital first"
+        );
+        card.status = CardStatus::Burned;
+        card.record(HistoryKind::Burned, Some(caller.clone()), caller.clone());
+        self.remove_from_owner(&caller, id);
+        emit_mt_burn(&caller, &token_id);
     }
 
     // ---- Platform: the physical card arrived ----
@@ -883,7 +924,11 @@ impl Contract {
             .map(|t| {
                 let id = parse_token_id(t)?;
                 let card = self.cards.get(&id)?;
-                Some(self.to_token(id, card))
+                let mut token = self.to_token(id, card);
+                if card.status == CardStatus::Burned {
+                    token.owner_id = None;
+                }
+                Some(token)
             })
             .collect()
     }
@@ -891,7 +936,7 @@ impl Contract {
     pub fn mt_balance_of(&self, account_id: AccountId, token_id: String) -> U128 {
         let held = parse_token_id(&token_id)
             .and_then(|id| self.cards.get(&id))
-            .is_some_and(|card| card.owner == account_id);
+            .is_some_and(|card| card.owner == account_id && card.status != CardStatus::Burned);
         U128(held as u128)
     }
 
@@ -903,8 +948,8 @@ impl Contract {
     }
 
     pub fn mt_supply(&self, token_id: String) -> Option<U128> {
-        let id = parse_token_id(&token_id)?;
-        self.cards.contains_key(&id).then_some(U128(1))
+        let card = self.cards.get(&parse_token_id(&token_id)?)?;
+        Some(U128((card.status != CardStatus::Burned) as u128))
     }
 
     pub fn mt_batch_supply(&self, token_ids: Vec<String>) -> Vec<Option<U128>> {
@@ -1577,6 +1622,128 @@ mod tests {
         lock(&mut c, "alice", &a, SERIAL);
         lock(&mut c, "alice", &b, "other");
         assert_eq!(c.print_state(b, SERIAL.into()), Some(PrintState::Unknown));
+    }
+
+    // ---- Burning: the holder destroys a digital card ----
+
+    fn burn_as(c: &mut Contract, who: &str, token: &str) {
+        as_caller(who, 1);
+        c.burn(token.into());
+    }
+
+    #[test]
+    fn burn_ends_the_supply_and_keeps_the_record() {
+        let mut c = setup();
+        let t = mint_one(&mut c, "alice");
+        burn_as(&mut c, "alice", &t);
+        assert_eq!(c.mt_supply(t.clone()), Some(U128(0)));
+        assert_eq!(c.mt_balance_of(acc("alice"), t.clone()), U128(0));
+        assert!(c.mt_tokens_for_owner(acc("alice"), None, None).is_empty());
+        assert_eq!(c.mt_token(vec![t.clone()])[0].as_ref().unwrap().owner_id, None);
+        let v = c.get_card(t).unwrap();
+        assert_eq!(v.status, CardStatus::Burned);
+        assert_eq!(v.owner_id, acc("alice"));
+        assert_eq!(v.history.last().unwrap().kind, HistoryKind::Burned);
+    }
+
+    #[test]
+    #[should_panic(expected = "Only the holder can destroy")]
+    fn platform_cannot_burn_a_card() {
+        let mut c = setup();
+        let t = mint_one(&mut c, "alice");
+        burn_as(&mut c, "platform", &t);
+    }
+
+    #[test]
+    #[should_panic(expected = "exactly 1 yoctoNEAR")]
+    fn burn_requires_one_yocto() {
+        let mut c = setup();
+        let t = mint_one(&mut c, "alice");
+        as_caller("alice", 0);
+        c.burn(t);
+    }
+
+    #[test]
+    #[should_panic(expected = "must return to digital first")]
+    fn printed_card_cannot_burn() {
+        let mut c = setup();
+        let t = mint_one(&mut c, "alice");
+        lock(&mut c, "alice", &t, SERIAL);
+        burn_as(&mut c, "alice", &t);
+    }
+
+    #[test]
+    #[should_panic(expected = "must return to digital first")]
+    fn card_on_its_way_back_cannot_burn() {
+        let mut c = setup();
+        let t = mint_one(&mut c, "alice");
+        lock(&mut c, "alice", &t, SERIAL);
+        ask_return(&mut c, "alice", &t);
+        burn_as(&mut c, "alice", &t);
+    }
+
+    #[test]
+    fn returned_card_can_burn_and_its_print_stays_void() {
+        let mut c = setup();
+        let t = mint_one(&mut c, "alice");
+        lock(&mut c, "alice", &t, SERIAL);
+        ask_return(&mut c, "alice", &t);
+        as_caller("platform", 0);
+        c.confirm_return(t.clone());
+        burn_as(&mut c, "alice", &t);
+        assert_eq!(c.print_state(t, SERIAL.into()), Some(PrintState::Void));
+    }
+
+    #[test]
+    #[should_panic(expected = "Card was destroyed")]
+    fn burned_card_cannot_burn_twice() {
+        let mut c = setup();
+        let t = mint_one(&mut c, "alice");
+        burn_as(&mut c, "alice", &t);
+        burn_as(&mut c, "alice", &t);
+    }
+
+    #[test]
+    #[should_panic(expected = "Card was destroyed")]
+    fn burned_card_cannot_move() {
+        let mut c = setup();
+        let t = mint_one(&mut c, "alice");
+        burn_as(&mut c, "alice", &t);
+        as_caller("alice", 1);
+        c.mt_transfer(acc("bob"), t, U128(1), None, None);
+    }
+
+    #[test]
+    #[should_panic(expected = "Card was destroyed")]
+    fn burned_card_cannot_print() {
+        let mut c = setup();
+        let t = mint_one(&mut c, "alice");
+        burn_as(&mut c, "alice", &t);
+        lock(&mut c, "alice", &t, SERIAL);
+    }
+
+    #[test]
+    fn card_burned_during_a_call_does_not_go_back() {
+        let mut c = setup();
+        let t = mint_one(&mut c, "alice");
+        as_caller("alice", 1);
+        c.mt_transfer(acc("market"), t.clone(), U128(1), None, None);
+        burn_as(&mut c, "market", &t);
+        let used = c.resolve(vec![acc("alice")], acc("market"), vec![t.clone()], None);
+        assert_eq!(used, vec![U128(1)]);
+        assert_eq!(c.get_card(t).unwrap().owner_id, acc("market"));
+    }
+
+    /// Existing cards must read the same after the code is replaced in place.
+    #[test]
+    fn new_variants_come_last_so_stored_cards_keep_their_meaning() {
+        let bytes = |s: CardStatus| near_sdk::borsh::to_vec(&s).unwrap();
+        assert_eq!(bytes(CardStatus::Digital), vec![0]);
+        assert_eq!(bytes(CardStatus::Printed), vec![1]);
+        assert_eq!(bytes(CardStatus::ReturnPending), vec![2]);
+        assert_eq!(bytes(CardStatus::Burned), vec![3]);
+        let kind = near_sdk::borsh::to_vec(&HistoryKind::Returned).unwrap();
+        assert_eq!(kind, vec![5]);
     }
 
     // ---- History and metadata ----

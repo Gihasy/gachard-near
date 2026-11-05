@@ -214,11 +214,21 @@ async function main() {
     card.history.map((h) => h.kind).join(">") === "Mint>Transfer>Print>Transfer>ReturnRequested>Returned",
     card.history.map((h) => h.kind).join(" > "));
 
+  // ---- Dismantle (ADR-046) ----
+  await expectRefused("Someone else cannot burn it", "Only the holder can destroy", () =>
+    relayed(bob, "burn", { token_id: tokenId }, 1n));
+  record("Alice burns it, with no gas money", await relayed(alice, "burn", { token_id: tokenId }, 1n));
+  card = await view("get_card", { token_id: tokenId });
+  check("Its record stays, and says it burned", card.status === "Burned" && card.history.at(-1).kind === "Burned");
+  check("Its supply is now zero", (await view("mt_supply", { token_id: tokenId })) === "0");
+  check("Alice no longer holds it", (await view("mt_balance_of", { account_id: alice.accountId, token_id: tokenId })) === "0");
+  check("Its old QR stays void", (await view("print_state", { token_id: tokenId, serial })) === "Void");
+
   console.log("");
   // Nobody pays. A refused call's 1 yocto deposit, which the platform attached,
   // is refunded to the user who signed it, so the exact gain is the number of
-  // refused calls above that carried one: Alice three. Exact, so a real charge cannot hide.
-  const refundsExpected = new Map([[creator.accountId, 0n], [alice.accountId, 3n], [bob.accountId, 0n]]);
+  // refused calls above that carried one: Alice three, Bob one. Exact, so a real charge cannot hide.
+  const refundsExpected = new Map([[creator.accountId, 0n], [alice.accountId, 3n], [bob.accountId, 1n]]);
   for (const u of users) {
     const after = await balanceOf(u.accountId);
     const gain = after - before.get(u.accountId);

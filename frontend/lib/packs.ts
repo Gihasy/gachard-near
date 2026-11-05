@@ -40,7 +40,11 @@ export async function openPack(userId: string, seriesId: number): Promise<PackOf
     const open = mine.find((o) => o.status === "open");
     if (open) return open;
     if (mine.filter((o) => o.createdAt.startsWith(today())).length >= PACKS_PER_DAY) {
-      throw new ContractRefused(`That is all ${PACKS_PER_DAY} packs for today. More tomorrow.`);
+      const user = d.users.find((u) => u.id === userId)!;
+      if (!user.extraPacks) {
+        throw new ContractRefused(`That is all ${PACKS_PER_DAY} packs for today. Come back tomorrow, or use Crystal for an extra slot in My Cards.`);
+      }
+      user.extraPacks -= 1;
     }
     const offer: PackOffer = {
       id: randomBytes(12).toString("hex"),

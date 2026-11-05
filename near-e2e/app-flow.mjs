@@ -179,10 +179,80 @@ async function main() {
     return bob.request(`/api/creator/series/${newSeries}/cards`, { method: "POST", body: form });
   };
   check("Something that is not an image is refused", (await upload(Buffer.from("not an image"), "Bad")).status === 400);
-  const card = await upload(await art.arrayBuffer(), "Flow Card");
+  const cardBytes = await art.arrayBuffer();
+  const card = await upload(cardBytes, "Flow Card");
   check("A card is uploaded", card.status === 200);
   const live = await anon.page("/");
   check("The new series is live", live.html.includes(`href="/series/${newSeries}"`));
+
+  // ---- The economy (ADR-046) ----
+  const held = async (who) => [...(await who.page("/collection")).html.matchAll(/href="\/scan\/(\d+)"/g)].map((m) => m[1]);
+  const crystalOf = async (who) => Number((await who.page("/collection")).html.match(/data-testid="crystal-balance"[^>]*>([\d,]+)/)?.[1].replace(/,/g, ""));
+  check("A collector starts with no Crystal", (await crystalOf(alice)) === 0);
+  check("A slot cannot be bought without Crystal", (await alice.post("/api/me/extra-pack")).status === 400);
+
+  check("Someone else cannot dismantle a card", (await bob.post(`/api/cards/${tokenIds[1]}/dismantle`)).status === 400);
+  check("A printed card cannot be dismantled", (await bob.post(`/api/cards/${token}/dismantle`)).status === 400);
+
+  const burnt = tokenIds[1];
+  const gain = await alice.post(`/api/cards/${burnt}/dismantle`);
+  const { crystal: firstYield } = await gain.json();
+  check("The holder dismantles a card", gain.status === 200 && firstYield > 0, `${firstYield} Crystal`);
+  check("Crystal rises by what it gave", (await crystalOf(alice)) === firstYield);
+  check("It cannot be dismantled twice", (await alice.post(`/api/cards/${burnt}/dismantle`)).status === 400 && (await crystalOf(alice)) === firstYield);
+  check("It leaves the collection", !(await held(alice)).includes(burnt));
+  const ruin = await anon.page(`/scan/${burnt}`);
+  check("Its record stays and says it was destroyed", ruin.status === 200 && ruin.html.includes("Dismantled and destroyed") && ruin.html.includes('data-testid="card-destroyed"'));
+  check("A burned card links to its burn on NearBlocks", (ruin.html.match(/testnet\.nearblocks\.io\/txns\//g) ?? []).length >= 2);
+  check("A burned card cannot be transferred", (await alice.post(`/api/cards/${burnt}/send`, { to: bobName })).status === 400);
+  check("A burned card cannot be printed", (await alice.post(`/api/cards/${burnt}/print`)).status === 400);
+
+  // Enough Crystal for a slot: at most two packs of commons at 10 each.
+  const nextPack = async () => {
+    const { id } = await (await alice.post("/api/packs", { seriesId: Number(seriesId) })).json();
+    for (let index = 0; index < 5; index += 1) await alice.post(`/api/packs/${id}/reveal`, { index });
+    return id;
+  };
+  const secondPack = await nextPack();
+  const secondBuy = await alice.post(`/api/packs/${secondPack}/buy`);
+  check("A second pack is bought", secondBuy.status === 200);
+  for (const id of await held(alice)) {
+    if ((await crystalOf(alice)) >= 50) break;
+    await alice.post(`/api/cards/${id}/dismantle`);
+  }
+  const balance = await crystalOf(alice);
+  check("Dismantling reaches the price of a slot", balance >= 50, `${balance} Crystal`);
+
+  const thirdPack = await nextPack();
+  check("The third pack of the day opens and is skipped", (await alice.post(`/api/packs/${thirdPack}/skip`)).status === 200);
+  const blocked = await alice.post("/api/packs", { seriesId: Number(seriesId) });
+  check("The fourth is refused at the day's limit", blocked.status === 400);
+  const slot = await alice.post("/api/me/extra-pack");
+  const afterSlot = await slot.json();
+  check("Crystal buys a slot", slot.status === 200 && afterSlot.extraPacks === 1 && afterSlot.crystal === balance - 50);
+  const fourth = await alice.post("/api/packs", { seriesId: Number(seriesId) });
+  const { id: fourthId } = await fourth.json();
+  check("The slot opens one more pack", fourth.status === 200 && Boolean(fourthId));
+  check("Asking again returns the same pack and spends no slot", (await (await alice.post("/api/packs", { seriesId: Number(seriesId) })).json()).id === fourthId);
+  await alice.post(`/api/packs/${fourthId}/skip`);
+  check("With the slot used, the next is refused", (await alice.post("/api/packs", { seriesId: Number(seriesId) })).status === 400);
+
+  // A sale is split. Every rarity is needed before a series goes live.
+  for (const rarity of [1, 2, 3]) {
+    const form = new FormData();
+    form.set("name", `Flow ${rarity}`);
+    form.set("rarity", String(rarity));
+    form.set("art", new File([cardBytes], "art.jpg", { type: "image/jpeg" }));
+    await bob.request(`/api/creator/series/${newSeries}/cards`, { method: "POST", body: form });
+  }
+  const revenueBefore = (await bob.page("/creator")).html.match(/data-creator="(\d+)" data-gachard="(\d+)"/);
+  check("A live series starts with no sales", revenueBefore?.[1] === "0" && revenueBefore?.[2] === "0");
+  const flow = await (await alice.post("/api/packs", { seriesId: newSeries })).json();
+  for (let index = 0; index < 5; index += 1) await alice.post(`/api/packs/${flow.id}/reveal`, { index });
+  check("A collector buys from that series", (await alice.post(`/api/packs/${flow.id}/buy`)).status === 200);
+  const revenue = (await bob.page("/creator")).html.match(/data-creator="(\d+)" data-gachard="(\d+)"/);
+  check("The sale is split 90/10 in the creator's studio", revenue?.[1] === "45" && revenue?.[2] === "5", `${revenue?.[1]} and ${revenue?.[2]}`);
+  check("Nobody else sees those figures", !(await alice.page("/creator")).html.includes('data-creator="45"'));
 
   console.log(failures ? `\n${failures} check(s) FAILED` : "\nAll checks passed");
   process.exit(failures ? 1 : 0);

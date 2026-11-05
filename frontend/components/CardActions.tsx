@@ -9,7 +9,7 @@ import { ErrorLine, Panel, inputClass, primaryBtn, secondaryBtn } from "@/compon
 
 const SPECS = ["63 x 88 mm", "Crop marks", "A QR for this print"];
 
-export default function CardActions({ tokenId, status, media, cardName, qr, isHolder, printNumber }: {
+export default function CardActions({ tokenId, status, media, cardName, qr, isHolder, printNumber, crystalYield }: {
   tokenId: string;
   status: string;
   media: string;
@@ -17,11 +17,12 @@ export default function CardActions({ tokenId, status, media, cardName, qr, isHo
   qr: string;
   isHolder: boolean;
   printNumber: number;
+  crystalYield: number;
 }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  const [confirming, setConfirming] = useState<"print" | "return" | "transfer" | null>(null);
+  const [confirming, setConfirming] = useState<"print" | "return" | "transfer" | "dismantle" | null>(null);
   const [to, setTo] = useState("");
 
   const run = async (url: string, body?: unknown) => {
@@ -37,6 +38,14 @@ export default function CardActions({ tokenId, status, media, cardName, qr, isHo
     }
     setBusy(false);
   };
+
+  if (status === "Burned") {
+    return (
+      <p id="print" className="rounded-2xl border border-cn-line bg-white/[.03] px-4 py-3 text-sm text-cn-text-2 scroll-mt-24" data-testid="card-destroyed">
+        This card was dismantled by its last holder. It is gone for good, and only its record remains.
+      </p>
+    );
+  }
 
   // Everyone else gets the record and nothing to press: the QR gives no power.
   if (!isHolder) {
@@ -174,7 +183,27 @@ export default function CardActions({ tokenId, status, media, cardName, qr, isHo
             </>
           )}
         </Panel>
-      ) : null}
+      ) : (
+        <Panel>
+          <h2 className="font-display font-semibold text-base">Dismantle for Crystal</h2>
+          {confirming === "dismantle" ? (
+            <div className="mt-2 pop" data-testid="dismantle-notice">
+              <p className="text-sm text-cn-text-2 leading-relaxed">
+                This destroys the card for good and gives you {crystalYield} Crystal. It cannot be undone.
+              </p>
+              <div className="mt-4 flex flex-wrap gap-3">
+                <button className={primaryBtn} disabled={busy} onClick={() => run("dismantle")} data-testid="confirm-dismantle">{busy ? "Destroying..." : `Destroy for ${crystalYield} Crystal`}</button>
+                <button className={secondaryBtn} disabled={busy} onClick={() => setConfirming(null)}>Cancel</button>
+              </div>
+            </div>
+          ) : (
+            <>
+              <p className="mt-1 text-sm text-cn-text-2 leading-relaxed">Got a duplicate? Turn it into {crystalYield} Crystal, and spend that on extra pack slots.</p>
+              <button className={`${secondaryBtn} mt-4`} onClick={() => setConfirming("dismantle")} data-testid="dismantle">Dismantle</button>
+            </>
+          )}
+        </Panel>
+      )}
       <ErrorLine>{error}</ErrorLine>
     </>
   );

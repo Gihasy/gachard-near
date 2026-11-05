@@ -27,6 +27,10 @@ export interface User {
   accountId: string;
   keyEncrypted: string;
   credits: number;
+  /** Made only by burning a card (ADR-046). Accounts from before it have none. */
+  crystal?: number;
+  /** Bought with Crystal, and used once the day's pack limit is reached. */
+  extraPacks?: number;
   approvedCreator: boolean;
   createdAt: string;
 }
@@ -72,6 +76,12 @@ export interface PrintRow {
   serial: string;
 }
 
+export interface DismantleRow {
+  userId: string;
+  crystal: number;
+  at: string;
+}
+
 export interface Data {
   users: User[];
   series: SeriesRow[];
@@ -80,9 +90,11 @@ export interface Data {
   prints: Record<string, PrintRow>;
   /** token id -> transaction hash per history entry, oldest first. */
   txs: Record<string, string[]>;
+  /** token id -> the Crystal it gave. Makes crediting a burn safe to repeat. */
+  dismantled: Record<string, DismantleRow>;
 }
 
-const emptyData = (): Data => ({ users: [], series: [], offers: [], prints: {}, txs: {} });
+const emptyData = (): Data => ({ users: [], series: [], offers: [], prints: {}, txs: {}, dismantled: {} });
 
 // ---- MongoDB ----
 
@@ -109,7 +121,8 @@ interface StateDoc {
 async function mongoRead(): Promise<StateDoc> {
   const states = await mongoCollection<StateDoc>("state");
   const doc = await states.findOne({ _id: "state" });
-  return doc ?? { _id: "state", version: 0, data: emptyData() };
+  // Saved before a field existed, a document fills it in here.
+  return doc ? { ...doc, data: { ...emptyData(), ...doc.data } } : { _id: "state", version: 0, data: emptyData() };
 }
 
 async function mongoWrite<T>(fn: (data: Data) => T): Promise<T> {

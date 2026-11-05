@@ -223,6 +223,14 @@ export default async function Home({ searchParams }: {
         </div>
       </section>
 
+      {/* ---- What a duplicate is worth ---- */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 mt-4" data-testid="home-crystal">
+        <p className="panel px-5 py-4 text-sm text-cn-text-2 leading-relaxed">
+          <strong className="font-semibold text-cn-text-1">Duplicates are not wasted.</strong>{" "}
+          Dismantle a digital card for Crystal, and spend it on extra pack slots. Printed cards stay safe until they come back to digital.
+        </p>
+      </section>
+
       {/* ---- Solution: the fourth worry, a card you can hold ---- */}
       <section id="print" className="max-w-7xl mx-auto px-4 sm:px-6 mt-16 sm:mt-24 scroll-mt-24">
         <div className="panel print-stage p-5 sm:p-10">

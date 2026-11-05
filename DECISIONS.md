@@ -1547,3 +1547,31 @@ their community collects it without meeting a wallet, a gas fee or a chain word.
 - **Printing no longer moves a secret.** The database stores the serial so the PDF can be downloaded again, in plain form, because it is printed in a public QR code.
 - **Giving a card to someone without an account is no longer possible.** The recipient needs a username first.
 - **A contract's balance has to cover its own code.** The wasm alone takes 2.81 NEAR of storage. The redeployment was funded with 3, and purchases failed with `LackBalanceForState` once about 12 KB of state had filled the rest. It was caught by running `app-flow.mjs` on the live site after the series were published. The contract now holds 8 NEAR, and that error now returns the buyer's Credits, because a rejected transaction minted nothing.
+
+---
+
+## ADR-046: A Small Economy: A Revenue Split, Dismantle, Crystal and One Shop Item
+
+**Status**: Accepted, 6 November 2026. Amends ADR-043, whose decision 6 put Crystal and dismantle out of scope and whose amendment said burn is not in the contract. The author asked for this after reviewing how the product earns.
+
+**Context**: pack sales took Credits from the buyer and gave them to nobody, so "revenue share" was only a sentence on the creator page. A collector could also skip until a pack looked good, and a pack with one good card and four duplicates was a poor buy. ADR-024, ADR-026, ADR-035 and ADR-038 designed an answer for the Monad product. ADR-043 removed it because a judge has minutes. This takes the smallest part that closes the loop.
+
+**Decision**:
+
+1. **Every pack sold is split, and the record is derived.** The creator gets 90% and Gachard 10%, in simulated Credits. The figures are computed from bought offers, so they cannot drift from what was sold, and the creator studio shows them. Nobody is paid. The percentages are examples, not a business decision.
+2. **Dismantle is a real burn.** The holder's own account signs `burn`. Only a digital card can burn, so a printed card has to come back first, and a physical card can never outlive its token. The token keeps its record and history as `Burned`, its supply becomes 0, and it leaves its holder's list. No method lets the platform burn a card.
+3. **Crystal is a number off chain.** It is created only by a burn, fixed by rarity at 10, 30, 90 and 300. It cannot be bought or cashed out, and it cannot be sent to anyone. The yields are examples.
+4. **The shop has one item.** 50 Crystal buys one extra pack slot, used when a day's limit of 3 is reached. A slot does not buy a card: the buyer still sees all five cards before paying, as in ADR-043 decision 2.
+5. **Crystal trading between collectors is out.** It would invite selling Crystal for real money off the platform, and it would need the abuse controls of ADR-024 and ADR-025. It stays a written plan.
+
+**Why an upgrade and not a new contract**: the state layout does not change. `Burned` is added at the end of two enums, which Borsh stores by index, so the same account takes the new code and every existing card survives. ADR-045 needed a new deployment because its layout changed. This one does not.
+
+**Honest limits**:
+- **Crystal does not earn anything by itself.** It gives a reason to buy another pack, and pack sales are the revenue. Whether it works is untested, because there are no real collectors.
+- **The pack limit is per account and per series.** New accounts and other series get around it, which a real launch would need to close.
+- **Crystal is custodial.** It is a number the app holds, and only the burn behind it can be checked on chain.
+- **A burn is credited after it lands.** If the response is lost, asking again finds the burned card and credits it once, keyed by token id.
+
+**Consequences**:
+- The contract is redeployed in place on testnet, so the running site keeps working during the change.
+- The concept comes from the Monad product, and the README discloses that. The burn and the app code are new, for NEAR.

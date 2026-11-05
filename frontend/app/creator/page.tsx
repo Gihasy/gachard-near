@@ -5,6 +5,7 @@ import { ArrowIcon, CheckIcon, PrintIcon, ScanIcon, SeriesIcon } from "@/compone
 import { CardImage, Eyebrow, Page, Panel, Rarity, primaryBtn } from "@/components/ui";
 import { missingRarities, RARITIES } from "@/lib/catalog";
 import { readDb } from "@/lib/db";
+import { CREATOR_SHARE_PCT, revenueOf } from "@/lib/economy";
 import { currentUser } from "@/lib/users";
 
 export const dynamic = "force-dynamic";
@@ -36,7 +37,7 @@ function Pitch() {
       </ul>
       <p className="mt-4 rounded-2xl border border-[#f7c96b40] bg-[#f7c96b12] px-4 py-3 text-sm leading-relaxed text-cn-text-2" data-testid="creator-plan">
         <strong className="font-semibold text-cn-credits">The plan for production, not part of this demo:</strong>{" "}
-        no upfront cost, with Gachard handling printing and shipping, and a revenue share on every pack sold. Nothing is charged or paid here.
+        no upfront cost, with Gachard handling printing and shipping, and a revenue share on every pack sold. Here, each sale is split {CREATOR_SHARE_PCT}/{100 - CREATOR_SHARE_PCT} in simulated Credits and shown in your studio, as an example. Nothing is charged or paid.
       </p>
     </section>
   );
@@ -52,7 +53,8 @@ export default async function Creator() {
       </Page>
     );
   }
-  const mine = (await readDb()).series.filter((s) => s.ownerUserId === user.id);
+  const { series, offers } = await readDb();
+  const mine = series.filter((s) => s.ownerUserId === user.id);
   return (
     <Page>
       <Pitch />
@@ -63,6 +65,7 @@ export default async function Creator() {
       <div className="space-y-6">
         {mine.map((s) => {
           const missing = missingRarities(s);
+          const revenue = revenueOf(s.id, offers);
           return (
             <Panel key={s.id}>
               <div className="flex flex-wrap justify-between gap-3 items-center">
@@ -77,6 +80,22 @@ export default async function Creator() {
                   </Link>
                 )}
               </div>
+              {missing.length ? null : (
+                <dl className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-3" data-testid="series-revenue" data-creator={revenue.creator} data-gachard={revenue.gachard}>
+                  {[
+                    ["Packs sold", revenue.packs],
+                    ["Total sales", revenue.gross],
+                    [`Your ${CREATOR_SHARE_PCT}%`, revenue.creator],
+                    [`Gachard's ${100 - CREATOR_SHARE_PCT}%`, revenue.gachard],
+                  ].map(([label, value]) => (
+                    <div key={label} className="rounded-2xl bg-white/[.035] border border-cn-line p-3">
+                      <dt className="text-xs text-cn-text-3">{label}</dt>
+                      <dd className="mt-1 font-display font-semibold tabular">{Number(value).toLocaleString("en-US")}</dd>
+                    </div>
+                  ))}
+                  <p className="col-span-full text-xs text-cn-text-3">In simulated Credits. Nobody is paid in this demo.</p>
+                </dl>
+              )}
               {s.templates.length ? (
                 <div className="mt-5 grid grid-cols-3 sm:grid-cols-5 md:grid-cols-6 gap-3">
                   {s.templates.map((t) => (

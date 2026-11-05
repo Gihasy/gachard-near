@@ -31,8 +31,17 @@ takes the physical card, so one that is lost or stolen stays lost.
 | No wallet | A named sub-account per user, created at sign-in | same |
 | No method lets the platform move a card | Only the holder's own call moves one. See the limit on the contract's key [below](#what-is-simulated-and-what-is-not-claimed) | contract tests |
 | Print and return | A printed card stays with its holder's account. Returning takes the holder's request and the platform's confirmation, under the same token id | contract, `print_lock`, `request_return`, `confirm_return` |
+| Dismantle | The holder's own account burns a digital card. Its supply becomes 0 and its record stays. A printed card has to come back first, so a physical card never outlives its token | contract, `burn` |
 | A QR for each print | The chain keeps a hash of each print's serial, so anyone can tell a current print from a cancelled one | contract, `print_state` |
 | Public proof | The Verify page reads the contract live, and each history row links to NearBlocks | [`frontend/app/scan/[id]/page.tsx`](frontend/app/scan/[id]/page.tsx) |
+
+## How it earns
+
+Pack sales are the revenue. Each pack sold is split between the creator and Gachard, and the creator studio shows the figures.
+
+Duplicates give a reason to buy the next pack. The holder dismantles a digital card, and the burn gives Crystal. Crystal buys an extra pack slot, and the buyer still sees every card before paying.
+
+Crystal is created only by a burn, and it cannot be bought, sent or cashed out. The 90/10 split, the yields and the slot's price are examples for this demo. Whether this loop works is untested, because there are no real collectors. See [ADR-046](DECISIONS.md).
 
 ## Try it
 
@@ -71,9 +80,10 @@ Open http://localhost:3000, or the hosted demo, then:
    Request return. A button stands in for posting the card: click Simulate: card received
    and destroyed. The same token id is digital again. Open the QR's address once more: it
    now reads VOID.
-9. **Release your own.** Open For Creators, publish a series, and add a card for each rarity that
+9. **Dismantle a duplicate.** Open a digital card and click Dismantle, then Destroy. Its record stays and says it was destroyed, and My Cards shows your Crystal. Crystal buys an extra pack slot there.
+10. **Release your own.** Open For Creators, publish a series, and add a card for each rarity that
    has a rate. It goes live on the home page. On any of its cards, Released by links to your account on
-   NearBlocks.
+   NearBlocks. After a sale, the series shows the 90/10 split in simulated Credits.
 
 ### Check each claim
 
@@ -126,7 +136,8 @@ cargo near build non-reproducible-wasm --no-abi
 
 ## What is simulated, and what is not claimed
 
-- **Payments are simulated.** Credits are a number in a local file.
+- **Payments are simulated.** Credits are a number in a local file. The creator's share is a figure derived from sales: nobody is paid.
+- **Crystal is a number the app holds.** Only the burn behind it can be checked on chain. Crystal trading between collectors is not built.
 - **Printing is simulated.** The PDF stands in for the card the platform would print and
   ship. It says so in its margin and on the card back, and the Verify page says so too.
 - **Sending a card back is simulated.** In production the physical card goes to Gachard to be
@@ -175,6 +186,7 @@ This is disclosed as the hackathon rules ask (Q-002, Q-003).
 - **What was built for this hackathon is the
   [diff from `pre-hackathon` to `hackathon-submission`](https://github.com/Gihasy/gachard-near/compare/pre-hackathon...hackathon-submission).** That covers the contract, all NEAR integration, the new app and
   the end-to-end check. Solidity, `ethers`, Pyth and Privy were removed.
+- The idea of dismantling cards for Crystal comes from the Monad version. The contract's `burn` and all the app code for it were written here, for NEAR.
 - Reused from the baseline: the visual tokens in `frontend/app/globals.css`,
   `frontend/lib/crypto.ts`, `frontend/lib/session.ts` (in part), `frontend/components/Logo.tsx`,
   `design/gachard.pen`, `docs/CREATOR-ASSET-GUIDE.md`, and the images in `frontend/public`,

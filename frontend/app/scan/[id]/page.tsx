@@ -6,6 +6,8 @@ import { CheckIcon, ExternalIcon, PrintIcon, SendIcon, SparkIcon } from "@/compo
 import { Panel, Rarity } from "@/components/ui";
 import { printState, readCard, serialForHolder, type PrintState } from "@/lib/cards";
 import { readDb } from "@/lib/db";
+import { CRYSTAL_BY_RARITY } from "@/lib/economy";
+import { RARITIES } from "@/lib/catalog";
 import { collectorLabel, contractId, explorer } from "@/lib/near";
 import { qrDataUrl, siteOrigin } from "@/lib/qr";
 import { currentUser, nameOf } from "@/lib/users";
@@ -19,12 +21,14 @@ const ROW: Record<string, { label: string; Icon: typeof CheckIcon }> = {
   ReturnRequested: { label: "Return requested", Icon: SendIcon },
   ReturnRejected: { label: "Return refused: card not genuine", Icon: PrintIcon },
   Returned: { label: "Returned to digital", Icon: CheckIcon },
+  Burned: { label: "Dismantled and destroyed", Icon: CheckIcon },
 };
 
 const STATUS: Record<string, { label: string; className: string }> = {
   Digital: { label: "Digital", className: "bg-[#7ee0a61f] text-cn-success" },
   Printed: { label: "Printed (hackathon demo PDF)", className: "bg-[#f7c96b1f] text-cn-credits" },
   ReturnPending: { label: "Return pending (hackathon simulation)", className: "bg-[#f7c96b1f] text-cn-credits" },
+  Burned: { label: "Destroyed", className: "bg-[#ff7a8a1a] text-cn-danger" },
 };
 
 const BANNER: Record<PrintState, { title: string; text: string; className: string }> = {
@@ -75,7 +79,8 @@ export default async function CardRecord({ params, searchParams }: {
   if (!card) notFound();
   const [user, { users }, { print }] = await Promise.all([currentUser(), readDb(), searchParams]);
   const isHolder = user?.accountId === card.owner_id;
-  const digital = card.status === "Digital";
+  const digital = card.status === "Digital" || card.status === "Burned";
+  const burned = card.status === "Burned";
   const status = STATUS[card.status] ?? STATUS.Digital;
 
   // The state of the paper in someone's hand, if they arrived from its QR.
@@ -115,7 +120,7 @@ export default async function CardRecord({ params, searchParams }: {
           </div>
 
           <dl className="grid grid-cols-2 gap-3">
-            <Fact label="Holder" testid="card-holder">
+            <Fact label={burned ? "Last holder" : "Holder"} testid="card-holder">
               {nameOf(card.owner_id, users)}{isHolder ? " (you)" : ""}
               <a className="mt-0.5 flex items-center gap-1 text-xs font-medium text-cn-lavender hover:underline" target="_blank" rel="noreferrer" href={explorer.account(card.owner_id)}>
                 {collectorLabel(card.owner_id)} <ExternalIcon width={12} height={12} />
@@ -144,6 +149,7 @@ export default async function CardRecord({ params, searchParams }: {
             qr={qr}
             isHolder={isHolder}
             printNumber={card.print_cycle}
+            crystalYield={CRYSTAL_BY_RARITY[RARITIES.indexOf(card.rarity)]}
           />
 
           <Panel>
