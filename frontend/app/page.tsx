@@ -104,9 +104,9 @@ export default async function Home({ searchParams }: {
       <section className="max-w-7xl mx-auto px-4 sm:px-6 pt-10 sm:pt-16 grid lg:grid-cols-[1.1fr_1fr] gap-10 lg:gap-6 items-center">
         <div className="rise">
           <Eyebrow>For collectors</Eyebrow>
-          <h1 className="mt-5 font-display font-bold text-[2.15rem] leading-[1.12] sm:text-5xl xl:text-[3.5rem]">
-            Find your favorites.{" "}
-            <span className="crystal-text">Collect their cards.</span>
+          <h1 className="mt-5 font-display font-bold text-[2.15rem] leading-[1.12] sm:text-5xl xl:text-[3.25rem] [text-wrap:balance]">
+            Find your favorite cards.{" "}
+            <span className="crystal-text whitespace-nowrap">Collect them!</span>
           </h1>
           <p className="mt-5 max-w-xl text-cn-text-2 text-base sm:text-lg leading-relaxed">
             Characters, VTubers, actors and whole worlds release their own trading cards here.
