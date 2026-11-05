@@ -1,7 +1,7 @@
 // End-to-end proof on NEAR testnet, against the deployed contract.
 //
 // Claim under test: a creator and collectors with no gas money can release,
-// receive, move, print and redeem cards. The platform pays gas and the 1 yocto
+// receive, move, print and return cards. The platform pays gas and the 1 yocto
 // deposit. Their own balances must not change by a single yoctoNEAR.
 //
 // Run: node --env-file=../frontend/.env.local e2e.mjs
@@ -100,8 +100,8 @@ async function expectRefused(name, wanted, attempt) {
   }
 }
 
-const redeemHash = (tokenId, cycle, code) =>
-  createHash("sha256").update(`gachard-redeem:${tokenId}:${cycle}:${code}`).digest();
+const printHash = (tokenId, serial) =>
+  createHash("sha256").update(`gachard-print:${tokenId}:${serial}`).digest("base64");
 
 async function main() {
   console.log(`Contract ${CONTRACT}\n`);
@@ -172,35 +172,53 @@ async function main() {
   card = await view("get_card", { token_id: tokenId });
   check("Bob now holds it", card.owner_id === bob.accountId);
 
-  const code = randomBytes(10).toString("hex").toUpperCase();
-  record("Bob locks the card for print",
-    await relayed(bob, "print_lock", {
-      token_id: tokenId, code_hash: redeemHash(tokenId, card.print_cycle + 1, code).toString("base64"),
-    }, 1n));
+  const serial = randomBytes(16).toString("hex");
+  record("Bob prints the card",
+    await relayed(bob, "print_lock", { token_id: tokenId, print_hash: printHash(tokenId, serial) }, 1n));
   card = await view("get_card", { token_id: tokenId });
   check("Card reads Printed, still held by Bob", card.status === "Printed" && card.owner_id === bob.accountId);
+  check("Its QR reads as the current print", (await view("print_state", { token_id: tokenId, serial })) === "Active");
+  check("A made-up QR reads as unknown", (await view("print_state", { token_id: tokenId, serial: "made-up" })) === "Unknown");
 
-  await expectRefused("A printed card cannot move", "locked for print", () =>
-    relayed(bob, "mt_transfer", { receiver_id: alice.accountId, token_id: tokenId, amount: "1" }, 1n));
-  await expectRefused("A wrong code is refused", "Invalid redeem code", () =>
-    relayed(alice, "redeem", { token_id: tokenId, code: "WRONGWRONGWRONGWRONG" }, 1n));
+  await expectRefused("Someone with the paper but not the account cannot move it", "Only the holder can transfer", () =>
+    relayed(alice, "mt_transfer", { receiver_id: creator.accountId, token_id: tokenId, amount: "1" }, 1n));
+  await expectRefused("Someone with the paper but not the account cannot return it", "Only the holder can return", () =>
+    relayed(alice, "request_return", { token_id: tokenId }, 1n));
+  await expectRefused("The platform cannot return a card nobody asked to return", "Card is not being returned", () =>
+    platform.signAndSendTransaction({
+      receiverId: CONTRACT,
+      throwOnFailure: false,
+      actions: [actions.functionCall("confirm_return", { token_id: tokenId }, teraToGas(30), 0n)],
+    }));
 
-  record("Alice redeems with the code", await relayed(alice, "redeem", { token_id: tokenId, code }, 1n));
+  record("Bob transfers the printed card to Alice",
+    await relayed(bob, "mt_transfer", { receiver_id: alice.accountId, token_id: tokenId, amount: "1" }, 1n));
   card = await view("get_card", { token_id: tokenId });
-  check("Same token, digital again, held by Alice",
-    card.token_id === tokenId && card.status === "Digital" && card.owner_id === alice.accountId);
-  check("History shows the whole trip",
-    card.history.map((h) => h.kind).join(">") === "Mint>Transfer>Print>Redeem",
-    card.history.map((h) => h.kind).join(" > "));
+  check("Alice holds it, and it is still printed", card.status === "Printed" && card.owner_id === alice.accountId);
 
-  await expectRefused("The code cannot be used twice", "Card is not printed", () =>
-    relayed(bob, "redeem", { token_id: tokenId, code }, 1n));
+  record("Alice asks to return it", await relayed(alice, "request_return", { token_id: tokenId }, 1n));
+  await expectRefused("A card on its way back cannot move", "Card is being returned", () =>
+    relayed(alice, "mt_transfer", { receiver_id: bob.accountId, token_id: tokenId, amount: "1" }, 1n));
+  await expectRefused("The holder cannot confirm their own return", "Only the minter can answer", () =>
+    relayed(alice, "confirm_return", { token_id: tokenId }));
+
+  record("The platform confirms the physical card arrived", await platform.signAndSendTransaction({
+    receiverId: CONTRACT,
+    actions: [actions.functionCall("confirm_return", { token_id: tokenId }, teraToGas(30), 0n)],
+  }));
+  card = await view("get_card", { token_id: tokenId });
+  check("Same token, digital again, still held by Alice",
+    card.token_id === tokenId && card.status === "Digital" && card.owner_id === alice.accountId);
+  check("The old QR now reads as void", (await view("print_state", { token_id: tokenId, serial })) === "Void");
+  check("History shows the whole trip",
+    card.history.map((h) => h.kind).join(">") === "Mint>Transfer>Print>Transfer>ReturnRequested>Returned",
+    card.history.map((h) => h.kind).join(" > "));
 
   console.log("");
   // Nobody pays. A refused call's 1 yocto deposit, which the platform attached,
   // is refunded to the user who signed it, so the exact gain is the number of
-  // refused calls above: Alice one, Bob two. Exact, so a real charge cannot hide.
-  const refundsExpected = new Map([[creator.accountId, 0n], [alice.accountId, 1n], [bob.accountId, 2n]]);
+  // refused calls above that carried one: Alice three. Exact, so a real charge cannot hide.
+  const refundsExpected = new Map([[creator.accountId, 0n], [alice.accountId, 3n], [bob.accountId, 0n]]);
   for (const u of users) {
     const after = await balanceOf(u.accountId);
     const gain = after - before.get(u.accountId);

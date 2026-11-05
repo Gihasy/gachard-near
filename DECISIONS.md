@@ -1514,3 +1514,33 @@ their community collects it without meeting a wallet, a gas fee or a chain word.
 - **The signup and upload caps are approximate.** They read then write, so two instances can overshoot slightly. They limit damage, not exact counts.
 - **The platform key and encryption secret now live in Vercel**, beside the database URL. That is ADR-036's warning again: whoever gets that environment holds every custodial account. Testnet only, with a throwaway account.
 - **A mint whose response is lost holds the buyer's Credits** as `unresolved`, as before. A function killed mid-mint can now cause this as well.
+
+## ADR-045: A Printed Card Belongs to an Account, and Returning It Takes the Physical Card
+
+**Status**: Accepted and built, 5 November 2026, on testnet contract `cards-v2`. Replaces the print and redeem rules of ADR-043, decision 3, for this hackathon. The rest of ADR-043 stands. Exercised by `cargo test`, `near-e2e/e2e.mjs` and `near-e2e/app-flow.mjs` locally, not yet on Vercel.
+
+**Context**: under ADR-043 a printed card carried a redeem code, and whoever entered the code received the card. That made the paper a bearer instrument: a photo of the code was enough to take the card. It also meant a printed card could not change hands on the record. The author wants the opposite risk: a physical card can be lost for good, and nobody who finds or steals it can do anything with it.
+
+**Decision**:
+
+1. **There is no redeem code. The QR code only opens a card's record.** Anyone who scans it sees the card and its holder. Only the holder, signed in, sees Transfer and Return to digital.
+2. **A printed card can be transferred, by its holder only, to a username.** It stays Printed. The paper changes hands outside the system.
+3. **Returning to digital means sending in the physical card.** The holder calls `request_return`, which stops the card moving while it travels. The minter then calls `confirm_return` once it has received and destroyed the card, or `reject_return` if it is not genuine. Neither side can do it alone, and neither call changes the holder.
+4. **A lost or stolen card can never return,** because there is nothing to send. This is deliberate. The holder can still transfer the record, so a buyer must check the physical card as well as the name on the record.
+5. **Each print has a random serial, carried in its QR code, with its hash on chain.** `print_state` answers Active, ReturnPending, Void or Unknown. A returned card's old paper reads VOID for good. Only one print of a card is ever current.
+6. **Usernames are app data, unique, and off chain.** Chain accounts stay anonymous HMAC names (ADR-042, decision 5). A new account gets an anonymous default username and can change it.
+7. **Printed cards cannot go through `mt_transfer_call`.** A refund could not tell a card printed all along from one printed during the call, and nothing in this app needs it.
+
+**Why not a code plus login, or one-way printing**: a secret on the card, required together with the holder's login, can be defeated by photographing it before the card is lost. One-way printing has no such gap, but takes the way back from a holder who still has the card. Sending in the card is the only one of the three that proves possession without new hardware.
+
+**What the demo does not prove**:
+- **The physical step is simulated.** Nothing can be posted during judging, so the holder sees labelled "Simulate" buttons that make the platform's real testnet transaction. In the demo a holder can therefore return a card they no longer have. The contract enforces who can act, not where the paper is.
+- **A copy of a current print scans the same as the original.** A QR code proves a link to a record, not that a piece of paper is genuine. Production needs platform printing with physical security features, or a chip that cannot be cloned, or `reject_return` has nothing to judge by. A self-printed PDF cannot have them.
+- **The holder can download the PDF again**, including a new holder. In production there is no PDF.
+- **The platform is trusted on the physical step.** Its confirmation is on chain, but the public cannot check that a card was really received and destroyed.
+- **A username is not on chain.** The link from a username to a chain account is the app's word. Scan shows both so they can be compared with the record.
+
+**Consequences**:
+- **The contract's storage layout changed,** so it is a new deployment and earlier testnet cards stay on the old contract.
+- **Printing no longer moves a secret.** The database stores the serial so the PDF can be downloaded again, in plain form, because it is printed in a public QR code.
+- **Giving a card to someone without an account is no longer possible.** The recipient needs a username first.

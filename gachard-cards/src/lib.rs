@@ -12,9 +12,13 @@
 //!   a template, and it cannot move a card once minted. It can mint any amount
 //!   from any template, so "released by this creator" means the creator's account
 //!   published the template, not that the creator approved each mint.
-//! - Whoever holds a printed card's code redeems it, and the card moves to them.
-//!   The code itself is checked, against a hash bound to the token and the print
-//!   cycle. A caller cannot pass a stored hash back: the contract computes it.
+//! - A printed card stays with its holder's account. Only that account can move
+//!   it, so finding or stealing the paper gives nobody the card (ADR-045).
+//! - Returning a printed card to digital takes two parties: the holder asks, then
+//!   the minter confirms it received the physical card. Neither can do it alone,
+//!   and confirming never changes who holds the card.
+//! - Each print has its own serial, carried in its QR code. The chain keeps a hash
+//!   of every serial, so anyone can tell a current print from a cancelled one.
 
 use near_sdk::json_types::{Base64VecU8, U128};
 use near_sdk::serde_json::json;
@@ -31,8 +35,6 @@ const MAX_TEMPLATES_PER_SERIES: u32 = 200;
 const MAX_NAME: usize = 64;
 const MAX_MEDIA: usize = 256;
 const MAX_MEMO: usize = 256;
-const MIN_CODE: usize = 16;
-const MAX_CODE: usize = 64;
 const RATE_TOTAL_BPS: u32 = 10_000;
 const RARITIES: [&str; 4] = ["Common", "Rare", "Epic", "Legendary"];
 
@@ -45,6 +47,22 @@ const GAS_MINIMUM_FOR_CALL: Gas = Gas::from_tgas(55);
 pub enum CardStatus {
     Digital,
     Printed,
+    /// The holder asked to return it, and the physical card is on its way.
+    ReturnPending,
+}
+
+/// What a QR code's serial means for its card, as of now.
+#[near(serializers = [json])]
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub enum PrintState {
+    /// The card's current print.
+    Active,
+    /// The current print, on its way back to be destroyed.
+    ReturnPending,
+    /// A print that was cancelled when the card returned to digital.
+    Void,
+    /// Not a serial this card has ever had.
+    Unknown,
 }
 
 #[near(serializers = [json, borsh])]
@@ -53,7 +71,9 @@ pub enum HistoryKind {
     Mint,
     Transfer,
     Print,
-    Redeem,
+    ReturnRequested,
+    ReturnRejected,
+    Returned,
 }
 
 #[near(serializers = [json, borsh])]
@@ -74,7 +94,8 @@ pub struct Card {
     owner: AccountId,
     status: CardStatus,
     print_cycle: u32,
-    code_hash: Option<Vec<u8>>,
+    /// One hash per print, oldest first. The last is current while the card is printed.
+    print_hashes: Vec<Vec<u8>>,
     minted_at_ms: u64,
     history: Vec<HistoryEntry>,
     history_total: u32,
@@ -213,10 +234,10 @@ fn require_token_id(token_id: &str) -> u64 {
     parse_token_id(token_id).unwrap_or_else(|| env::panic_str("Invalid token id"))
 }
 
-/// The hash a print lock commits to. Bound to the token and the print cycle, so
-/// a code from an earlier cycle, or from another card, can never match.
-pub fn redeem_hash(token_id: u64, print_cycle: u32, code: &str) -> Vec<u8> {
-    env::sha256(format!("gachard-redeem:{token_id}:{print_cycle}:{code}").as_bytes())
+/// The hash a print lock commits to. Bound to the token, so a serial from another
+/// card can never match.
+pub fn print_hash(token_id: u64, serial: &str) -> Vec<u8> {
+    env::sha256(format!("gachard-print:{token_id}:{serial}").as_bytes())
 }
 
 fn emit_gachard(event: &str, data: near_sdk::serde_json::Value) {
@@ -325,6 +346,7 @@ impl Contract {
         amounts: &[U128],
         approvals_given: bool,
         memo: Option<&str>,
+        digital_only: bool,
     ) -> Vec<AccountId> {
         assert_one_yocto();
         require!(!approvals_given, "Approvals are not supported");
@@ -347,8 +369,14 @@ impl Contract {
             let card = self.card(id);
             require!(card.owner == sender, "Only the holder can transfer a card");
             require!(
-                card.status == CardStatus::Digital,
-                "Card is locked for print"
+                card.status != CardStatus::ReturnPending,
+                "Card is being returned"
+            );
+            // A refund could not tell a card that was printed all along from one
+            // printed during the call, so only digital cards go through a call.
+            require!(
+                !digital_only || card.status == CardStatus::Digital,
+                "Only a digital card can be sent to a contract"
             );
             previous.push(self.move_card(id, receiver_id, HistoryKind::Transfer));
         }
@@ -418,6 +446,21 @@ impl Contract {
             used.push(U128(if refunded { 0 } else { 1 }));
         }
         used
+    }
+
+    /// Checks shared by the platform's two answers to a return.
+    fn pending_return(&self, token_id: &str) -> (u64, AccountId) {
+        require!(
+            env::predecessor_account_id() == self.minter,
+            "Only the minter can answer a return"
+        );
+        let id = require_token_id(token_id);
+        let card = self.card(id);
+        require!(
+            card.status == CardStatus::ReturnPending,
+            "Card is not being returned"
+        );
+        (id, card.owner.clone())
     }
 
     fn template_of(&self, card: &Card) -> &Template {
@@ -546,7 +589,7 @@ impl Contract {
                 owner: receiver_id.clone(),
                 status: CardStatus::Digital,
                 print_cycle: 0,
-                code_hash: None,
+                print_hashes: Vec::new(),
                 minted_at_ms: env::block_timestamp_ms(),
                 history: Vec::new(),
                 history_total: 0,
@@ -668,6 +711,7 @@ impl Contract {
             &[amount],
             approval.is_some(),
             memo.as_deref(),
+            false,
         );
     }
 
@@ -686,6 +730,7 @@ impl Contract {
             &amounts,
             approvals.is_some(),
             memo.as_deref(),
+            false,
         );
     }
 
@@ -707,6 +752,7 @@ impl Contract {
             &amounts,
             approval.is_some(),
             memo.as_deref(),
+            true,
         );
         self.start_transfer_call(receiver_id, token_ids, amounts, previous, msg)
     }
@@ -727,6 +773,7 @@ impl Contract {
             &amounts,
             approvals.is_some(),
             memo.as_deref(),
+            true,
         );
         self.start_transfer_call(receiver_id, token_ids, amounts, previous, msg)
     }
@@ -745,15 +792,14 @@ impl Contract {
         self.resolve(previous_owner_ids, receiver_id, token_ids, unused.ok())
     }
 
-    // ---- Holder: print and redeem ----
+    // ---- Holder: print and return ----
 
-    /// Locks the card in place for print. It cannot move until it is redeemed.
-    /// `code_hash` is `redeem_hash(token, new print cycle, code)`, made off chain,
-    /// so the code itself is never on chain before it is used.
+    /// Marks the card as printed. It stays with the holder, who can still transfer
+    /// it. `print_hash` is `print_hash(token, serial)`, made off chain.
     #[payable]
-    pub fn print_lock(&mut self, token_id: String, code_hash: Base64VecU8) -> u32 {
+    pub fn print_lock(&mut self, token_id: String, print_hash: Base64VecU8) -> u32 {
         assert_one_yocto();
-        require!(code_hash.0.len() == 32, "code_hash must be a sha256");
+        require!(print_hash.0.len() == 32, "print_hash must be a sha256");
         let id = require_token_id(&token_id);
         let caller = env::predecessor_account_id();
         let card = self
@@ -770,7 +816,7 @@ impl Contract {
         );
         card.status = CardStatus::Printed;
         card.print_cycle += 1;
-        card.code_hash = Some(code_hash.0);
+        card.print_hashes.push(print_hash.0);
         card.record(HistoryKind::Print, Some(caller.clone()), caller.clone());
         let cycle = card.print_cycle;
         emit_gachard(
@@ -780,42 +826,52 @@ impl Contract {
         cycle
     }
 
-    /// Returns a printed card to digital, to the caller, under the same token id.
-    /// Holding the code is what entitles them: a physical card changes hands.
+    /// The holder asks to return a printed card. It cannot move while the physical
+    /// card is on its way, so it cannot be sold during that time.
     #[payable]
-    pub fn redeem(&mut self, token_id: String, code: String) {
+    pub fn request_return(&mut self, token_id: String) {
         assert_one_yocto();
-        require!(
-            code.len() >= MIN_CODE && code.len() <= MAX_CODE,
-            "Invalid redeem code"
-        );
         let id = require_token_id(&token_id);
         let caller = env::predecessor_account_id();
         let card = self
             .cards
             .get_mut(&id)
             .unwrap_or_else(|| env::panic_str("Card not found"));
+        require!(card.owner == caller, "Only the holder can return a card");
         require!(card.status == CardStatus::Printed, "Card is not printed");
-        let expected = redeem_hash(id, card.print_cycle, &code);
-        require!(
-            card.code_hash.as_ref() == Some(&expected),
-            "Invalid redeem code"
-        );
-        card.status = CardStatus::Digital;
-        card.code_hash = None;
-        let cycle = card.print_cycle;
-        let from = self.move_card(id, &caller, HistoryKind::Redeem);
-        if from != caller {
-            emit_mt_transfer(
-                &from,
-                &caller,
-                std::slice::from_ref(&token_id),
-                Some("redeem"),
-            );
-        }
+        card.status = CardStatus::ReturnPending;
+        card.record(HistoryKind::ReturnRequested, Some(caller.clone()), caller.clone());
         emit_gachard(
-            "redeem",
-            json!({"token_id": token_id, "holder": caller, "print_cycle": cycle}),
+            "return_requested",
+            json!({"token_id": token_id, "holder": caller, "print_cycle": card.print_cycle}),
+        );
+    }
+
+    // ---- Platform: the physical card arrived ----
+
+    /// The physical card was received and destroyed. The card is digital again, with
+    /// the same holder, and its print is void. Only works after the holder asked.
+    pub fn confirm_return(&mut self, token_id: String) {
+        let (id, holder) = self.pending_return(&token_id);
+        let card = self.cards.get_mut(&id).unwrap();
+        card.status = CardStatus::Digital;
+        card.record(HistoryKind::Returned, Some(holder.clone()), holder.clone());
+        emit_gachard(
+            "returned",
+            json!({"token_id": token_id, "holder": holder, "print_cycle": card.print_cycle}),
+        );
+    }
+
+    /// What arrived was not the genuine card. The print stays current and the card
+    /// stays printed, so the holder can transfer it again.
+    pub fn reject_return(&mut self, token_id: String) {
+        let (id, holder) = self.pending_return(&token_id);
+        let card = self.cards.get_mut(&id).unwrap();
+        card.status = CardStatus::Printed;
+        card.record(HistoryKind::ReturnRejected, Some(holder.clone()), holder.clone());
+        emit_gachard(
+            "return_rejected",
+            json!({"token_id": token_id, "holder": holder, "print_cycle": card.print_cycle}),
         );
     }
 
@@ -955,6 +1011,22 @@ impl Contract {
         })
     }
 
+    /// What a QR code's serial means. Null if the card does not exist.
+    pub fn print_state(&self, token_id: String, serial: String) -> Option<PrintState> {
+        let id = parse_token_id(&token_id)?;
+        let card = self.cards.get(&id)?;
+        let hash = print_hash(id, &serial);
+        let Some(index) = card.print_hashes.iter().position(|h| *h == hash) else {
+            return Some(PrintState::Unknown);
+        };
+        let current = index + 1 == card.print_hashes.len();
+        Some(match (current, card.status) {
+            (true, CardStatus::Printed) => PrintState::Active,
+            (true, CardStatus::ReturnPending) => PrintState::ReturnPending,
+            _ => PrintState::Void,
+        })
+    }
+
     pub fn get_series(&self, series_id: u32) -> Option<Series> {
         self.series.get(&series_id).cloned()
     }
@@ -985,7 +1057,7 @@ mod tests {
     use near_sdk::test_utils::VMContextBuilder;
     use near_sdk::{NearToken, testing_env};
 
-    const CODE: &str = "ABCD-EFGH-JKMN-PQRS";
+    const SERIAL: &str = "first-print-serial";
 
     fn acc(name: &str) -> AccountId {
         format!("{name}.testnet").parse().unwrap()
@@ -1036,11 +1108,15 @@ mod tests {
         c.mint(1, vec![1], acc(to)).remove(0)
     }
 
-    fn lock(c: &mut Contract, holder: &str, token: &str, code: &str) {
+    fn lock(c: &mut Contract, holder: &str, token: &str, serial: &str) {
         let id = token.parse().unwrap();
-        let cycle = c.card(id).print_cycle + 1;
         as_caller(holder, 1);
-        c.print_lock(token.into(), Base64VecU8(redeem_hash(id, cycle, code)));
+        c.print_lock(token.into(), Base64VecU8(print_hash(id, serial)));
+    }
+
+    fn ask_return(c: &mut Contract, holder: &str, token: &str) {
+        as_caller(holder, 1);
+        c.request_return(token.into());
     }
 
     // ---- Who may do what ----
@@ -1272,7 +1348,7 @@ mod tests {
         let t = mint_one(&mut c, "alice");
         as_caller("alice", 1);
         c.mt_transfer(acc("market"), t.clone(), U128(1), None, None);
-        lock(&mut c, "market", &t, CODE);
+        lock(&mut c, "market", &t, SERIAL);
         let used = c.resolve(
             vec![acc("alice")],
             acc("market"),
@@ -1283,16 +1359,60 @@ mod tests {
         assert_eq!(c.mt_balance_of(acc("market"), t), U128(1));
     }
 
-    // ---- Print and redeem ----
+    // ---- A printed card: only its holder's account can move it ----
 
     #[test]
-    #[should_panic(expected = "locked for print")]
-    fn printed_card_cannot_move() {
+    fn printed_card_moves_only_on_the_record_and_stays_printed() {
         let mut c = setup();
         let t = mint_one(&mut c, "alice");
-        lock(&mut c, "alice", &t, CODE);
+        lock(&mut c, "alice", &t, SERIAL);
         as_caller("alice", 1);
-        c.mt_transfer(acc("bob"), t, U128(1), None, None);
+        c.mt_transfer(acc("bob"), t.clone(), U128(1), None, None);
+        let v = c.get_card(t.clone()).unwrap();
+        assert_eq!(v.owner_id, acc("bob"));
+        assert_eq!(v.status, CardStatus::Printed);
+        assert_eq!(c.print_state(t, SERIAL.into()), Some(PrintState::Active));
+    }
+
+    /// Whoever finds or steals the paper has its QR code, and that gives them nothing.
+    #[test]
+    #[should_panic(expected = "Only the holder can transfer")]
+    fn finder_of_a_printed_card_cannot_move_it() {
+        let mut c = setup();
+        let t = mint_one(&mut c, "alice");
+        lock(&mut c, "alice", &t, SERIAL);
+        as_caller("finder", 1);
+        c.mt_transfer(acc("buyer"), t, U128(1), None, None);
+    }
+
+    #[test]
+    #[should_panic(expected = "Only the holder can return")]
+    fn finder_of_a_printed_card_cannot_return_it() {
+        let mut c = setup();
+        let t = mint_one(&mut c, "alice");
+        lock(&mut c, "alice", &t, SERIAL);
+        ask_return(&mut c, "finder", &t);
+    }
+
+    #[test]
+    #[should_panic(expected = "Only the holder can return")]
+    fn previous_holder_cannot_return_a_card_they_passed_on() {
+        let mut c = setup();
+        let t = mint_one(&mut c, "alice");
+        lock(&mut c, "alice", &t, SERIAL);
+        as_caller("alice", 1);
+        c.mt_transfer(acc("bob"), t.clone(), U128(1), None, None);
+        ask_return(&mut c, "alice", &t);
+    }
+
+    #[test]
+    #[should_panic(expected = "Only a digital card can be sent to a contract")]
+    fn printed_card_cannot_go_through_a_transfer_call() {
+        let mut c = setup();
+        let t = mint_one(&mut c, "alice");
+        lock(&mut c, "alice", &t, SERIAL);
+        as_caller("alice", 1);
+        c.mt_transfer_call(acc("market"), t, U128(1), None, None, String::new());
     }
 
     #[test]
@@ -1300,102 +1420,8 @@ mod tests {
     fn card_cannot_be_printed_twice_at_once() {
         let mut c = setup();
         let t = mint_one(&mut c, "alice");
-        lock(&mut c, "alice", &t, CODE);
-        lock(&mut c, "alice", &t, CODE);
-    }
-
-    #[test]
-    fn redeem_returns_the_same_token_to_whoever_holds_the_code() {
-        let mut c = setup();
-        let t = mint_one(&mut c, "alice");
-        lock(&mut c, "alice", &t, CODE);
-        assert_eq!(c.get_card(t.clone()).unwrap().status, CardStatus::Printed);
-        // Printed in place: alice still holds it until the code is used.
-        assert_eq!(c.mt_balance_of(acc("alice"), t.clone()), U128(1));
-
-        as_caller("bob", 1);
-        c.redeem(t.clone(), CODE.into());
-
-        let v = c.get_card(t.clone()).unwrap();
-        assert_eq!(v.token_id, t);
-        assert_eq!(v.status, CardStatus::Digital);
-        assert_eq!(v.owner_id, acc("bob"));
-        assert_eq!(v.print_cycle, 1);
-        let kinds: Vec<_> = v.history.iter().map(|h| h.kind).collect();
-        assert_eq!(
-            kinds,
-            vec![HistoryKind::Mint, HistoryKind::Print, HistoryKind::Redeem]
-        );
-        assert_eq!(c.mt_balance_of(acc("alice"), t.clone()), U128(0));
-        assert_eq!(c.mt_balance_of(acc("bob"), t), U128(1));
-    }
-
-    #[test]
-    #[should_panic(expected = "Invalid redeem code")]
-    fn wrong_code_is_refused() {
-        let mut c = setup();
-        let t = mint_one(&mut c, "alice");
-        lock(&mut c, "alice", &t, CODE);
-        as_caller("bob", 1);
-        c.redeem(t, "WRONG-WRONG-WRONG-1".into());
-    }
-
-    /// The v1 flaw (ADR-036): passing the stored hash back as if it were the code.
-    #[test]
-    #[should_panic(expected = "Invalid redeem code")]
-    fn stored_hash_is_not_a_code() {
-        let mut c = setup();
-        let t = mint_one(&mut c, "alice");
-        lock(&mut c, "alice", &t, CODE);
-        let id: u64 = t.parse().unwrap();
-        let stored: String = c
-            .card(id)
-            .code_hash
-            .clone()
-            .unwrap()
-            .iter()
-            .take(30)
-            .map(|b| format!("{b:02x}"))
-            .collect();
-        as_caller("mallory", 1);
-        c.redeem(t, stored);
-    }
-
-    #[test]
-    #[should_panic(expected = "Card is not printed")]
-    fn code_cannot_be_used_twice() {
-        let mut c = setup();
-        let t = mint_one(&mut c, "alice");
-        lock(&mut c, "alice", &t, CODE);
-        as_caller("bob", 1);
-        c.redeem(t.clone(), CODE.into());
-        as_caller("carol", 1);
-        c.redeem(t, CODE.into());
-    }
-
-    #[test]
-    #[should_panic(expected = "Invalid redeem code")]
-    fn code_from_an_earlier_print_cycle_is_dead() {
-        let mut c = setup();
-        let t = mint_one(&mut c, "alice");
-        lock(&mut c, "alice", &t, CODE);
-        as_caller("alice", 1);
-        c.redeem(t.clone(), CODE.into());
-        lock(&mut c, "alice", &t, "NEWC-ODEN-EWCO-DE22");
-        as_caller("mallory", 1);
-        c.redeem(t, CODE.into());
-    }
-
-    #[test]
-    #[should_panic(expected = "Invalid redeem code")]
-    fn code_of_another_card_is_refused() {
-        let mut c = setup();
-        let a = mint_one(&mut c, "alice");
-        let b = mint_one(&mut c, "alice");
-        lock(&mut c, "alice", &a, CODE);
-        lock(&mut c, "alice", &b, "OTHE-RCOD-EOTH-ER22");
-        as_caller("mallory", 1);
-        c.redeem(b, CODE.into());
+        lock(&mut c, "alice", &t, SERIAL);
+        lock(&mut c, "alice", &t, "second");
     }
 
     #[test]
@@ -1405,6 +1431,152 @@ mod tests {
         let t = mint_one(&mut c, "alice");
         as_caller("alice", 0);
         c.print_lock(t, Base64VecU8(vec![1; 32]));
+    }
+
+    // ---- Returning to digital: the holder asks, the platform confirms ----
+
+    #[test]
+    fn return_gives_back_the_same_token_to_the_same_holder() {
+        let mut c = setup();
+        let t = mint_one(&mut c, "alice");
+        lock(&mut c, "alice", &t, SERIAL);
+        ask_return(&mut c, "alice", &t);
+        as_caller("platform", 0);
+        c.confirm_return(t.clone());
+        let v = c.get_card(t.clone()).unwrap();
+        assert_eq!(v.token_id, t);
+        assert_eq!(v.status, CardStatus::Digital);
+        assert_eq!(v.owner_id, acc("alice"));
+        let kinds: Vec<_> = v.history.iter().map(|h| h.kind).collect();
+        assert_eq!(
+            kinds,
+            vec![
+                HistoryKind::Mint,
+                HistoryKind::Print,
+                HistoryKind::ReturnRequested,
+                HistoryKind::Returned
+            ]
+        );
+    }
+
+    /// A lost card is one the holder can never send in, so the platform must not be
+    /// able to return a card on its own.
+    #[test]
+    #[should_panic(expected = "Card is not being returned")]
+    fn platform_cannot_return_a_card_nobody_asked_to_return() {
+        let mut c = setup();
+        let t = mint_one(&mut c, "alice");
+        lock(&mut c, "alice", &t, SERIAL);
+        as_caller("platform", 0);
+        c.confirm_return(t);
+    }
+
+    #[test]
+    #[should_panic(expected = "Only the minter can answer")]
+    fn holder_cannot_confirm_their_own_return() {
+        let mut c = setup();
+        let t = mint_one(&mut c, "alice");
+        lock(&mut c, "alice", &t, SERIAL);
+        ask_return(&mut c, "alice", &t);
+        as_caller("alice", 0);
+        c.confirm_return(t);
+    }
+
+    #[test]
+    #[should_panic(expected = "Only the minter can answer")]
+    fn holder_cannot_reject_their_own_return() {
+        let mut c = setup();
+        let t = mint_one(&mut c, "alice");
+        lock(&mut c, "alice", &t, SERIAL);
+        ask_return(&mut c, "alice", &t);
+        as_caller("alice", 0);
+        c.reject_return(t);
+    }
+
+    #[test]
+    #[should_panic(expected = "Card is being returned")]
+    fn card_on_its_way_back_cannot_move() {
+        let mut c = setup();
+        let t = mint_one(&mut c, "alice");
+        lock(&mut c, "alice", &t, SERIAL);
+        ask_return(&mut c, "alice", &t);
+        as_caller("alice", 1);
+        c.mt_transfer(acc("bob"), t, U128(1), None, None);
+    }
+
+    #[test]
+    #[should_panic(expected = "Card is not printed")]
+    fn digital_card_cannot_ask_to_return() {
+        let mut c = setup();
+        let t = mint_one(&mut c, "alice");
+        ask_return(&mut c, "alice", &t);
+    }
+
+    #[test]
+    #[should_panic(expected = "exactly 1 yoctoNEAR")]
+    fn request_return_requires_one_yocto() {
+        let mut c = setup();
+        let t = mint_one(&mut c, "alice");
+        lock(&mut c, "alice", &t, SERIAL);
+        as_caller("alice", 0);
+        c.request_return(t);
+    }
+
+    #[test]
+    fn rejected_return_leaves_the_print_current() {
+        let mut c = setup();
+        let t = mint_one(&mut c, "alice");
+        lock(&mut c, "alice", &t, SERIAL);
+        ask_return(&mut c, "alice", &t);
+        as_caller("platform", 0);
+        c.reject_return(t.clone());
+        assert_eq!(c.get_card(t.clone()).unwrap().status, CardStatus::Printed);
+        assert_eq!(c.print_state(t.clone(), SERIAL.into()), Some(PrintState::Active));
+        as_caller("alice", 1);
+        c.mt_transfer(acc("bob"), t.clone(), U128(1), None, None);
+        assert_eq!(c.mt_balance_of(acc("bob"), t), U128(1));
+    }
+
+    // ---- What a QR code says ----
+
+    #[test]
+    fn print_state_follows_the_card() {
+        let mut c = setup();
+        let t = mint_one(&mut c, "alice");
+        assert_eq!(c.print_state(t.clone(), SERIAL.into()), Some(PrintState::Unknown));
+        lock(&mut c, "alice", &t, SERIAL);
+        assert_eq!(c.print_state(t.clone(), SERIAL.into()), Some(PrintState::Active));
+        assert_eq!(c.print_state(t.clone(), "made-up".into()), Some(PrintState::Unknown));
+        ask_return(&mut c, "alice", &t);
+        assert_eq!(c.print_state(t.clone(), SERIAL.into()), Some(PrintState::ReturnPending));
+        as_caller("platform", 0);
+        c.confirm_return(t.clone());
+        assert_eq!(c.print_state(t.clone(), SERIAL.into()), Some(PrintState::Void));
+        assert_eq!(c.print_state("99".into(), SERIAL.into()), None);
+    }
+
+    #[test]
+    fn a_reprint_has_a_new_serial_and_the_old_print_stays_void() {
+        let mut c = setup();
+        let t = mint_one(&mut c, "alice");
+        lock(&mut c, "alice", &t, SERIAL);
+        ask_return(&mut c, "alice", &t);
+        as_caller("platform", 0);
+        c.confirm_return(t.clone());
+        lock(&mut c, "alice", &t, "second");
+        assert_eq!(c.get_card(t.clone()).unwrap().print_cycle, 2);
+        assert_eq!(c.print_state(t.clone(), SERIAL.into()), Some(PrintState::Void));
+        assert_eq!(c.print_state(t, "second".into()), Some(PrintState::Active));
+    }
+
+    #[test]
+    fn a_serial_from_another_card_is_unknown() {
+        let mut c = setup();
+        let a = mint_one(&mut c, "alice");
+        let b = mint_one(&mut c, "alice");
+        lock(&mut c, "alice", &a, SERIAL);
+        lock(&mut c, "alice", &b, "other");
+        assert_eq!(c.print_state(b, SERIAL.into()), Some(PrintState::Unknown));
     }
 
     // ---- History and metadata ----

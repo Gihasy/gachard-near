@@ -1,6 +1,6 @@
 /**
  * App data that does not belong on chain: users, encrypted custodial keys,
- * simulated Credits, pack offers and redeem codes.
+ * simulated Credits, pack offers and print serials.
  *
  * Two stores behind one interface. Without MONGODB_URL it is a JSON file, so the
  * local demo needs no database account (ADR-043). With MONGODB_URL it is MongoDB,
@@ -20,6 +20,8 @@ const MAX_WRITE_ATTEMPTS = 12;
 
 export interface User {
   id: string;
+  /** Unique, public, off chain (ADR-045). Accounts from before it have none. */
+  username?: string;
   provider: "demo" | "google";
   googleSub?: string;
   accountId: string;
@@ -64,14 +66,15 @@ export interface PackOffer {
 
 export interface PrintRow {
   cycle: number;
-  codeEncrypted: string;
+  /** Not a secret: it is printed in the card's QR code. */
+  serial: string;
 }
 
 export interface Data {
   users: User[];
   series: SeriesRow[];
   offers: PackOffer[];
-  /** token id -> redeem code of its current print cycle. */
+  /** token id -> its latest print. */
   prints: Record<string, PrintRow>;
   /** token id -> transaction hash per history entry, oldest first. */
   txs: Record<string, string[]>;

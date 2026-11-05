@@ -9,10 +9,10 @@ Who can do what:
 
 | Action | Who | Note |
 |---|---|---|
-| Move a card, lock it for print | The holder only | The platform has no method that moves a card |
+| Move a card, print it, ask to return it | The holder only | The platform has no method that moves a card |
 | Create a series, add a card | An approved creator's own account | Templates cannot be changed once added |
 | Mint | The minter (the platform) | Can mint any amount from any template |
-| Redeem a printed card | Whoever holds the code | The card moves to the caller |
+| Answer a return | The minter (the platform), only after the holder asked | The holder does not change |
 
 Limits worth knowing:
 

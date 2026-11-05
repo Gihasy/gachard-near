@@ -1,13 +1,13 @@
 /**
  * One card, read from the chain. The database adds only transaction hashes for
- * the links, and the redeem code for whoever holds the card.
+ * the links, and the serial of a card's latest print.
  */
 import { createHash, randomBytes } from "node:crypto";
 import { artMatches } from "./art.ts";
 import { RARITIES } from "./catalog.ts";
-import { decrypt, encrypt } from "./crypto.ts";
 import { readDb, withDb, type User } from "./db.ts";
-import { accountFromCode, ContractRefused, userCall, view } from "./near.ts";
+import { ContractRefused, platformCall, userCall, view } from "./near.ts";
+import { cleanUsername } from "./users.ts";
 
 interface ChainCard {
   token_id: string;
@@ -15,7 +15,7 @@ interface ChainCard {
   series_id: number;
   template_id: number;
   creator: string;
-  status: "Digital" | "Printed";
+  status: "Digital" | "Printed" | "ReturnPending";
   print_cycle: number;
   minted_at_ms: number;
   history: { kind: string; from: string | null; to: string; block_height: number; at_ms: number }[];
@@ -77,65 +77,63 @@ const logTx = (tokenId: string, hash: string) =>
     (d.txs[tokenId] ??= []).push(hash);
   });
 
-// Crockford base32: no I, L, O or U, so a code survives being read off paper.
-const ALPHABET = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
+/** What a QR code's serial means, read from the contract. Null if no such card. */
+export type PrintState = "Active" | "ReturnPending" | "Void" | "Unknown";
+export const printState = (tokenId: string, serial: string) =>
+  view<PrintState | null>("print_state", { token_id: tokenId, serial });
 
-export function newRedeemCode(): string {
-  return Array.from(randomBytes(16), (b) => ALPHABET[b % 32]).join("");
-}
-
-const normaliseCode = (code: string) => code.toUpperCase().replace(/[\s-]/g, "");
-
-export function formatCode(code: string): string {
-  return code.match(/.{1,4}/g)?.join("-") ?? code;
-}
-
-/** Locks the card and records its code. Only a hash of the code goes on chain. */
-export async function printCard(user: User, tokenId: string) {
+async function requireHolder(user: User, tokenId: string) {
   const card = await readCard(tokenId);
   if (!card) throw new ContractRefused("Card not found.");
-  // Checked here as well as on chain: storing a code for a card this user does
-  // not hold would overwrite the real holder's code.
-  if (card.owner_id !== user.accountId) throw new ContractRefused("Only the holder can print a card.");
+  if (card.owner_id !== user.accountId) throw new ContractRefused("Only the holder can do this.");
+  return card;
+}
+
+/** Marks the card as printed under a new serial. Only a hash of it goes on chain. */
+export async function printCard(user: User, tokenId: string) {
+  const card = await requireHolder(user, tokenId);
   if (card.status !== "Digital") throw new ContractRefused("Card is already printed.");
-  const code = newRedeemCode();
-  const cycle = card.print_cycle + 1;
-  const codeHash = createHash("sha256")
-    .update(`gachard-redeem:${tokenId}:${cycle}:${code}`)
-    .digest("base64");
-  // The code is kept first. A lock without its code could never be redeemed.
+  const serial = randomBytes(16).toString("hex");
+  const printHash = createHash("sha256").update(`gachard-print:${tokenId}:${serial}`).digest("base64");
+  // Kept first. A print whose serial was lost could never produce its PDF.
   await withDb((d) => {
-    d.prints[tokenId] = { cycle, codeEncrypted: encrypt(code) };
+    d.prints[tokenId] = { cycle: card.print_cycle + 1, serial };
   });
-  const { hash } = await userCall(user, "print_lock", { token_id: tokenId, code_hash: codeHash }, 1n);
+  const { hash } = await userCall(user, "print_lock", { token_id: tokenId, print_hash: printHash }, 1n);
   await logTx(tokenId, hash);
 }
 
-/** The code on the holder's PDF, or null if this user may not see it. */
-export async function codeForHolder(user: User, card: { owner_id: string; token_id: string; status: string }) {
-  if (card.owner_id !== user.accountId || card.status !== "Printed") return null;
-  const row = (await readDb()).prints[card.token_id];
-  return row ? decrypt(row.codeEncrypted) : null;
+/** The serial for the holder's PDF, or null if this user has no print to download. */
+export async function serialForHolder(user: User, card: { owner_id: string; token_id: string; status: string }) {
+  if (card.owner_id !== user.accountId || card.status === "Digital") return null;
+  return (await readDb()).prints[card.token_id]?.serial ?? null;
 }
 
-export async function redeemCard(user: User, tokenId: string, code: string) {
-  const clean = normaliseCode(code);
-  const { hash } = await userCall(user, "redeem", { token_id: tokenId, code: clean }, 1n);
+/** The holder asks to return a printed card. The physical card must now be sent in. */
+export async function requestReturn(user: User, tokenId: string) {
+  const { hash } = await userCall(user, "request_return", { token_id: tokenId }, 1n);
   await logTx(tokenId, hash);
-  await withDb((d) => {
-    delete d.prints[tokenId];
-  });
 }
 
-export async function sendCard(user: User, tokenId: string, toCode: string) {
-  const receiver = accountFromCode(toCode);
-  if (!receiver || !(await readDb()).users.some((u) => u.accountId === receiver)) {
-    throw new ContractRefused("No collector has that code.");
-  }
+/**
+ * A stand-in for the step a person does in production, when the physical card
+ * arrives (ADR-045). The transaction is the real one. Whether a card arrived is not
+ * known here, so the demo cannot tell a card that was sent from one that was lost.
+ */
+export async function simulateReturnAnswer(user: User, tokenId: string, accepted: boolean) {
+  await requireHolder(user, tokenId);
+  const { hash } = await platformCall(accepted ? "confirm_return" : "reject_return", { token_id: tokenId });
+  await logTx(tokenId, hash);
+}
+
+export async function sendCard(user: User, tokenId: string, to: string) {
+  const username = cleanUsername(to);
+  const receiver = (await readDb()).users.find((u) => u.username === username);
+  if (!receiver) throw new ContractRefused("No collector has that username.");
   const { hash } = await userCall(
     user,
     "mt_transfer",
-    { receiver_id: receiver, token_id: tokenId, amount: "1" },
+    { receiver_id: receiver.accountId, token_id: tokenId, amount: "1" },
     1n,
   );
   await logTx(tokenId, hash);

@@ -4,10 +4,11 @@ import CardActions from "@/components/CardActions";
 import TiltCard from "@/components/TiltCard";
 import { CheckIcon, ExternalIcon, PrintIcon, SendIcon, SparkIcon } from "@/components/icons";
 import { Panel, Rarity } from "@/components/ui";
-import { readCard } from "@/lib/cards";
-import { collectorCode, collectorLabel, contractId, explorer } from "@/lib/near";
+import { printState, readCard, serialForHolder, type PrintState } from "@/lib/cards";
+import { readDb } from "@/lib/db";
+import { collectorLabel, contractId, explorer } from "@/lib/near";
 import { qrDataUrl, siteOrigin } from "@/lib/qr";
-import { currentUser } from "@/lib/users";
+import { currentUser, nameOf } from "@/lib/users";
 
 export const dynamic = "force-dynamic";
 
@@ -15,7 +16,38 @@ const ROW: Record<string, { label: string; Icon: typeof CheckIcon }> = {
   Mint: { label: "Released", Icon: SparkIcon },
   Transfer: { label: "Changed hands", Icon: SendIcon },
   Print: { label: "Printed", Icon: PrintIcon },
-  Redeem: { label: "Returned to digital", Icon: CheckIcon },
+  ReturnRequested: { label: "Return requested", Icon: SendIcon },
+  ReturnRejected: { label: "Return refused: card not genuine", Icon: PrintIcon },
+  Returned: { label: "Returned to digital", Icon: CheckIcon },
+};
+
+const STATUS: Record<string, { label: string; className: string }> = {
+  Digital: { label: "Digital", className: "bg-[#7ee0a61f] text-cn-success" },
+  Printed: { label: "Printed (hackathon demo PDF)", className: "bg-[#f7c96b1f] text-cn-credits" },
+  ReturnPending: { label: "Return pending (hackathon simulation)", className: "bg-[#f7c96b1f] text-cn-credits" },
+};
+
+const BANNER: Record<PrintState, { title: string; text: string; className: string }> = {
+  Active: {
+    title: "This QR is this card's current print.",
+    text: "A copy of the paper would read the same, so this does not prove the paper is genuine.",
+    className: "border-[#7ee0a640] bg-[#7ee0a612]",
+  },
+  ReturnPending: {
+    title: "This print is being returned.",
+    text: "Its holder asked to send it back. It cannot be transferred, so do not buy it.",
+    className: "border-[#f7c96b40] bg-[#f7c96b12]",
+  },
+  Void: {
+    title: "VOID: this print was cancelled.",
+    text: "The card returned to digital after this was printed. This paper is no longer the card.",
+    className: "border-[#ff7a8a66] bg-[#ff7a8a1a]",
+  },
+  Unknown: {
+    title: "This QR is not a print of this card.",
+    text: "The chain has no record of it. Treat this paper as a fake.",
+    className: "border-[#ff7a8a66] bg-[#ff7a8a1a]",
+  },
 };
 
 function ArtCheck({ value }: { value: boolean | null }) {
@@ -33,15 +65,26 @@ function Fact({ label, children, testid }: { label: string; children: React.Reac
   );
 }
 
-export default async function CardRecord({ params }: { params: Promise<{ id: string }> }) {
+export default async function CardRecord({ params, searchParams }: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ print?: string | string[] }>;
+}) {
   const { id } = await params;
   if (!/^[0-9]+$/.test(id)) notFound();
   const card = await readCard(id);
   if (!card) notFound();
-  const user = await currentUser();
+  const [user, { users }, { print }] = await Promise.all([currentUser(), readDb(), searchParams]);
   const isHolder = user?.accountId === card.owner_id;
-  const printed = card.status === "Printed";
-  const qr = await qrDataUrl(`${await siteOrigin()}/scan/${id}`);
+  const digital = card.status === "Digital";
+  const status = STATUS[card.status] ?? STATUS.Digital;
+
+  // The state of the paper in someone's hand, if they arrived from its QR.
+  const scanned = typeof print === "string" && print ? await printState(id, print) : null;
+  const banner = scanned ? BANNER[scanned] : null;
+
+  const serial = user ? await serialForHolder(user, card) : null;
+  const origin = await siteOrigin();
+  const qr = await qrDataUrl(serial ? `${origin}/scan/${id}?print=${serial}` : `${origin}/scan/${id}`);
 
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
@@ -51,6 +94,13 @@ export default async function CardRecord({ params }: { params: Promise<{ id: str
         </div>
 
         <div className="space-y-5 min-w-0">
+          {banner ? (
+            <div className={`rounded-2xl border px-4 py-3 ${banner.className}`} role="status" data-testid="print-state" data-state={scanned}>
+              <p className="font-display font-semibold text-base">{banner.title}</p>
+              <p className="mt-1 text-sm text-cn-text-2 leading-relaxed">{banner.text}</p>
+            </div>
+          ) : null}
+
           <div>
             <p className="text-sm text-cn-text-2">{card.seriesName}</p>
             <h1 className="mt-1 font-display font-bold text-2xl sm:text-4xl break-words">
@@ -58,25 +108,27 @@ export default async function CardRecord({ params }: { params: Promise<{ id: str
             </h1>
             <div className="mt-3 flex flex-wrap items-center gap-3">
               <Rarity value={card.rarity} />
-              <span
-                className={`rounded-full px-3 py-1 text-xs font-semibold ${printed ? "bg-[#f7c96b1f] text-cn-credits" : "bg-[#7ee0a61f] text-cn-success"}`}
-                data-testid="card-status"
-              >
-                {printed ? "Printed (hackathon demo PDF)" : "Digital"}
+              <span className={`rounded-full px-3 py-1 text-xs font-semibold ${status.className}`} data-testid="card-status">
+                {status.label}
               </span>
             </div>
           </div>
 
           <dl className="grid grid-cols-2 gap-3">
-            <Fact label="Holder" testid="card-holder">{collectorLabel(card.owner_id)}{isHolder ? " (you)" : ""}</Fact>
-            <Fact label="Released by">{collectorLabel(card.creator)}</Fact>
+            <Fact label="Holder" testid="card-holder">
+              {nameOf(card.owner_id, users)}{isHolder ? " (you)" : ""}
+              <a className="mt-0.5 flex items-center gap-1 text-xs font-medium text-cn-lavender hover:underline" target="_blank" rel="noreferrer" href={explorer.account(card.owner_id)}>
+                {collectorLabel(card.owner_id)} <ExternalIcon width={12} height={12} />
+              </a>
+            </Fact>
+            <Fact label="Released by">{nameOf(card.creator, users)}</Fact>
             <Fact label="Times printed"><span className="tabular">{card.print_cycle}</span></Fact>
             <Fact label="Artwork file" testid="art-check"><ArtCheck value={card.artMatches} /></Fact>
           </dl>
           <p className="text-xs text-cn-text-3 leading-relaxed">
-            {printed
-              ? "A printed copy links to this record but does not prove who owns it, and copies of a demo PDF can be made. This holder and print count are the current truth."
-              : "This record is read live from a public ledger. The links below let you check it without trusting this site."}
+            {digital
+              ? "This record is read live from a public ledger. The links below let you check it without trusting this site."
+              : "Buying this card? Have the physical card in front of you, and pay only after your username shows as Holder here. The paper alone proves nothing."}
           </p>
 
           <CardActions
@@ -86,8 +138,7 @@ export default async function CardRecord({ params }: { params: Promise<{ id: str
             cardName={card.cardName}
             qr={qr}
             isHolder={isHolder}
-            signedIn={Boolean(user)}
-            myCode={user ? collectorCode(user.accountId) : null}
+            printNumber={card.print_cycle}
           />
 
           <Panel>
@@ -103,7 +154,7 @@ export default async function CardRecord({ params }: { params: Promise<{ id: str
                     <div className="min-w-0">
                       <span className="font-semibold">{row.label}</span>
                       <div className="text-cn-text-2 break-words">
-                        {h.from && h.from !== h.to ? `${collectorLabel(h.from)} to ` : ""}{collectorLabel(h.to)}
+                        {h.from && h.from !== h.to ? `${nameOf(h.from, users)} to ` : ""}{nameOf(h.to, users)}
                       </div>
                       <div className="text-xs text-cn-text-3 mt-0.5">{new Date(h.at_ms).toUTCString()}</div>
                     </div>

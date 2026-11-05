@@ -2,7 +2,7 @@ import { randomBytes } from "node:crypto";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { readDb, withDb, type User } from "./db.ts";
-import { ContractRefused, createUserAccount } from "./near.ts";
+import { collectorLabel, ContractRefused, createUserAccount, defaultUsername } from "./near.ts";
 import { SESSION_COOKIE, SESSION_MAX_AGE, createSessionToken, verifySessionToken } from "./session.ts";
 
 export const STARTING_CREDITS = 5000;
@@ -25,6 +25,7 @@ export async function createUser(provider: User["provider"], googleSub?: string)
   const account = await createUserAccount(id);
   const user: User = {
     id,
+    username: defaultUsername(account.accountId),
     provider,
     googleSub,
     ...account,
@@ -34,6 +35,31 @@ export async function createUser(provider: User["provider"], googleSub?: string)
   };
   await withDb((d) => d.users.push(user));
   return user;
+}
+
+const USERNAME = /^[a-z0-9_]{3,20}$/;
+
+export const cleanUsername = (name: string) => name.trim().replace(/^@/, "").toLowerCase();
+
+/** The public name for an account: its username, or its anonymous label. */
+export function nameOf(accountId: string, users: User[]): string {
+  const username = users.find((u) => u.accountId === accountId)?.username;
+  return username ? `@${username}` : collectorLabel(accountId);
+}
+
+export async function setUsername(user: User, name: string) {
+  const username = cleanUsername(name);
+  if (!USERNAME.test(username)) {
+    throw new ContractRefused("A username is 3 to 20 letters, numbers or underscores.");
+  }
+  await withDb((d) => {
+    if (d.users.some((u) => u.username === username && u.id !== user.id)) {
+      throw new ContractRefused("That username is taken.");
+    }
+    const row = d.users.find((u) => u.id === user.id);
+    if (row) row.username = username;
+  });
+  return username;
 }
 
 export function withSession<T>(body: T, userId: string) {

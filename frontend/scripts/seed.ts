@@ -29,6 +29,7 @@ if ((await readDb()).series.length > 0) {
 console.log(`Seed: creating the demo creator (${usesMongo() ? "MongoDB" : "local file"})...`);
 const id = randomBytes(12).toString("hex");
 const creator: User = {
+  username: "crystal_night",
   id,
   provider: "demo",
   ...(await createUserAccount(id)),

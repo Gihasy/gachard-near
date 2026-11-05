@@ -9,7 +9,6 @@
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 import QRCode from "qrcode";
 import { readArt } from "./art.ts";
-import { formatCode } from "./cards.ts";
 
 export const SIMULATION_NOTICE = "SIMULATION: NEAR Hackathon demo. Not an official printed card.";
 
@@ -23,11 +22,11 @@ export async function printPdf(card: {
   cardName: string;
   seriesName: string;
   media: string;
-  code: string;
+  serial: string;
   printCycle: number;
   origin: string;
 }) {
-  const scanUrl = `${card.origin}/scan/${card.tokenId}`;
+  const scanUrl = `${card.origin}/scan/${card.tokenId}?print=${card.serial}`;
   const doc = await PDFDocument.create();
   doc.setTitle(`${card.cardName} - hackathon demo print`);
   const font = await doc.embedFont(StandardFonts.Helvetica);
@@ -53,9 +52,10 @@ export async function printPdf(card: {
     const y = (A4.height - mm(TRIM.height)) / 2;
     page.drawText(SIMULATION_NOTICE, { x: mm(15), y: A4.height - mm(15), size: 10, font: bold, color: rgb(0.75, 0.1, 0.2) });
     page.drawText(title, { x: mm(15), y: A4.height - mm(22), size: 9, font, color: ink });
-    page.drawText(`In production, cards are printed and shipped by the platform. Check this card: ${scanUrl}`, {
-      x: mm(15), y: mm(15), size: 7.5, font, color: ink,
+    page.drawText("In production, cards are printed and shipped by the platform.", {
+      x: mm(15), y: mm(19), size: 7.5, font, color: ink,
     });
+    page.drawText(`Check this card: ${scanUrl}`, { x: mm(15), y: mm(15), size: 6.5, font, color: ink });
     return { page, x, y };
   };
 
@@ -91,9 +91,9 @@ export async function printPdf(card: {
     cropMarks(page, x, y);
   }
 
-  // Back: the redeem code. In production it sits under a scratch-off layer.
+  // Back: which print this is. The QR on the front holds the same serial.
   {
-    const { page, x, y } = drawPage(`Back: the redeem code would be hidden under a scratch layer in production.`);
+    const { page, x, y } = drawPage("Back: this paper is not ownership. Only the holder's account can transfer or return the card.");
     page.drawImage(back, {
       x: x - mm(BLEED), y: y - mm(BLEED),
       width: mm(TRIM.width + BLEED * 2), height: mm(TRIM.height + BLEED * 2),
@@ -101,9 +101,9 @@ export async function printPdf(card: {
     const panelY = y + mm(10);
     page.drawRectangle({ x: x + mm(5), y: panelY, width: mm(TRIM.width - 10), height: mm(24), color: rgb(1, 1, 1) });
     page.drawText("Hackathon demo print", { x: x + mm(8), y: panelY + mm(18), size: 8, font: bold, color: rgb(0.75, 0.1, 0.2) });
-    page.drawText("Redeem code", { x: x + mm(8), y: panelY + mm(12.5), size: 7, font, color: ink });
-    page.drawText(formatCode(card.code), { x: x + mm(8), y: panelY + mm(7), size: 9.5, font: bold, color: ink });
-    page.drawText(`Token ${card.tokenId}`, { x: x + mm(8), y: panelY + mm(2.5), size: 7, font, color: ink });
+    page.drawText(`Token ${card.tokenId}, print ${card.printCycle}`, { x: x + mm(8), y: panelY + mm(12.5), size: 9.5, font: bold, color: ink });
+    page.drawText("Serial", { x: x + mm(8), y: panelY + mm(7.5), size: 7, font, color: ink });
+    page.drawText(card.serial, { x: x + mm(8), y: panelY + mm(3.5), size: 6, font, color: ink });
     cropMarks(page, x, y);
   }
 

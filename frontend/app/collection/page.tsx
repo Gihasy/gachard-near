@@ -1,11 +1,11 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import CopyCode from "@/components/CopyCode";
+import UsernameForm from "@/components/UsernameForm";
 import TiltCard from "@/components/TiltCard";
 import { ArrowIcon, PrintIcon } from "@/components/icons";
 import { CardImage, Eyebrow, Page, Rarity, primaryBtn } from "@/components/ui";
 import { cardsOf } from "@/lib/cards";
-import { collectorCode, collectorLabel } from "@/lib/near";
+import { defaultUsername } from "@/lib/near";
 import { currentUser } from "@/lib/users";
 
 export const dynamic = "force-dynamic";
@@ -14,21 +14,16 @@ export default async function Collection() {
   const user = await currentUser();
   if (!user) redirect("/login?next=/collection");
   const cards = await cardsOf(user.accountId);
-  const code = collectorCode(user.accountId);
+  const username = user.username ?? defaultUsername(user.accountId);
   return (
     <Page wide>
       <div className="flex flex-wrap items-end justify-between gap-5 mb-8">
         <div>
-          <Eyebrow>{collectorLabel(user.accountId)}</Eyebrow>
+          <Eyebrow>@{username}</Eyebrow>
           <h1 className="mt-4 font-display font-bold text-2xl sm:text-4xl">Your collection</h1>
           <p className="mt-2 text-cn-text-2">{cards.length} {cards.length === 1 ? "card" : "cards"}{cards.length ? ". Open any card to verify or print it." : ""}</p>
         </div>
-        {code ? (
-          <div>
-            <p className="text-xs text-cn-text-3 mb-1.5">Your code, to receive a card</p>
-            <CopyCode code={code} />
-          </div>
-        ) : null}
+        <UsernameForm username={username} />
       </div>
 
       {cards.length === 0 ? (
@@ -52,8 +47,8 @@ export default async function Collection() {
               <p className="mt-3 text-sm font-semibold truncate group-hover:text-cn-lavender transition">{c.name}</p>
               <div className="flex justify-between items-center gap-2">
                 <Rarity value={c.rarity} />
-                {c.status === "Printed" ? (
-                  <span className="text-[11px] font-semibold rounded-full bg-white/10 px-2 py-0.5 text-cn-text-2">Printed</span>
+                {c.status !== "Digital" ? (
+                  <span className="text-[11px] font-semibold rounded-full bg-white/10 px-2 py-0.5 text-cn-text-2">{c.status === "Printed" ? "Printed" : "Returning"}</span>
                 ) : (
                   <span className="inline-flex items-center gap-1 text-xs text-cn-text-3 tabular" title="Can be printed"><PrintIcon width={13} height={13} /> #{c.tokenId}</span>
                 )}

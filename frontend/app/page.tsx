@@ -23,12 +23,12 @@ const PROMISES = ["No wallet to set up", "No network fees", "Verify any card"];
 
 const PRINT_STEPS = [
   { title: "Own the digital card", text: "It lives in your collection, with its own public record." },
-  { title: "Get the print file", text: "Choose Print. The card locks and you get a PDF with crop marks, a QR code and a redeem code." },
-  { title: "Print it and cut it out", text: "Anyone who scans the QR reads the card's live record." },
-  { title: "Bring it back anytime", text: "Whoever enters the code receives the card in digital form. Same card, same history." },
+  { title: "Get the print file", text: "Choose Print. You get a PDF with crop marks and a QR code unique to that print." },
+  { title: "Print it and pass it on", text: "Anyone who scans the QR sees the card. Only its holder, signed in, can transfer it to another username." },
+  { title: "Send it back to go digital", text: "The physical card goes to Gachard to be destroyed, and its old QR reads VOID. A card that is lost or stolen can never come back." },
 ];
 
-const PRINT_SPECS = ["63 x 88 mm", "3 mm bleed", "Crop marks", "QR and redeem code"];
+const PRINT_SPECS = ["63 x 88 mm", "3 mm bleed", "Crop marks", "A QR for each print"];
 
 const RECORD = [
   { label: "Released", Icon: SparkIcon },
@@ -125,7 +125,7 @@ export default async function Home() {
         <div className="panel print-stage p-5 sm:p-10 grid lg:grid-cols-[1fr_1.05fr] gap-10 lg:gap-14 items-center">
           <div className="sheets">
             <div className="sheets-back">
-              <PrintSheet src="/cards/card-back.webp" side="back" label="Back page of the print file, with a space for the redeem code" />
+              <PrintSheet src="/cards/card-back.webp" side="back" label="Back page of the print file, naming the print" />
             </div>
             <div className="sheets-front">
               <PrintSheet
@@ -160,7 +160,7 @@ export default async function Home() {
             </ul>
             <p className="mt-6 rounded-2xl border border-[#f7c96b40] bg-[#f7c96b12] px-4 py-3 text-sm leading-relaxed text-cn-text-2">
               <strong className="font-semibold text-cn-credits">Hackathon simulation.</strong>{" "}
-              In production, the platform would print and ship the card. Here you print the PDF yourself.
+              In production, the platform would print and ship the card, and destroy the ones sent back. Here you print the PDF yourself, and a button stands in for sending it back.
             </p>
           </div>
         </div>

@@ -154,12 +154,8 @@ export function collectorLabel(accountId: string): string {
   return match ? `Collector #${match[1].slice(0, 6).toUpperCase()}` : accountId;
 }
 
-/** What one collector gives another to receive a card. */
-export function collectorCode(accountId: string): string | null {
-  return accountId.match(LABEL)?.[1].toUpperCase() ?? null;
-}
-
-export function accountFromCode(code: string): string | null {
-  const clean = code.trim().replace(/^#/, "").toLowerCase();
-  return /^[0-9a-f]{12}$/.test(clean) ? `c-${clean}.${platformId()}` : null;
+/** An anonymous starting username, so a new account can receive a card at once. */
+export function defaultUsername(accountId: string): string {
+  const match = accountId.match(LABEL);
+  return `collector_${(match?.[1] ?? accountId).slice(0, 8).toLowerCase()}`;
 }

@@ -21,7 +21,8 @@ moves all of that behind an ordinary sign-in.
 | No gas for users | NEP-366 meta transactions: the user signs, the platform pays gas and the 1 yocto deposit | [`frontend/lib/near.ts`](frontend/lib/near.ts) |
 | No wallet | A named sub-account per user, created at sign-in | same |
 | Platform cannot take a card | No method moves a card except the holder's own call | contract tests |
-| Print and return | A printed card locks in place. Its code returns it to digital under the same token id | contract, `print_lock`, `redeem` |
+| Print and return | A printed card stays with its holder's account. Returning takes the holder's request and the platform's confirmation, under the same token id | contract, `print_lock`, `request_return`, `confirm_return` |
+| A QR for each print | The chain keeps a hash of each print's serial, so anyone can tell a current print from a cancelled one | contract, `print_state` |
 | Public proof | Scan reads the contract live, and each history row links to NearBlocks | [`frontend/app/scan/[id]/page.tsx`](frontend/app/scan/[id]/page.tsx) |
 
 ## Try it
@@ -50,14 +51,16 @@ Open http://localhost:3000, then:
 5. **Verify.** Click See the first card's record. You see the holder, who released it, and
    whether the artwork file matches the hash on chain. Click check independently: NearBlocks
    shows the same transaction, outside this app.
-6. **Print.** Click Print, read the simulation notice, then Lock and create PDF. The status
-   reads Printed (hackathon demo PDF). Download the PDF: it holds the card, a QR code and
-   the redeem code.
-7. **Check the lock.** The send form is gone, because a printed card cannot move. The
-   contract itself refuses it: the end-to-end check below proves that.
-8. **Redeem as someone else.** Sign out, sign in with a new demo account and open
-   `/scan/<token>` (the QR's address). Enter the code from the PDF. The same token id is now
-   digital and yours, and its history shows the whole trip.
+6. **Print.** Click Print, read the simulation notice, then Print and create PDF. The status
+   reads Printed (hackathon demo PDF). Download the PDF: it holds the card and a QR code.
+7. **Scan as someone else.** Open the QR's address in a private window, or sign in with a
+   new demo account. You see the card and its holder, and nothing to press. Pick a username
+   for that account under Collection.
+8. **Transfer, then return.** Back as the holder, transfer the card to that username. It
+   stays printed, and its history updates. As the new holder, click Return to digital, then
+   Request return. A button stands in for posting the card: click Simulate: card received
+   and destroyed. The same token id is digital again. Open the QR's address once more: it
+   now reads VOID.
 9. **Release your own.** Open Create, publish a series, and add a card for each rarity that
    has a rate. It goes live on the home page. A record of what your account published is on
    chain.
@@ -65,7 +68,8 @@ Open http://localhost:3000, then:
 ### Prove it without a browser
 
 With the setup above done, this runs the whole path against testnet and fails if a user's
-balance falls by a single yoctoNEAR, or if the platform can move a user's card.
+balance falls by a single yoctoNEAR, if the platform can move a user's card, or if someone
+with the paper but not the account can move or return one.
 
 ```bash
 cd near-e2e
@@ -77,7 +81,7 @@ The last recorded run, with its transaction links, is in
 [`near-e2e/last-run.json`](near-e2e/last-run.json).
 
 To run the whole app path over HTTP against any running copy, local or hosted, including
-a pack, a print, a PDF, a redeem and a creator upload:
+a pack, a print, a PDF, a transfer, a return and a creator upload:
 
 ```bash
 cd near-e2e
@@ -98,9 +102,18 @@ cargo near build non-reproducible-wasm --no-abi
 
 - **Payments are simulated.** Credits are a number in a local file.
 - **Printing is simulated.** The PDF stands in for the card the platform would print and
-  ship. It says so in its margin and on the card back, and Scan says so too. A PDF can be
-  copied and its code is visible, so a printout proves a link to a token, not ownership.
-  In production the code would sit under a scratch-off layer.
+  ship. It says so in its margin and on the card back, and Scan says so too.
+- **Sending a card back is simulated.** In production the physical card goes to Gachard to be
+  destroyed, so a lost or stolen card can never return. Nothing can be posted in a demo, so
+  labelled buttons stand in for that, and they make the real transaction. **So in this demo a
+  holder can return a card they no longer have.** The contract enforces who can act, not
+  where the paper is. Production also trusts Gachard on this step: its confirmation is on
+  chain, but the public cannot check that a card was received and destroyed.
+- **A QR does not prove paper is genuine.** A copy of a current print scans the same as the
+  original. What it cannot do is move the card: only the holder's account can. Production
+  needs platform printing with physical security features. A self-printed PDF cannot have them.
+- **Usernames are not on chain.** The link from a username to an account is this app's word.
+  Scan shows both, so they can be compared with the record.
 - **Rates are published, not proven.** The draw is a server-side random choice. A buyer sees
   what they pay for, so the purchase does not depend on it, but the rates are not provably
   fair.

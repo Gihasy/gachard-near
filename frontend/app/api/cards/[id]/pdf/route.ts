@@ -1,22 +1,22 @@
-import { codeForHolder, readCard } from "@/lib/cards";
+import { readCard, serialForHolder } from "@/lib/cards";
 import { printPdf } from "@/lib/pdf";
 import { currentUser, failure } from "@/lib/users";
 
-/** Only the current holder gets the PDF, because it shows the redeem code. */
+/** The print file, for the current holder. */
 export async function GET(request: Request, ctx: { params: Promise<{ id: string }> }) {
   const user = await currentUser();
   if (!user) return Response.json({ error: "Please sign in." }, { status: 401 });
   const { id } = await ctx.params;
   try {
     const card = await readCard(id);
-    const code = card && (await codeForHolder(user, card));
-    if (!card || !code) return Response.json({ error: "No print to download." }, { status: 404 });
+    const serial = card && (await serialForHolder(user, card));
+    if (!card || !serial) return Response.json({ error: "No print to download." }, { status: 404 });
     const pdf = await printPdf({
       tokenId: id,
       cardName: card.cardName,
       seriesName: card.seriesName,
       media: card.media,
-      code,
+      serial,
       printCycle: card.print_cycle,
       origin: new URL(request.url).origin,
     });

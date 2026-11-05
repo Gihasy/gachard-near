@@ -1,6 +1,6 @@
 {
-  "ranAt": "2026-11-05T10:23:37.428Z",
-  "contract": "cards.gachard-demo-17809fd7.testnet",
+  "ranAt": "2026-11-05T13:10:00.031Z",
+  "contract": "cards-v2.gachard-demo-6b9aead4.testnet",
   "tokenId": "1",
   "seriesId": 2,
   "failures": 0,
@@ -13,27 +13,27 @@
     {
       "name": "Platform approves the creator",
       "ok": true,
-      "detail": "https://testnet.nearblocks.io/txns/2oVcLUsiLh3kNEjyCLacCUg25V39J4u1AakhnipEyype"
+      "detail": "https://testnet.nearblocks.io/txns/5pwAa3GXy6nGa1MgyQCfGENGYKivujoxED7Qb1poAKua"
     },
     {
       "name": "Creator creates a series, gas paid by the platform",
       "ok": true,
-      "detail": "https://testnet.nearblocks.io/txns/95YF6Hovtk8tDbxrDzUSXjPoDPfykGMhydwKuserE5Z6"
+      "detail": "https://testnet.nearblocks.io/txns/FfaaBRrUm6QLEwHx2evTK3tmgEZPnRBX7genN2mjn6ER"
     },
     {
       "name": "Creator adds a card with its artwork hash",
       "ok": true,
-      "detail": "https://testnet.nearblocks.io/txns/H4xEVSWoZQm2HjPc3KDvCEKKZ6G4cYp7FBMkkEaPLXHY"
+      "detail": "https://testnet.nearblocks.io/txns/7sJ6RFWTs2ZuJJwdFWdn2kEUBj3queMZiT8vDcbRxZ8M"
     },
     {
       "name": "Chain names the creator as issuer",
       "ok": true,
-      "detail": "c-2a88515a80b1.gachard-demo-17809fd7.testnet"
+      "detail": "c-5a002e5c7a6d.gachard-demo-6b9aead4.testnet"
     },
     {
       "name": "Platform mints a card to Alice",
       "ok": true,
-      "detail": "https://testnet.nearblocks.io/txns/FKeTgJGhRnTni4iEXcWARzSGAX9qQ1vGwy3XvBnXieCs"
+      "detail": "https://testnet.nearblocks.io/txns/6fNd7QSmLcxejDZ3My5qV6EMxx2SJUqb1fmrDB5eJPEU"
     },
     {
       "name": "Card records its origin",
@@ -53,7 +53,7 @@
     {
       "name": "Alice sends the card to Bob, with no NEAR of her own",
       "ok": true,
-      "detail": "https://testnet.nearblocks.io/txns/edMZsg7tx2tWmZvtgvu7W3Xv9B6t2iRrJvoBEEaM3vt"
+      "detail": "https://testnet.nearblocks.io/txns/4t9ipZAuU8Ekf7UychquxGWvR5zPKjEHWwgLLUDUoWZL"
     },
     {
       "name": "Bob now holds it",
@@ -61,9 +61,9 @@
       "detail": ""
     },
     {
-      "name": "Bob locks the card for print",
+      "name": "Bob prints the card",
       "ok": true,
-      "detail": "https://testnet.nearblocks.io/txns/AYa8qFKZFTECV7Fc4RxGZaFJ5FwKJER4Gyk7Ct7Ass5d"
+      "detail": "https://testnet.nearblocks.io/txns/HNzPesMLDG1o8KTcxJmAA4uuQ1A2EScLPaQcKvuvLGJP"
     },
     {
       "name": "Card reads Printed, still held by Bob",
@@ -71,49 +71,89 @@
       "detail": ""
     },
     {
-      "name": "A printed card cannot move",
+      "name": "Its QR reads as the current print",
       "ok": true,
-      "detail": "{\"ActionError\":{\"index\":0,\"kind\":{\"FunctionCallError\":{\"ExecutionError\":\"Smart contract panicked: Card is locked for print\"}}}}"
+      "detail": ""
     },
     {
-      "name": "A wrong code is refused",
+      "name": "A made-up QR reads as unknown",
       "ok": true,
-      "detail": "{\"ActionError\":{\"index\":0,\"kind\":{\"FunctionCallError\":{\"ExecutionError\":\"Smart contract panicked: Invalid redeem code\"}}}}"
+      "detail": ""
     },
     {
-      "name": "Alice redeems with the code",
+      "name": "Someone with the paper but not the account cannot move it",
       "ok": true,
-      "detail": "https://testnet.nearblocks.io/txns/8j2To2wQwprzQNSSEBLqVSUH45wXPaU7GQDz8WX1TT5j"
+      "detail": "{\"ActionError\":{\"index\":0,\"kind\":{\"FunctionCallError\":{\"ExecutionError\":\"Smart contract panicked: Only the holder can transfer a card\"}}}}"
     },
     {
-      "name": "Same token, digital again, held by Alice",
+      "name": "Someone with the paper but not the account cannot return it",
+      "ok": true,
+      "detail": "{\"ActionError\":{\"index\":0,\"kind\":{\"FunctionCallError\":{\"ExecutionError\":\"Smart contract panicked: Only the holder can return a card\"}}}}"
+    },
+    {
+      "name": "The platform cannot return a card nobody asked to return",
+      "ok": true,
+      "detail": "{\"ActionError\":{\"index\":0,\"kind\":{\"FunctionCallError\":{\"ExecutionError\":\"Smart contract panicked: Card is not being returned\"}}}} | {\"ActionError\":{\"index\":0,\"k"
+    },
+    {
+      "name": "Bob transfers the printed card to Alice",
+      "ok": true,
+      "detail": "https://testnet.nearblocks.io/txns/9xkFWNjU5ZvDyAVHSBa4YsGSqFQM3irx6FjvHJV1wS1C"
+    },
+    {
+      "name": "Alice holds it, and it is still printed",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Alice asks to return it",
+      "ok": true,
+      "detail": "https://testnet.nearblocks.io/txns/Hv6PZ4crEd1uNvAMgpi4HJ1JdK97J8wnW5Km3NhkyXNf"
+    },
+    {
+      "name": "A card on its way back cannot move",
+      "ok": true,
+      "detail": "{\"ActionError\":{\"index\":0,\"kind\":{\"FunctionCallError\":{\"ExecutionError\":\"Smart contract panicked: Card is being returned\"}}}}"
+    },
+    {
+      "name": "The holder cannot confirm their own return",
+      "ok": true,
+      "detail": "{\"ActionError\":{\"index\":0,\"kind\":{\"FunctionCallError\":{\"ExecutionError\":\"Smart contract panicked: Only the minter can answer a return\"}}}}"
+    },
+    {
+      "name": "The platform confirms the physical card arrived",
+      "ok": true,
+      "detail": "https://testnet.nearblocks.io/txns/FUUnBVR9pZLPyNofjQ84qmkiYj8KPhprzicoTS62bVC9"
+    },
+    {
+      "name": "Same token, digital again, still held by Alice",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "The old QR now reads as void",
       "ok": true,
       "detail": ""
     },
     {
       "name": "History shows the whole trip",
       "ok": true,
-      "detail": "Mint > Transfer > Print > Redeem"
+      "detail": "Mint > Transfer > Print > Transfer > ReturnRequested > Returned"
     },
     {
-      "name": "The code cannot be used twice",
-      "ok": true,
-      "detail": "{\"ActionError\":{\"index\":0,\"kind\":{\"FunctionCallError\":{\"ExecutionError\":\"Smart contract panicked: Card is not printed\"}}}}"
-    },
-    {
-      "name": "c-2a88515a80b1 paid nothing",
+      "name": "c-5a002e5c7a6d paid nothing",
       "ok": true,
       "detail": "balance change 0 yocto, expected 0"
     },
     {
-      "name": "c-e1f7ca483eb4 paid nothing",
+      "name": "c-8c82d99485b6 paid nothing",
       "ok": true,
-      "detail": "balance change 1 yocto, expected 1"
+      "detail": "balance change 3 yocto, expected 3"
     },
     {
-      "name": "c-b98433a1f7b3 paid nothing",
+      "name": "c-2bd2f439fd9f paid nothing",
       "ok": true,
-      "detail": "balance change 2 yocto, expected 2"
+      "detail": "balance change 0 yocto, expected 0"
     }
   ]
 }

@@ -6,15 +6,15 @@ import TiltCard from "@/components/TiltCard";
 import { Eyebrow, Page, Panel, Rarity, RARITY_COLOR } from "@/components/ui";
 import { missingRarities, RARITIES } from "@/lib/catalog";
 import { readDb } from "@/lib/db";
-import { collectorLabel } from "@/lib/near";
 import { CARDS_PER_PACK, PACKS_PER_DAY } from "@/lib/packs";
-import { currentUser } from "@/lib/users";
+import { currentUser, nameOf } from "@/lib/users";
 
 export const dynamic = "force-dynamic";
 
 export default async function SeriesPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const series = (await readDb()).series.find((s) => s.id === Number(id));
+  const db = await readDb();
+  const series = db.series.find((s) => s.id === Number(id));
   if (!series) notFound();
   const user = await currentUser();
   const missing = missingRarities(series);
@@ -33,7 +33,7 @@ export default async function SeriesPage({ params }: { params: Promise<{ id: str
             <PackArt name={series.name} cards={CARDS_PER_PACK} />
           </div>
           <div className="min-w-0">
-            <Eyebrow>Released by {collectorLabel(series.creatorAccount)}</Eyebrow>
+            <Eyebrow>Released by {nameOf(series.creatorAccount, db.users)}</Eyebrow>
             <h1 className="mt-4 font-display font-bold text-2xl sm:text-4xl leading-tight break-words">{series.name}</h1>
             <p className="mt-3 text-cn-text-2 leading-relaxed max-w-lg">
               Opening is free. See all {CARDS_PER_PACK} cards, then buy or skip. You only pay for what you have seen.

@@ -41,8 +41,8 @@ class Visitor {
   }
 }
 
-// The code is drawn as hex text in a compressed PDF stream.
-function redeemCodeIn(pdf) {
+// The serial is drawn as hex text in a compressed PDF stream.
+function serialIn(pdf) {
   const bytes = Buffer.from(pdf);
   let from = 0;
   for (;;) {
@@ -54,7 +54,7 @@ function redeemCodeIn(pdf) {
       const text = inflateSync(bytes.subarray(start + 6, end).subarray(bytes[start + 6] === 13 ? 2 : 1)).toString("latin1");
       for (const [, hex] of text.matchAll(/<([0-9A-Fa-f]+)>\s*Tj/g)) {
         const shown = Buffer.from(hex, "hex").toString("latin1");
-        if (/^[0-9A-Z]{4}(-[0-9A-Z]{4}){3}$/.test(shown)) return shown;
+        if (/^[0-9a-f]{32}$/.test(shown)) return shown;
       }
     } catch {
       // Not a compressed text stream, such as an image.
@@ -111,23 +111,56 @@ async function main() {
 
   check("Someone else cannot print it", (await bob.post(`/api/cards/${token}/print`)).status === 400);
   const printed = await alice.post(`/api/cards/${token}/print`);
-  check("The holder locks it for print", printed.status === 200);
+  check("The holder prints it", printed.status === 200);
   check("Scan says it is a simulation", (await anon.page(`/scan/${token}`)).html.includes("Printed (hackathon demo PDF)"));
-  check("A printed card cannot be sent", (await alice.post(`/api/cards/${token}/send`, { to: "ABCDEF123456" })).status === 400);
 
   const pdf = await alice.request(`/api/cards/${token}/pdf`);
   const pdfBytes = await pdf.arrayBuffer();
   check("The PDF downloads", pdf.status === 200 && Buffer.from(pdfBytes).subarray(0, 5).toString() === "%PDF-", `${pdfBytes.byteLength} bytes`);
   check("Someone else cannot download it", (await bob.request(`/api/cards/${token}/pdf`)).status === 404);
-  const code = redeemCodeIn(pdfBytes);
-  check("The PDF holds a redeem code", Boolean(code));
+  const serial = serialIn(pdfBytes);
+  check("The PDF names its print's serial", Boolean(serial));
 
-  check("A wrong code is refused", (await bob.post(`/api/cards/${token}/redeem`, { code: "WRONGWRONGWRONG1" })).status === 400);
-  const redeemed = await bob.post(`/api/cards/${token}/redeem`, { code });
-  check("The code returns the card to whoever enters it", redeemed.status === 200);
+  const stateOf = async (who, query) => (await who.page(`/scan/${token}?print=${query}`)).html.match(/data-state="(\w+)"/)?.[1];
+  check("Its QR reads as the current print", (await stateOf(anon, serial)) === "Active");
+  check("A made-up QR reads as unknown", (await stateOf(anon, "madeup")) === "Unknown");
+
+  const notHolder = await bob.page(`/scan/${token}?print=${serial}`);
+  check("Scanning as someone else shows no actions", notHolder.html.includes('data-testid="not-holder"') && !notHolder.html.includes('data-testid="send-to"'));
+  check("Scanning as the holder shows them", (await alice.page(`/scan/${token}?print=${serial}`)).html.includes('data-testid="send-to"'));
+  check("Someone with the QR cannot transfer it", (await bob.post(`/api/cards/${token}/send`, { to: "crystal_night" })).status === 400);
+  check("Someone with the QR cannot return it", (await bob.post(`/api/cards/${token}/return`)).status === 400);
+
+  check("A username must be valid", (await bob.post("/api/me/username", { username: "x" })).status === 400);
+  const bobName = `bob_${Date.now().toString(36)}`;
+  check("A collector picks a username", (await bob.post("/api/me/username", { username: bobName })).status === 200);
+  check("A username cannot be taken twice", (await alice.post("/api/me/username", { username: bobName })).status === 400);
+  check("A transfer to nobody is refused", (await alice.post(`/api/cards/${token}/send`, { to: "no_such_user" })).status === 400);
+  check("The holder transfers the printed card by username", (await alice.post(`/api/cards/${token}/send`, { to: `@${bobName}` })).status === 200);
+  const moved = await bob.page(`/scan/${token}`);
+  check("It is now Bob's, under his username, still printed",
+    moved.html.includes(`@${bobName}`) && moved.html.includes("(you)") && moved.html.includes("Printed (hackathon demo PDF)"));
+  check("The previous holder can no longer return it", (await alice.post(`/api/cards/${token}/return`)).status === 400);
+
+  check("Nobody can answer a return that was not asked for", (await bob.post(`/api/cards/${token}/return/simulate`, { accepted: true })).status === 400);
+  check("The holder requests a return", (await bob.post(`/api/cards/${token}/return`)).status === 200);
+  check("Scan says the return is simulated", (await anon.page(`/scan/${token}`)).html.includes("Return pending (hackathon simulation)"));
+  check("Its QR reads as being returned", (await stateOf(anon, serial)) === "ReturnPending");
+  check("It cannot be transferred on its way back", (await bob.post(`/api/cards/${token}/send`, { to: "crystal_night" })).status === 400);
+  check("Someone else cannot press the simulation", (await alice.post(`/api/cards/${token}/return/simulate`, { accepted: true })).status === 400);
+
+  check("A fake card is refused", (await bob.post(`/api/cards/${token}/return/simulate`, { accepted: false })).status === 200);
+  check("So its print is still current", (await stateOf(anon, serial)) === "Active");
+  await bob.post(`/api/cards/${token}/return`);
+  check("The genuine card is accepted", (await bob.post(`/api/cards/${token}/return/simulate`, { accepted: true })).status === 200);
   const after = await bob.page(`/scan/${token}`);
-  check("Same token, digital, now Bob's", after.html.includes("(you)") && after.html.includes("Returned to digital"));
-  check("The code is dead", (await alice.post(`/api/cards/${token}/redeem`, { code })).status === 400);
+  check("Same token, digital, still Bob's", after.html.includes("(you)") && after.html.includes("Returned to digital"));
+  check("The old QR reads VOID", (await stateOf(anon, serial)) === "Void" && (await anon.page(`/scan/${token}?print=${serial}`)).html.includes("VOID"));
+
+  check("It prints again, under a new serial", (await bob.post(`/api/cards/${token}/print`)).status === 200);
+  const newSerial = serialIn(await (await bob.request(`/api/cards/${token}/pdf`)).arrayBuffer());
+  check("The new QR is current and the old one stays void",
+    newSerial !== serial && (await stateOf(anon, newSerial)) === "Active" && (await stateOf(anon, serial)) === "Void");
 
   const series = await bob.post("/api/creator/series", {
     name: `Flow ${Date.now()}`,

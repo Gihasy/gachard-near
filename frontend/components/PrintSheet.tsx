@@ -1,8 +1,7 @@
 /**
  * A picture of what the print PDF holds (lib/pdf.ts): the art with crop marks and
- * the QR in the same corner, or the back with the code panel, and the simulation
+ * the QR in the same corner, or the back with the print's details, and the simulation
  * notice in the margin. Enlarged next to a real A4 page so a phone can read it.
- * It never shows a real redeem code.
  */
 const CORNERS = ["tl", "tr", "bl", "br"];
 
@@ -29,8 +28,8 @@ export default function PrintSheet({ src, qr, side = "front", label, footer, liv
           {side === "back" ? (
             <div className="sheet-code">
               <b>Hackathon demo print</b>
-              <span>Redeem code</span>
-              <strong>XXXX-XXXX-XXXX-XXXX</strong>
+              <strong>Token 15, print 1</strong>
+              <span>Each print has its own serial</span>
             </div>
           ) : null}
         </div>
