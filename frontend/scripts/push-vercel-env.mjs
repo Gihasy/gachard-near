@@ -2,8 +2,8 @@
 // project, so secrets never have to be pasted anywhere. Values go over stdin with
 // no trailing newline, because `vercel env add` keeps whitespace.
 //
-// From the repository root, after `vercel link`:
-//   node frontend/scripts/push-vercel-env.mjs
+// From frontend, after `vercel link` there:
+//   node scripts/push-vercel-env.mjs
 import { spawnSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 

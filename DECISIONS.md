@@ -1498,7 +1498,7 @@ their community collects it without meeting a wallet, a gas fee or a chain word.
 
 ## ADR-044: A Hosted Demo on Vercel, With MongoDB and No Image Library on the Server
 
-**Status**: Accepted, 5 November 2026. Built and tested against a local MongoDB. **Not yet verified on Vercel**, until `near-e2e/app-flow.mjs` passes against the deployed URL.
+**Status**: Accepted, 5 November 2026. Built and verified on Vercel: `near-e2e/app-flow.mjs` passed against the deployed URL with Atlas on 5 November 2026.
 
 **Context**: the first deployment to Vercel returned 500 on the home page. The log showed `Could not load the "sharp" module`, because `libvips` did not reach the function. Fixing that alone would have left a site that could not sign anyone in: ADR-043 stores data in a JSON file and artwork on disk, and a serverless function has neither a lasting disk nor one process.
 
@@ -1517,7 +1517,7 @@ their community collects it without meeting a wallet, a gas fee or a chain word.
 
 ## ADR-045: A Printed Card Belongs to an Account, and Returning It Takes the Physical Card
 
-**Status**: Accepted and built, 5 November 2026, on testnet contract `cards-v2`. Replaces the print and redeem rules of ADR-043, decision 3, for this hackathon. The rest of ADR-043 stands. Exercised by `cargo test`, `near-e2e/e2e.mjs` and `near-e2e/app-flow.mjs` locally, not yet on Vercel.
+**Status**: Accepted and built, 5 November 2026, on testnet contract `cards-v2`. Replaces the print and redeem rules of ADR-043, decision 3, for this hackathon. The rest of ADR-043 stands. Exercised by `cargo test` and `near-e2e/e2e.mjs`, and by `near-e2e/app-flow.mjs` locally and on Vercel.
 
 **Context**: under ADR-043 a printed card carried a redeem code, and whoever entered the code received the card. That made the paper a bearer instrument: a photo of the code was enough to take the card. It also meant a printed card could not change hands on the record. The author wants the opposite risk: a physical card can be lost for good, and nobody who finds or steals it can do anything with it.
 
