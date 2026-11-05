@@ -1546,3 +1546,4 @@ their community collects it without meeting a wallet, a gas fee or a chain word.
 - **The contract's storage layout changed,** so it is a new deployment and earlier testnet cards stay on the old contract.
 - **Printing no longer moves a secret.** The database stores the serial so the PDF can be downloaded again, in plain form, because it is printed in a public QR code.
 - **Giving a card to someone without an account is no longer possible.** The recipient needs a username first.
+- **A contract's balance has to cover its own code.** The wasm alone takes 2.81 NEAR of storage. The redeployment was funded with 3, and purchases failed with `LackBalanceForState` once about 12 KB of state had filled the rest. It was caught by running `app-flow.mjs` on the live site after the series were published. The contract now holds 8 NEAR, and that error now returns the buyer's Credits, because a rejected transaction minted nothing.

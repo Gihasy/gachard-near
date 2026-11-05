@@ -51,7 +51,7 @@ export default function CardActions({ tokenId, status, media, cardName, qr, isHo
   }
 
   const sheet = (
-    <div className="w-36 sm:w-44 mx-auto sm:mx-0 shrink-0 -rotate-2">
+    <div className="w-40 sm:w-44 mx-auto sm:mx-0 shrink-0 -rotate-2">
       <PrintSheet src={media} qr={qr} label={`Preview of the print file for ${cardName}`} />
     </div>
   );

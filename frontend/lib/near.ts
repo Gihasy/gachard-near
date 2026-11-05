@@ -77,6 +77,8 @@ function settle(outcome: Outcome): { hash: string; value: unknown } {
     const text = JSON.stringify(failure);
     const panic = text.match(/Smart contract panicked: ([^"\\]+)/);
     if (panic) throw new ContractRefused(panic[1]);
+    // The whole transaction was rejected, so nothing happened and it is safe to say so.
+    if (text.includes("LackBalanceForState")) throw new ContractRefused("This demo has run out of testnet funds. Please try again later.");
     throw new Error(`Transaction failed: ${text.slice(0, 300)}`);
   }
 

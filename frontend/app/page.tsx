@@ -41,7 +41,7 @@ const PRINT_STEPS = [
   { title: "Send it back to go digital", text: "The physical card goes to Gachard to be destroyed, and its old QR reads VOID. A card that is lost or stolen can never come back." },
 ];
 
-const PRINT_SPECS = ["63 x 88 mm", "3 mm bleed", "Crop marks", "A QR for each print"];
+const PRINT_SPECS = ["63 x 88 mm", "3 mm bleed", "Crop marks"];
 
 const RECORD = [
   { label: "Released", Icon: SparkIcon },
@@ -209,19 +209,16 @@ export default async function Home({ searchParams }: {
       {/* ---- Digital to print ---- */}
       <section id="print" className="max-w-7xl mx-auto px-4 sm:px-6 mt-16 sm:mt-24 scroll-mt-24">
         <div className="panel print-stage p-5 sm:p-10 grid lg:grid-cols-[1fr_1.05fr] gap-10 lg:gap-14 items-center">
-          <div className="sheets">
-            <div className="sheets-back">
-              <PrintSheet src="/cards/card-back.webp" side="back" label="Back page of the print file, naming the print" />
+          <div className="print-show">
+            <div className="print-show-back">
+              <PrintSheet src="/cards/card-back.webp" side="back" marks={false} label="The back of a printed card, naming the print" />
             </div>
-            <div className="sheets-front">
-              <PrintSheet
-                src="/cards/legendary-1.webp"
-                qr={sampleQr}
-                label="Front page of the print file: the card with crop marks, a QR code and a simulation notice"
-                footer="In production, cards are printed and shipped by the platform."
-                live
-              />
+            <div className="print-show-front">
+              <PrintSheet src="/cards/legendary-1.webp" qr={sampleQr} label="The front of a printed card, with crop marks and a QR code in the corner" />
+              <span className="print-show-dim" data-axis="w">63 mm</span>
+              <span className="print-show-dim" data-axis="h">88 mm</span>
             </div>
+            <span className="print-show-tag">A QR for each print</span>
           </div>
           <div>
             <Eyebrow>Digital first, printable anytime</Eyebrow>
