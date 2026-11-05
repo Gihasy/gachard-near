@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { PrintIcon, SearchIcon } from "@/components/icons";
 import { CardImage, inputClass } from "@/components/ui";
 
@@ -24,6 +24,19 @@ export default function SeriesBrowser({ items, categories, initialQuery, initial
 }) {
   const [query, setQuery] = useState(initialQuery);
   const [category, setCategory] = useState(categories.includes(initialCategory) ? initialCategory : ALL);
+
+  // The hero's search lands on #series, far down the page. The browser's own jump happens
+  // before the page has settled and stops short, so finish it once everything has loaded.
+  useEffect(() => {
+    if (window.location.hash !== "#series") return;
+    const jump = () => document.getElementById("series")?.scrollIntoView();
+    if (document.readyState === "complete") {
+      jump();
+      return;
+    }
+    window.addEventListener("load", jump, { once: true });
+    return () => window.removeEventListener("load", jump);
+  }, []);
 
   const shown = useMemo(() => {
     const words = query.toLowerCase().split(/\s+/).filter(Boolean);

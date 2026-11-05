@@ -35,6 +35,16 @@ const RAIL = [
 
 const PROMISES = ["No wallet to set up", "No network fees", "Pay only for what you see"];
 
+// Written as what collecting tends to feel like, not as quotes: no real person said these.
+const WORRIES = [
+  { title: "Buying blind", text: "You pay for a pack, and only then find out what is inside." },
+  { title: "Is it even real?", text: "A picture of a card proves nothing, and anyone can copy one." },
+  { title: "A wallet, just to collect?", text: "You came for a card, not for seed phrases and network fees." },
+  { title: "A card you can never hold", text: "Most digital cards stay on a screen, however much you love them." },
+];
+
+const NOTHING_TO_SET_UP = ["No wallet", "No seed phrase", "No network fees"];
+
 const PRINT_STEPS = [
   { title: "Own the digital card", text: "It lives in your collection, with its own public record." },
   { title: "Get the print file", text: "Choose Print. You get a PDF with crop marks and a QR code unique to that print." },
@@ -147,40 +157,32 @@ export default async function Home({ searchParams }: {
         </div>
       </section>
 
-      {/* ---- Find your favorite ---- */}
-      <section id="series" className="max-w-7xl mx-auto px-4 sm:px-6 mt-16 sm:mt-20 scroll-mt-24">
-        <h2 className="font-display font-bold text-2xl sm:text-4xl">Who do you collect?</h2>
-        {items.length === 0 ? (
-          <div className="panel mt-6 p-8 sm:p-10 text-center">
-            <p className="font-display font-semibold text-lg">Nothing is live yet.</p>
-            <p className="mt-2 text-cn-text-2">Be the first to release a series.</p>
-            <Link className={`${primaryBtn} mt-5`} href="/creator">Release a series</Link>
-          </div>
-        ) : (
-          <>
-            <SeriesBrowser
-              items={items}
-              categories={categories}
-              initialQuery={typeof q === "string" ? q : ""}
-              initialCategory={typeof category === "string" ? category : ""}
-            />
-            <p className="mt-4 text-xs text-cn-text-3">
-              Demo series. Mochi Puffs, Aika Nova and Noa Vantor are invented, and are not real people or brands.
-            </p>
-          </>
-        )}
+      {/* ---- Empathy: what collecting feels like today ---- */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 mt-16 sm:mt-20" data-testid="worries">
+        <h2 className="font-display font-bold text-2xl sm:text-4xl max-w-3xl leading-tight">
+          You love them. Collecting them shouldn&apos;t feel like a gamble.
+        </h2>
+        <ul className="mt-8 grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {WORRIES.map((worry) => (
+            <li key={worry.title} className="panel p-5">
+              <h3 className="font-display font-semibold text-base">{worry.title}</h3>
+              <p className="mt-2 text-sm text-cn-text-2 leading-relaxed">{worry.text}</p>
+            </li>
+          ))}
+        </ul>
       </section>
 
-      {/* ---- How collecting works ---- */}
+      {/* ---- Solution: the first three worries, answered ---- */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 mt-16 sm:mt-24">
-        <h2 className="font-display font-bold text-2xl sm:text-4xl max-w-2xl leading-tight">
-          See every card before you pay for it.
+        <h2 className="font-display font-bold text-2xl sm:text-4xl leading-tight">
+          Collecting,{" "}
+          <span className="crystal-text">without the gamble.</span>
         </h2>
-        <div className="mt-8 grid md:grid-cols-2 gap-4">
+        <div className="mt-8 grid md:grid-cols-2 lg:grid-cols-3 gap-4">
           <Tile
             icon={<UserIcon />}
-            title="Open a pack for free"
-            text="Sign in the way you sign in anywhere else. Turn over five cards, then buy the pack or skip it. Skipping costs nothing."
+            title="See every card before you pay"
+            text="Open a pack for free and turn over all five cards. Then buy the pack or skip it. Skipping costs nothing."
           >
             <div className="mt-6 grid grid-cols-5 gap-2 -mb-14">
               {["card-back.webp", "demo/mochi-rare.jpg", "demo/aika-epic.jpg", "card-back.webp", "card-back.webp"].map((file, i) => (
@@ -204,10 +206,24 @@ export default async function Home({ searchParams }: {
               ))}
             </ol>
           </Tile>
+          <Tile
+            icon={<CheckIcon />}
+            title="Nothing to set up"
+            text="Sign in the way you sign in anywhere else. Gachard handles the blockchain and pays its network fees."
+            className="md:col-span-2 lg:col-span-1"
+          >
+            <ul className="mt-5 flex flex-wrap gap-2 text-xs font-semibold">
+              {NOTHING_TO_SET_UP.map((item) => (
+                <li key={item} className="inline-flex items-center gap-1.5 rounded-full border border-cn-line-strong bg-white/[.04] px-3 py-1.5">
+                  <CheckIcon width={14} height={14} className="text-cn-crystal" /> {item}
+                </li>
+              ))}
+            </ul>
+          </Tile>
         </div>
       </section>
 
-      {/* ---- Digital to print ---- */}
+      {/* ---- Solution: the fourth worry, a card you can hold ---- */}
       <section id="print" className="max-w-7xl mx-auto px-4 sm:px-6 mt-16 sm:mt-24 scroll-mt-24">
         <div className="panel print-stage p-5 sm:p-10">
           <div className="grid lg:grid-cols-[1fr_1.15fr] gap-8 lg:gap-14 items-center">
@@ -282,6 +298,30 @@ export default async function Home({ searchParams }: {
           </div>
           </div>
         </div>
+      </section>
+
+      {/* ---- Engage: find your favorite ---- */}
+      <section id="series" className="max-w-7xl mx-auto px-4 sm:px-6 mt-16 sm:mt-24 scroll-mt-24">
+        <h2 className="font-display font-bold text-2xl sm:text-4xl">Who do you collect?</h2>
+        {items.length === 0 ? (
+          <div className="panel mt-6 p-8 sm:p-10 text-center">
+            <p className="font-display font-semibold text-lg">Nothing is live yet.</p>
+            <p className="mt-2 text-cn-text-2">Be the first to release a series.</p>
+            <Link className={`${primaryBtn} mt-5`} href="/creator">Release a series</Link>
+          </div>
+        ) : (
+          <>
+            <SeriesBrowser
+              items={items}
+              categories={categories}
+              initialQuery={typeof q === "string" ? q : ""}
+              initialCategory={typeof category === "string" ? category : ""}
+            />
+            <p className="mt-4 text-xs text-cn-text-3">
+              Demo series. Mochi Puffs, Aika Nova and Noa Vantor are invented, and are not real people or brands.
+            </p>
+          </>
+        )}
       </section>
 
       {/* ---- Creator call ---- */}
