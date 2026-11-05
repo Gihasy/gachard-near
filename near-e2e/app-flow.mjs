@@ -247,12 +247,33 @@ async function main() {
   }
   const revenueBefore = (await bob.page("/creator")).html.match(/data-creator="(\d+)" data-gachard="(\d+)"/);
   check("A live series starts with no sales", revenueBefore?.[1] === "0" && revenueBefore?.[2] === "0");
+  const progressOf = async () => (await alice.page("/collection")).html.match(new RegExp(`data-series="${newSeries}" data-owned="(\\d+)" data-total="(\\d+)"`))?.slice(1).join("/");
+  check("A series nobody holds shows no progress", (await progressOf()) === undefined);
   const flow = await (await alice.post("/api/packs", { seriesId: newSeries })).json();
   for (let index = 0; index < 5; index += 1) await alice.post(`/api/packs/${flow.id}/reveal`, { index });
-  check("A collector buys from that series", (await alice.post(`/api/packs/${flow.id}/buy`)).status === 200);
+  const flowBought = await alice.post(`/api/packs/${flow.id}/buy`);
+  const flowBuy = await flowBought.json();
+  check("A collector buys from that series", flowBought.status === 200);
   const revenue = (await bob.page("/creator")).html.match(/data-creator="(\d+)" data-gachard="(\d+)"/);
   check("The sale is split 90/10 in the creator's studio", revenue?.[1] === "45" && revenue?.[2] === "5", `${revenue?.[1]} and ${revenue?.[2]}`);
   check("Nobody else sees those figures", !(await alice.page("/creator")).html.includes('data-creator="45"'));
+
+  // Progress only counts: five copies of one of four cards is one of four.
+  check("Copies count once in a series' progress", (await progressOf()) === "1/4", await progressOf());
+  check("The cards still missing are shown as empty", (await alice.page("/collection")).html.includes('data-testid="missing-card"'));
+  const copies = flowBuy.tokenIds;
+  const lastCopyOf = async (id) => (await alice.page(`/scan/${id}`)).html.match(/data-last-copy="(\w+)"/)?.[1];
+  check("With copies left, no warning is due", (await lastCopyOf(copies[4])) === "false");
+  check("A card in a series can still be printed", (await alice.post(`/api/cards/${copies[0]}/print`)).status === 200);
+  for (const id of copies.slice(1, 4)) await alice.post(`/api/cards/${id}/dismantle`);
+  check("A printed copy still counts as held", (await lastCopyOf(copies[4])) === "false");
+  await alice.post(`/api/cards/${copies[0]}/return`);
+  await alice.post(`/api/cards/${copies[0]}/return/simulate`, { accepted: true });
+  await alice.post(`/api/cards/${copies[0]}/dismantle`);
+  check("The only copy left is flagged before it is dismantled", (await lastCopyOf(copies[4])) === "true");
+  check("Progress holds until then", (await progressOf()) === "1/4");
+  await alice.post(`/api/cards/${copies[4]}/dismantle`);
+  check("Dismantling it ends the series' progress", (await progressOf()) === undefined);
 
   console.log(failures ? `\n${failures} check(s) FAILED` : "\nAll checks passed");
   process.exit(failures ? 1 : 0);

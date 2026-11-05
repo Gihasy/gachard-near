@@ -1,11 +1,13 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import CrystalShop from "@/components/CrystalShop";
+import SeriesProgress from "@/components/SeriesProgress";
 import UsernameForm from "@/components/UsernameForm";
 import TiltCard from "@/components/TiltCard";
 import { ArrowIcon, PrintIcon } from "@/components/icons";
 import { CardImage, Eyebrow, Page, Rarity, primaryBtn } from "@/components/ui";
 import { cardsOf } from "@/lib/cards";
+import { readDb } from "@/lib/db";
 import { CRYSTAL_BY_RARITY, EXTRA_PACK_PRICE } from "@/lib/economy";
 import { defaultUsername } from "@/lib/near";
 import { currentUser } from "@/lib/users";
@@ -15,7 +17,7 @@ export const dynamic = "force-dynamic";
 export default async function Collection() {
   const user = await currentUser();
   if (!user) redirect("/login?next=/collection");
-  const cards = await cardsOf(user.accountId);
+  const [cards, { series }] = await Promise.all([cardsOf(user.accountId), readDb()]);
   const username = user.username ?? defaultUsername(user.accountId);
   // Only a digital card can be dismantled, so only those count as spare copies.
   const copies = new Map<string, number>();
@@ -41,6 +43,8 @@ export default async function Collection() {
         yields={CRYSTAL_BY_RARITY.join(", ")}
         duplicates={duplicates}
       />
+
+      <SeriesProgress series={series} cards={cards} />
 
       {cards.length === 0 ? (
         <div className="panel p-8 sm:p-12 text-center">

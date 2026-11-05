@@ -41,6 +41,8 @@ Pack sales are the revenue. Each pack sold is split between the creator and Gach
 
 Duplicates give a reason to buy the next pack. The holder dismantles a digital card, and the burn gives Crystal. Crystal buys an extra pack slot, and the buyer still sees every card before paying.
 
+My Cards also shows how much of each series a collector holds, and which cards are missing. Nothing is locked or won for finishing one.
+
 Crystal is created only by a burn, and it cannot be bought, sent or cashed out. The 90/10 split, the yields and the slot's price are examples for this demo. Whether this loop works is untested, because there are no real collectors. See [ADR-046](DECISIONS.md).
 
 ## Try it

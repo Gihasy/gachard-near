@@ -9,7 +9,7 @@ import { ErrorLine, Panel, inputClass, primaryBtn, secondaryBtn } from "@/compon
 
 const SPECS = ["63 x 88 mm", "Crop marks", "A QR for this print"];
 
-export default function CardActions({ tokenId, status, media, cardName, qr, isHolder, printNumber, crystalYield }: {
+export default function CardActions({ tokenId, status, media, cardName, qr, isHolder, printNumber, crystalYield, lastCopy }: {
   tokenId: string;
   status: string;
   media: string;
@@ -18,6 +18,7 @@ export default function CardActions({ tokenId, status, media, cardName, qr, isHo
   isHolder: boolean;
   printNumber: number;
   crystalYield: number;
+  lastCopy: boolean;
 }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
@@ -190,6 +191,7 @@ export default function CardActions({ tokenId, status, media, cardName, qr, isHo
             <div className="mt-2 pop" data-testid="dismantle-notice">
               <p className="text-sm text-cn-text-2 leading-relaxed">
                 This destroys the card for good and gives you {crystalYield} Crystal. It cannot be undone.
+                {lastCopy ? " This is your only copy, so your progress in this series goes down." : ""}
               </p>
               <div className="mt-4 flex flex-wrap gap-3">
                 <button className={primaryBtn} disabled={busy} onClick={() => run("dismantle")} data-testid="confirm-dismantle">{busy ? "Destroying..." : `Destroy for ${crystalYield} Crystal`}</button>
@@ -199,7 +201,7 @@ export default function CardActions({ tokenId, status, media, cardName, qr, isHo
           ) : (
             <>
               <p className="mt-1 text-sm text-cn-text-2 leading-relaxed">Got a duplicate? Turn it into {crystalYield} Crystal, and spend that on extra pack slots.</p>
-              <button className={`${secondaryBtn} mt-4`} onClick={() => setConfirming("dismantle")} data-testid="dismantle">Dismantle</button>
+              <button className={`${secondaryBtn} mt-4`} onClick={() => setConfirming("dismantle")} data-testid="dismantle" data-last-copy={lastCopy}>Dismantle</button>
             </>
           )}
         </Panel>

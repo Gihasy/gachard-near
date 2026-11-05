@@ -4,7 +4,7 @@ import CardActions from "@/components/CardActions";
 import TiltCard from "@/components/TiltCard";
 import { CheckIcon, ExternalIcon, PrintIcon, SendIcon, SparkIcon } from "@/components/icons";
 import { Panel, Rarity } from "@/components/ui";
-import { printState, readCard, serialForHolder, type PrintState } from "@/lib/cards";
+import { cardsOf, printState, readCard, serialForHolder, type PrintState } from "@/lib/cards";
 import { readDb } from "@/lib/db";
 import { CRYSTAL_BY_RARITY } from "@/lib/economy";
 import { RARITIES } from "@/lib/catalog";
@@ -88,6 +88,11 @@ export default async function CardRecord({ params, searchParams }: {
   const banner = scanned ? BANNER[scanned] : null;
 
   const serial = user ? await serialForHolder(user, card) : null;
+  // Dismantling a holder's only copy lowers their progress in the series, so they are told.
+  const design = `${card.series_id}:${card.template_id}`;
+  const lastCopy = user && isHolder && card.status === "Digital"
+    ? (await cardsOf(user.accountId)).filter((c) => c.design === design).length === 1
+    : false;
   const origin = await siteOrigin();
   const qr = await qrDataUrl(serial ? `${origin}/scan/${id}?print=${serial}` : `${origin}/scan/${id}`);
 
@@ -150,6 +155,7 @@ export default async function CardRecord({ params, searchParams }: {
             isHolder={isHolder}
             printNumber={card.print_cycle}
             crystalYield={CRYSTAL_BY_RARITY[RARITIES.indexOf(card.rarity)]}
+            lastCopy={lastCopy}
           />
 
           <Panel>

@@ -1575,3 +1575,5 @@ their community collects it without meeting a wallet, a gas fee or a chain word.
 **Consequences**:
 - The contract is redeployed in place on testnet, so the running site keeps working during the change.
 - The concept comes from the Monad product, and the README discloses that. The burn and the app code are new, for NEAR.
+
+**Amendment, 6 November 2026: series progress instead of an album.** The author asked whether the album of ADR-038 belongs here. It does not: its permanent lock would stop a card being printed, which is this entry's point, and it brings seasons, limited cards and the Wish Card with it. My Cards shows how many of a series' cards a collector holds, and which are missing. It is derived from what they hold, so it needs no contract change and cannot drift. Nothing is locked and nothing is won, which also keeps it clear of collecting a set for a prize. A holder is warned before dismantling their only copy of a card. Whether this makes anyone buy another pack is untested.
