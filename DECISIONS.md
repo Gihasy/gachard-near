@@ -1487,3 +1487,11 @@ their community collects it without meeting a wallet, a gas fee or a chain word.
 - **The Economy Lab and the v2 store are unused here.** They remain the product's
   plan. If this MVP's pack rule is adopted beyond the hackathon, that needs its own
   ADR, since it drops rotation and commit-reveal from ADR-038 and ADR-040.
+
+
+**Amendment, 5 November 2026: what was cut, and two things learned while building.**
+- **Player trading is cut, from the start of the build.** Sending a card to another collector replaces it, as decision 7's cut order allows, so `games` is not a track for this entry. A price paid on a trade would have been in simulated Credits, which adds nothing a judge can check.
+- **Everything else in decision 1 is built** and was exercised end to end in a browser: sign-in, a creator's series and card upload, pack, purchase, record, print, PDF, redeem by a second account.
+- **Burn is not in the contract.** Dismantle is out of scope (decision 6), and a method that does not exist cannot be misused.
+- **The redeem code is stored encrypted before the lock is sent**, because a lock whose code was lost could never be redeemed. So the app checks the holder itself before storing it, or a stranger's print request would overwrite the holder's code. The contract alone would have refused the lock, but after the damage.
+- **A refused meta transaction refunds its 1 yocto deposit to the user who signed it**, not to the platform that attached it. This is inferred from exact balance changes in `near-e2e/e2e.mjs`, not read in a specification. It is dust, but it means a user's balance can rise.

@@ -4,27 +4,23 @@
 // receive, move, print and redeem cards. The platform pays gas and the 1 yocto
 // deposit. Their own balances must not change by a single yoctoNEAR.
 //
-// Run: PLATFORM_ACCOUNT=<account>.testnet node e2e.mjs
-// The platform key is read from ~/.near-credentials, never from this repository.
+// Run: node --env-file=../frontend/.env.local e2e.mjs
+// The platform key comes from that file, which is not in this repository.
 // Fresh test accounts are created on each run. Their keys stay in memory.
 import { createHash, createHmac, randomBytes } from "node:crypto";
 import { readFileSync, writeFileSync } from "node:fs";
-import { homedir } from "node:os";
-import { join } from "node:path";
 import { Account, JsonRpcProvider, KeyPair, actions, teraToGas } from "near-api-js";
 
-const PLATFORM = process.env.PLATFORM_ACCOUNT;
-if (!PLATFORM) throw new Error("Set PLATFORM_ACCOUNT");
-const CONTRACT = process.env.CONTRACT_ACCOUNT ?? `cards.${PLATFORM}`;
-const RPC = process.env.RPC_URL ?? "https://test.rpc.fastnear.com";
+const PLATFORM = process.env.NEAR_PLATFORM_ACCOUNT;
+const PLATFORM_KEY = process.env.NEAR_PLATFORM_KEY;
+if (!PLATFORM || !PLATFORM_KEY) throw new Error("Run with --env-file=../frontend/.env.local");
+const CONTRACT = process.env.NEAR_CONTRACT ?? `cards.${PLATFORM}`;
+const RPC = process.env.NEAR_RPC_URL ?? "https://test.rpc.fastnear.com";
 const EXPLORER = "https://testnet.nearblocks.io/txns/";
 const FUNDING = 2_000_000_000_000_000_000_000n; // 0.002 NEAR: storage only, not gas money
 
 const provider = new JsonRpcProvider({ url: RPC });
-const credentials = JSON.parse(
-  readFileSync(join(homedir(), ".near-credentials", "testnet", `${PLATFORM}.json`), "utf8"),
-);
-const platform = new Account(PLATFORM, provider, credentials.private_key);
+const platform = new Account(PLATFORM, provider, PLATFORM_KEY);
 
 const steps = [];
 let failures = 0;

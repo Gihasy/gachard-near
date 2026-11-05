@@ -1,7 +1,7 @@
 {
-  "ranAt": "2026-11-05T09:49:36.575Z",
-  "contract": "cards.gachard-dev-4f0c7e.testnet",
-  "tokenId": "2",
+  "ranAt": "2026-11-05T10:23:37.428Z",
+  "contract": "cards.gachard-demo-17809fd7.testnet",
+  "tokenId": "1",
   "seriesId": 2,
   "failures": 0,
   "steps": [
@@ -13,32 +13,32 @@
     {
       "name": "Platform approves the creator",
       "ok": true,
-      "detail": "https://testnet.nearblocks.io/txns/GsRdxm2DdPZid72dABbwrKR2xaKoeZvrYe8Fg13zUpcN"
+      "detail": "https://testnet.nearblocks.io/txns/2oVcLUsiLh3kNEjyCLacCUg25V39J4u1AakhnipEyype"
     },
     {
       "name": "Creator creates a series, gas paid by the platform",
       "ok": true,
-      "detail": "https://testnet.nearblocks.io/txns/4gQt4DLK5ugupEGoZ5yKwZnbn68HCz9NGJboUhbDRZYc"
+      "detail": "https://testnet.nearblocks.io/txns/95YF6Hovtk8tDbxrDzUSXjPoDPfykGMhydwKuserE5Z6"
     },
     {
       "name": "Creator adds a card with its artwork hash",
       "ok": true,
-      "detail": "https://testnet.nearblocks.io/txns/FVWEg7jskUmA5fiFhF6wbKeUc4qgFjWE1FkXQuAvPa1L"
+      "detail": "https://testnet.nearblocks.io/txns/H4xEVSWoZQm2HjPc3KDvCEKKZ6G4cYp7FBMkkEaPLXHY"
     },
     {
       "name": "Chain names the creator as issuer",
       "ok": true,
-      "detail": "c-ef38fc2426df.gachard-dev-4f0c7e.testnet"
+      "detail": "c-2a88515a80b1.gachard-demo-17809fd7.testnet"
     },
     {
       "name": "Platform mints a card to Alice",
       "ok": true,
-      "detail": "https://testnet.nearblocks.io/txns/ZKpM3czjkYJXMQh1NHNRndf1RPTowUEDw3kezZ4N82T"
+      "detail": "https://testnet.nearblocks.io/txns/FKeTgJGhRnTni4iEXcWARzSGAX9qQ1vGwy3XvBnXieCs"
     },
     {
       "name": "Card records its origin",
       "ok": true,
-      "detail": "token 2, series 2, template 1"
+      "detail": "token 1, series 2, template 1"
     },
     {
       "name": "Stored art hash matches the file",
@@ -53,7 +53,7 @@
     {
       "name": "Alice sends the card to Bob, with no NEAR of her own",
       "ok": true,
-      "detail": "https://testnet.nearblocks.io/txns/HPZGbuiYWDLWffQaN5ckZdBNKB4XRy7EeYSa8nZivPhu"
+      "detail": "https://testnet.nearblocks.io/txns/edMZsg7tx2tWmZvtgvu7W3Xv9B6t2iRrJvoBEEaM3vt"
     },
     {
       "name": "Bob now holds it",
@@ -63,7 +63,7 @@
     {
       "name": "Bob locks the card for print",
       "ok": true,
-      "detail": "https://testnet.nearblocks.io/txns/J6a1g6pGsBoQ5QzrPwxJ8cfkfuN5Ta8kBnYb6Uvb6QmC"
+      "detail": "https://testnet.nearblocks.io/txns/AYa8qFKZFTECV7Fc4RxGZaFJ5FwKJER4Gyk7Ct7Ass5d"
     },
     {
       "name": "Card reads Printed, still held by Bob",
@@ -83,7 +83,7 @@
     {
       "name": "Alice redeems with the code",
       "ok": true,
-      "detail": "https://testnet.nearblocks.io/txns/Cyze4sSZ6Fnv1enpnyaUMN64A3VnZJVbtddgHqszMeiP"
+      "detail": "https://testnet.nearblocks.io/txns/8j2To2wQwprzQNSSEBLqVSUH45wXPaU7GQDz8WX1TT5j"
     },
     {
       "name": "Same token, digital again, held by Alice",
@@ -101,17 +101,17 @@
       "detail": "{\"ActionError\":{\"index\":0,\"kind\":{\"FunctionCallError\":{\"ExecutionError\":\"Smart contract panicked: Card is not printed\"}}}}"
     },
     {
-      "name": "c-ef38fc2426df paid nothing",
+      "name": "c-2a88515a80b1 paid nothing",
       "ok": true,
       "detail": "balance change 0 yocto, expected 0"
     },
     {
-      "name": "c-6e369bc10283 paid nothing",
+      "name": "c-e1f7ca483eb4 paid nothing",
       "ok": true,
       "detail": "balance change 1 yocto, expected 1"
     },
     {
-      "name": "c-a3cb2ad070fb paid nothing",
+      "name": "c-b98433a1f7b3 paid nothing",
       "ok": true,
       "detail": "balance change 2 yocto, expected 2"
     }

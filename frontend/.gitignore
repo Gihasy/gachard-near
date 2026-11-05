@@ -49,3 +49,6 @@ next-env.d.ts
 
 # v1 -> v2 migration snapshots: they list wallet addresses. Keep copies outside the repo and the database.
 /.migration/
+
+# Local demo data
+.data/

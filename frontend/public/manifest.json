@@ -1,7 +1,7 @@
 {
   "name": "Gachard",
   "short_name": "Gachard",
-  "description": "Platform kartu TCG digital-native",
+  "description": "Creators release their own trading cards",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#0B0E1A",
