@@ -140,6 +140,10 @@ cargo near build non-reproducible-wasm --no-abi
   needs platform printing with physical security features. A self-printed PDF cannot have them.
 - **Usernames are not on chain.** The link from a username to an account is this app's word.
   Scan shows both, so they can be compared with the record.
+- **The hosted demo's Mochi Puffs, Aika Nova and Noa Vantor series are invented.** They show
+  the kinds of creator this is for, and are not clients. The people and characters are
+  fictional, and their art is drawn in code by [`make-demo-art.mjs`](frontend/scripts/make-demo-art.mjs).
+  Each card says so on its face. They are published by [`seed-demo-ips.ts`](frontend/scripts/seed-demo-ips.ts).
 - **Rates are published, not proven.** The draw is a server-side random choice. A buyer sees
   what they pay for, so the purchase does not depend on it, but the rates are not provably
   fair.

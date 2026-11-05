@@ -247,7 +247,7 @@ export default async function Home() {
                   </div>
                   <div className="mt-4 flex items-end justify-between gap-3">
                     <div className="min-w-0">
-                      <h3 className="font-display font-semibold text-base truncate">{s.name}</h3>
+                      <h3 className="font-display font-semibold text-base leading-snug">{s.name}</h3>
                       <p className="mt-1 inline-flex items-center gap-1.5 text-sm text-cn-text-3">{s.templates.length} cards, all printable <PrintIcon width={14} height={14} /></p>
                     </div>
                     {best[0] ? <Rarity value={`${RARITIES[best[0].rarity]}`} /> : null}
