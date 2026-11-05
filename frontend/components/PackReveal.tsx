@@ -198,7 +198,7 @@ export default function PackReveal({ initial }: { initial: View }) {
             </div>
             <div className="flex flex-wrap gap-3">
               <Link className={secondaryBtn} href={`/scan/${view.tokenIds[0]}#print`}><PrintIcon width={16} height={16} /> Print or verify the first card</Link>
-              <Link className={primaryBtn} href="/collection">Go to collection <ArrowIcon width={16} height={16} /></Link>
+              <Link className={primaryBtn} href="/collection">Go to my cards <ArrowIcon width={16} height={16} /></Link>
             </div>
           </div>
         ) : view.status === "skipped" ? (

@@ -20,7 +20,7 @@ export default async function Collection() {
       <div className="flex flex-wrap items-end justify-between gap-5 mb-8">
         <div>
           <Eyebrow>@{username}</Eyebrow>
-          <h1 className="mt-4 font-display font-bold text-2xl sm:text-4xl">Your collection</h1>
+          <h1 className="mt-4 font-display font-bold text-2xl sm:text-4xl">My cards</h1>
           <p className="mt-2 text-cn-text-2">{cards.length} {cards.length === 1 ? "card" : "cards"}{cards.length ? ". Open any card to verify or print it." : ""}</p>
         </div>
         <UsernameForm username={username} />

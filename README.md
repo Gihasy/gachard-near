@@ -32,7 +32,7 @@ takes the physical card, so one that is lost or stolen stays lost.
 | No method lets the platform move a card | Only the holder's own call moves one. See the limit on the contract's key [below](#what-is-simulated-and-what-is-not-claimed) | contract tests |
 | Print and return | A printed card stays with its holder's account. Returning takes the holder's request and the platform's confirmation, under the same token id | contract, `print_lock`, `request_return`, `confirm_return` |
 | A QR for each print | The chain keeps a hash of each print's serial, so anyone can tell a current print from a cancelled one | contract, `print_state` |
-| Public proof | Scan reads the contract live, and each history row links to NearBlocks | [`frontend/app/scan/[id]/page.tsx`](frontend/app/scan/[id]/page.tsx) |
+| Public proof | The Verify page reads the contract live, and each history row links to NearBlocks | [`frontend/app/scan/[id]/page.tsx`](frontend/app/scan/[id]/page.tsx) |
 
 ## Try it
 
@@ -65,13 +65,13 @@ Open http://localhost:3000, or the hosted demo, then:
    reads Printed (hackathon demo PDF). Click Download print PDF: it holds the card and a QR code. The address the QR opens is printed at the foot of each page.
 7. **Scan as someone else.** In a private window, sign in with a new demo account and open
    that address. You see the card and its holder, and nothing to press. Your username is under
-   Collection, and you can change it there.
+   My Cards, and you can change it there.
 8. **Transfer, then return.** Back as the holder, enter that username, then click Continue and Transfer. It
    stays printed, and its history updates. As the new holder, open the card and click Return to digital, then
    Request return. A button stands in for posting the card: click Simulate: card received
    and destroyed. The same token id is digital again. Open the QR's address once more: it
    now reads VOID.
-9. **Release your own.** Open Create, publish a series, and add a card for each rarity that
+9. **Release your own.** Open For Creators, publish a series, and add a card for each rarity that
    has a rate. It goes live on the home page. On any of its cards, Released by links to your account on
    NearBlocks.
 
@@ -86,7 +86,7 @@ Open http://localhost:3000, or the hosted demo, then:
 | A returned card's old QR reads VOID | `cargo test print_state_follows_the_card` and `app-flow.mjs` | The test passes, and `app-flow.mjs` prints `The old QR reads VOID` |
 | A price stays hidden until every card is open | `app-flow.mjs` | `Price is still hidden at card four` |
 | The art matches its hash on chain | `app-flow.mjs` | `Artwork matches the chain's hash` |
-| Scan can be checked outside this app | Click check independently on a history row | The transaction on NearBlocks. A row with no saved hash links to the contract instead |
+| The Verify page can be checked outside this app | Click check independently on a history row | The transaction on NearBlocks. A row with no saved hash links to the contract instead |
 
 ### Prove it without a browser
 
@@ -128,7 +128,7 @@ cargo near build non-reproducible-wasm --no-abi
 
 - **Payments are simulated.** Credits are a number in a local file.
 - **Printing is simulated.** The PDF stands in for the card the platform would print and
-  ship. It says so in its margin and on the card back, and Scan says so too.
+  ship. It says so in its margin and on the card back, and the Verify page says so too.
 - **Sending a card back is simulated.** In production the physical card goes to Gachard to be
   destroyed, so a lost or stolen card can never return. Nothing can be posted in a demo, so
   labelled buttons stand in for that, and they make the real transaction. **So in this demo a
@@ -139,7 +139,7 @@ cargo near build non-reproducible-wasm --no-abi
   original. What it cannot do is move the card: only the holder's account can. Production
   needs platform printing with physical security features. A self-printed PDF cannot have them.
 - **Usernames are not on chain.** The link from a username to an account is this app's word.
-  Scan shows both, so they can be compared with the record.
+  The Verify page shows both, so they can be compared with the record.
 - **The hosted demo's Mochi Puffs, Aika Nova and Noa Vantor series are invented.** They show
   the kinds of creator this is for, and are not clients. The people and characters are
   fictional, and their art is drawn in code by [`make-demo-art.mjs`](frontend/scripts/make-demo-art.mjs).

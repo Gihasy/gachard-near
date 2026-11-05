@@ -4,11 +4,12 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { CollectionIcon, CreateIcon, ScanIcon, SeriesIcon } from "@/components/icons";
 
-const LINKS = [
-  { href: "/", label: "Series", Icon: SeriesIcon, active: (p: string) => p === "/" || p.startsWith("/series") || p.startsWith("/pack") },
-  { href: "/collection", label: "Collection", Icon: CollectionIcon, active: (p: string) => p.startsWith("/collection") },
-  { href: "/creator", label: "Create", Icon: CreateIcon, active: (p: string) => p.startsWith("/creator") },
-  { href: "/scan", label: "Scan", Icon: ScanIcon, active: (p: string) => p.startsWith("/scan") },
+const LINKS: { href: string; label: string; short?: string; Icon: typeof SeriesIcon; active: (p: string) => boolean }[] = [
+  { href: "/", label: "Explore", Icon: SeriesIcon, active: (p: string) => p === "/" || p.startsWith("/series") || p.startsWith("/pack") },
+  { href: "/collection", label: "My Cards", Icon: CollectionIcon, active: (p: string) => p.startsWith("/collection") },
+  { href: "/scan", label: "Verify", Icon: ScanIcon, active: (p: string) => p.startsWith("/scan") },
+  // Shorter in the phone tab bar, where there is no room for the full name.
+  { href: "/creator", label: "For Creators", short: "Create", Icon: CreateIcon, active: (p: string) => p.startsWith("/creator") },
 ];
 
 export function TopLinks() {
@@ -37,7 +38,7 @@ export function TabBar() {
   return (
     <nav aria-label="Main" className="tabbar md:hidden fixed bottom-0 inset-x-0 z-40 border-t border-cn-line">
       <div className="grid grid-cols-4">
-        {LINKS.map(({ href, label, Icon, active }) => {
+        {LINKS.map(({ href, label, short, Icon, active }) => {
           const on = active(path);
           return (
             <Link
@@ -49,7 +50,7 @@ export function TabBar() {
               <span className={`grid place-items-center h-7 w-12 rounded-full transition ${on ? "crystal-calm" : ""}`} style={on ? { boxShadow: "none" } : undefined}>
                 <Icon width={18} height={18} />
               </span>
-              {label}
+              {short ?? label}
             </Link>
           );
         })}
