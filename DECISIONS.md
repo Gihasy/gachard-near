@@ -1495,3 +1495,22 @@ their community collects it without meeting a wallet, a gas fee or a chain word.
 - **Burn is not in the contract.** Dismantle is out of scope (decision 6), and a method that does not exist cannot be misused.
 - **The redeem code is stored encrypted before the lock is sent**, because a lock whose code was lost could never be redeemed. So the app checks the holder itself before storing it, or a stranger's print request would overwrite the holder's code. The contract alone would have refused the lock, but after the damage.
 - **A refused meta transaction refunds its 1 yocto deposit to the user who signed it**, not to the platform that attached it. This is inferred from exact balance changes in `near-e2e/e2e.mjs`, not read in a specification. It is dust, but it means a user's balance can rise.
+
+## ADR-044: A Hosted Demo on Vercel, With MongoDB and No Image Library on the Server
+
+**Status**: Accepted, 5 November 2026. Built and tested against a local MongoDB. **Not yet verified on Vercel**, until `near-e2e/app-flow.mjs` passes against the deployed URL.
+
+**Context**: the first deployment to Vercel returned 500 on the home page. The log showed `Could not load the "sharp" module`, because `libvips` did not reach the function. Fixing that alone would have left a site that could not sign anyone in: ADR-043 stores data in a JSON file and artwork on disk, and a serverless function has neither a lasting disk nor one process.
+
+**Decision**:
+
+1. **Two stores behind one interface.** With no `MONGODB_URL`, the JSON file stays, so `npm run demo` still needs no account. That is what a screener runs. With `MONGODB_URL`, data lives in MongoDB. ADR-017's Atlas choice carries over, in a new database: this one does not share data with the Monad product.
+2. **All app data is one versioned document.** A write compares the version and reruns if it lost a race. It is the smallest change from the file store, and it is a demo-sized design: every write rewrites everything, and a document is capped at 16 MB. It was tested with 40 concurrent writes, none lost. Do not carry it beyond the hackathon.
+3. **The server does not decode images, and `sharp` is gone from it.** The browser converts an upload to JPEG on a canvas, and the server checks the file type and size and stores the bytes. Tracing the native library into the function could have worked, but it could only be tested by deploying, and removing it removes the failure. `sharp` remains a dev dependency for the seed script only.
+4. **Open uploads stay, with caps.** ADR-043 said uploads need a decision before going public. The creator path is the point of this demo, so it stays open: 3 series per account, 20 cards per series, 10 series and 60 cards per hour, 4 MB per image. **This does not stop a person publishing something they should not.** There is no review and no takedown tool, and anything published stays on the chain. If it is abused, the response is to take the hosted site down.
+5. **Platform transactions retry on `InvalidNonce` and on a missing access key.** Instances can pick the same nonce, and a new account's key can take a moment to reach the RPC node. In both cases nothing reached the chain, so resending is safe. Nothing else is retried: ADR-031's warning about blind retries still stands. The missing-key case was found when setup failed once on a clean run.
+
+**Consequences**:
+- **The signup and upload caps are approximate.** They read then write, so two instances can overshoot slightly. They limit damage, not exact counts.
+- **The platform key and encryption secret now live in Vercel**, beside the database URL. That is ADR-036's warning again: whoever gets that environment holds every custodial account. Testnet only, with a throwaway account.
+- **A mint whose response is lost holds the buyer's Credits** as `unresolved`, as before. A function killed mid-mint can now cause this as well.

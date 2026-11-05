@@ -35,31 +35,39 @@ const provider = new JsonRpcProvider({ url: RPC });
 const key = keyPair.toString();
 const platform = new Account(platformId, provider, key);
 
-// The faucet's answer can arrive just before the account is readable.
-for (let attempt = 0; ; attempt += 1) {
-  try {
-    await platform.getState();
-    break;
-  } catch (error) {
-    if (attempt >= 20) throw error;
-    await new Promise((resolve) => setTimeout(resolve, 1500));
+// A new account or key can take a moment to reach the RPC node. Signing then fails
+// before anything is sent, so it is safe to try again.
+async function whenKeyArrives(send) {
+  for (let attempt = 0; ; attempt += 1) {
+    try {
+      return await send();
+    } catch (error) {
+      const message = `${error?.name ?? ""} ${error?.message ?? error}`;
+      const notYet = /AccessKeyDoesNotExist|Access key .* does not exist|AccountDoesNotExist|does not exist while viewing/i.test(message);
+      if (attempt >= 20 || !notYet) throw error;
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+    }
   }
 }
 
 console.log(`Setup: deploying the contract to ${contractId}...`);
-await platform.createSubAccount({
-  accountOrPrefix: "cards",
-  publicKey,
-  nearToTransfer: nearToYocto("4"),
-});
+await whenKeyArrives(() =>
+  platform.createSubAccount({
+    accountOrPrefix: "cards",
+    publicKey,
+    nearToTransfer: nearToYocto("4"),
+  }),
+);
 const contract = new Account(contractId, provider, key);
-await contract.signAndSendTransaction({
-  receiverId: contractId,
-  actions: [
-    actions.deployContract(new Uint8Array(readFileSync(WASM))),
-    actions.functionCall("new", { owner: platformId, minter: platformId }, teraToGas(30), 0n),
-  ],
-});
+await whenKeyArrives(() =>
+  contract.signAndSendTransaction({
+    receiverId: contractId,
+    actions: [
+      actions.deployContract(new Uint8Array(readFileSync(WASM))),
+      actions.functionCall("new", { owner: platformId, minter: platformId }, teraToGas(30), 0n),
+    ],
+  }),
+);
 
 writeFileSync(
   ENV_FILE,

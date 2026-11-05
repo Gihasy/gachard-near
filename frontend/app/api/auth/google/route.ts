@@ -11,10 +11,13 @@ export async function POST(request: Request) {
     const sub = ticket.getPayload()?.sub;
     if (!sub) return Response.json({ error: "Sign-in failed." }, { status: 400 });
     // The Google id is all that is kept: no email, no name (ADR-032).
-    const existing = readDb().users.find((u) => u.googleSub === sub);
+    const existing = (await readDb()).users.find((u) => u.googleSub === sub);
     const user = existing ?? (await createUser("google", sub));
     return withSession({ ok: true }, user.id);
   } catch (error) {
     return failure(error);
   }
 }
+
+// Waits for a transaction to land.
+export const maxDuration = 30;

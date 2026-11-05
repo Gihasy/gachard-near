@@ -9,7 +9,7 @@ export async function GET(request: Request, ctx: { params: Promise<{ id: string 
   const { id } = await ctx.params;
   try {
     const card = await readCard(id);
-    const code = card && codeForHolder(user, card);
+    const code = card && (await codeForHolder(user, card));
     if (!card || !code) return Response.json({ error: "No print to download." }, { status: 404 });
     const pdf = await printPdf({
       tokenId: id,
@@ -18,7 +18,7 @@ export async function GET(request: Request, ctx: { params: Promise<{ id: string 
       media: card.media,
       code,
       printCycle: card.print_cycle,
-      scanUrl: `${new URL(request.url).origin}/scan/${id}`,
+      origin: new URL(request.url).origin,
     });
     return new Response(pdf, {
       headers: {
@@ -30,3 +30,6 @@ export async function GET(request: Request, ctx: { params: Promise<{ id: string 
     return failure(error);
   }
 }
+
+// Waits for a transaction to land.
+export const maxDuration = 30;

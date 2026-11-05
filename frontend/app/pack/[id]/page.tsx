@@ -11,7 +11,7 @@ export default async function PackPage({ params }: { params: Promise<{ id: strin
   const { id } = await params;
   const user = await currentUser();
   if (!user) redirect(`/login?next=/pack/${id}`);
-  const data = readDb();
+  const data = await readDb();
   const offer = data.offers.find((o) => o.id === id && o.userId === user.id);
   const series = offer && data.series.find((s) => s.id === offer.seriesId);
   if (!offer || !series) notFound();

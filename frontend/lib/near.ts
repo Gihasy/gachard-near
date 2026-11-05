@@ -35,9 +35,26 @@ const platform = () => new Account(platformId(), provider(), env("NEAR_PLATFORM_
 // One platform key means one nonce sequence, so its transactions go in turn.
 const shared = globalThis as unknown as { gachardTxQueue?: Promise<unknown> };
 function inTurn<T>(send: () => Promise<T>): Promise<T> {
-  const run = (shared.gachardTxQueue ?? Promise.resolve()).then(send);
+  const run = (shared.gachardTxQueue ?? Promise.resolve()).then(() => retryOnNonce(send));
   shared.gachardTxQueue = run.catch(() => undefined);
   return run;
+}
+
+// Two failures that are safe to resend, because nothing reached the chain:
+// - InvalidNonce: the queue covers one process. Serverless runs several, and they
+//   can pick the same nonce, so the chain rejects the transaction outright.
+// - AccessKeyDoesNotExist: a new account's key has not reached this RPC node yet,
+//   so signing failed before anything was sent.
+async function retryOnNonce<T>(send: () => Promise<T>): Promise<T> {
+  for (let attempt = 0; ; attempt += 1) {
+    try {
+      return await send();
+    } catch (error) {
+      const message = `${(error as Error)?.name ?? ""} ${(error as Error)?.message ?? error}`;
+      if (attempt >= 5 || !/InvalidNonce|AccessKeyDoesNotExist|Access key .* does not exist/i.test(message)) throw error;
+      await new Promise((resolve) => setTimeout(resolve, 400 + Math.random() * 500 * (attempt + 1)));
+    }
+  }
 }
 
 interface Outcome {

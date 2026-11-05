@@ -11,13 +11,13 @@ const MAX_NEW_USERS_PER_HOUR = 30;
 export async function currentUser(): Promise<User | null> {
   const store = await cookies();
   const id = verifySessionToken(store.get(SESSION_COOKIE)?.value);
-  return id ? (readDb().users.find((u) => u.id === id) ?? null) : null;
+  return id ? ((await readDb()).users.find((u) => u.id === id) ?? null) : null;
 }
 
 /** Each new account costs the platform real testnet funds, so signups are capped. */
 export async function createUser(provider: User["provider"], googleSub?: string): Promise<User> {
   const hourAgo = Date.now() - 3_600_000;
-  const recent = readDb().users.filter((u) => Date.parse(u.createdAt) > hourAgo).length;
+  const recent = (await readDb()).users.filter((u) => Date.parse(u.createdAt) > hourAgo).length;
   if (recent >= MAX_NEW_USERS_PER_HOUR) {
     throw new ContractRefused("Too many new accounts this hour. Please try again later.");
   }

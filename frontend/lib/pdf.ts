@@ -6,12 +6,9 @@
  * The simulation notice is in the page margin and on the card back. The card face
  * stays clean. The notice that cannot be cropped off is the Scan status.
  */
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 import QRCode from "qrcode";
-import sharp from "sharp";
-import { ART_DIR } from "./catalog.ts";
+import { readArt } from "./art.ts";
 import { formatCode } from "./cards.ts";
 
 export const SIMULATION_NOTICE = "SIMULATION: NEAR Hackathon demo. Not an official printed card.";
@@ -21,16 +18,6 @@ const A4 = { width: mm(210), height: mm(297) };
 const TRIM = { width: 63, height: 88 };
 const BLEED = 3;
 
-async function png(input: Buffer) {
-  return sharp(input).png().toBuffer();
-}
-
-function artFile(media: string): Buffer {
-  const name = media.match(/^\/api\/art\/([0-9a-f]{64}\.webp)$/)?.[1];
-  if (!name) throw new Error("Unknown artwork path");
-  return readFileSync(join(ART_DIR, name));
-}
-
 export async function printPdf(card: {
   tokenId: string;
   cardName: string;
@@ -38,20 +25,26 @@ export async function printPdf(card: {
   media: string;
   code: string;
   printCycle: number;
-  scanUrl: string;
+  origin: string;
 }) {
+  const scanUrl = `${card.origin}/scan/${card.tokenId}`;
   const doc = await PDFDocument.create();
   doc.setTitle(`${card.cardName} - hackathon demo print`);
   const font = await doc.embedFont(StandardFonts.Helvetica);
   const bold = await doc.embedFont(StandardFonts.HelveticaBold);
   const ink = rgb(0.1, 0.1, 0.14);
 
-  const front = await doc.embedPng(await png(artFile(card.media)));
-  const back = await doc.embedPng(
-    await png(readFileSync(join(process.cwd(), "public", "cards", "card-back.webp"))),
-  );
+  const art = await readArt(card.media);
+  if (!art) throw new Error("Artwork not found");
+  const front = card.media.endsWith(".png") ? await doc.embedPng(art) : await doc.embedJpg(art);
+
+  // Fetched from the site: a serverless function has no public folder on disk.
+  const backResponse = await fetch(`${card.origin}/cards/card-back.jpg`);
+  if (!backResponse.ok) throw new Error("Card back not found");
+  const back = await doc.embedJpg(await backResponse.arrayBuffer());
+
   const qr = await doc.embedPng(
-    await QRCode.toBuffer(card.scanUrl, { margin: 1, width: 400, errorCorrectionLevel: "M" }),
+    await QRCode.toBuffer(scanUrl, { margin: 1, width: 400, errorCorrectionLevel: "M" }),
   );
 
   const drawPage = (title: string) => {
@@ -60,7 +53,7 @@ export async function printPdf(card: {
     const y = (A4.height - mm(TRIM.height)) / 2;
     page.drawText(SIMULATION_NOTICE, { x: mm(15), y: A4.height - mm(15), size: 10, font: bold, color: rgb(0.75, 0.1, 0.2) });
     page.drawText(title, { x: mm(15), y: A4.height - mm(22), size: 9, font, color: ink });
-    page.drawText(`In production, cards are printed and shipped by the platform. Check this card: ${card.scanUrl}`, {
+    page.drawText(`In production, cards are printed and shipped by the platform. Check this card: ${scanUrl}`, {
       x: mm(15), y: mm(15), size: 7.5, font, color: ink,
     });
     return { page, x, y };

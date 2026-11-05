@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic";
 
 export default async function SeriesPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const series = readDb().series.find((s) => s.id === Number(id));
+  const series = (await readDb()).series.find((s) => s.id === Number(id));
   if (!series) notFound();
   const user = await currentUser();
   const missing = missingRarities(series);

@@ -3,7 +3,8 @@
  * the links, and the redeem code for whoever holds the card.
  */
 import { createHash, randomBytes } from "node:crypto";
-import { artMatches, RARITIES } from "./catalog.ts";
+import { artMatches } from "./art.ts";
+import { RARITIES } from "./catalog.ts";
 import { decrypt, encrypt } from "./crypto.ts";
 import { readDb, withDb, type User } from "./db.ts";
 import { accountFromCode, ContractRefused, userCall, view } from "./near.ts";
@@ -31,7 +32,7 @@ export async function readCard(tokenId: string) {
       template_id: card.template_id,
     }),
   ]);
-  const hashes = readDb().txs[tokenId] ?? [];
+  const hashes = (await readDb()).txs[tokenId] ?? [];
   const firstIndex = card.history_total - card.history.length;
   return {
     ...card,
@@ -40,7 +41,7 @@ export async function readCard(tokenId: string) {
     rarity: RARITIES[template.rarity],
     media: template.media,
     mediaHash: template.media_hash,
-    artMatches: artMatches(template.media, template.media_hash),
+    artMatches: await artMatches(template.media, template.media_hash),
     history: card.history.map((h, i) => ({ ...h, txHash: hashes[firstIndex + i] ?? null })),
   };
 }
@@ -111,9 +112,9 @@ export async function printCard(user: User, tokenId: string) {
 }
 
 /** The code on the holder's PDF, or null if this user may not see it. */
-export function codeForHolder(user: User, card: { owner_id: string; token_id: string; status: string }) {
+export async function codeForHolder(user: User, card: { owner_id: string; token_id: string; status: string }) {
   if (card.owner_id !== user.accountId || card.status !== "Printed") return null;
-  const row = readDb().prints[card.token_id];
+  const row = (await readDb()).prints[card.token_id];
   return row ? decrypt(row.codeEncrypted) : null;
 }
 
@@ -128,7 +129,7 @@ export async function redeemCard(user: User, tokenId: string, code: string) {
 
 export async function sendCard(user: User, tokenId: string, toCode: string) {
   const receiver = accountFromCode(toCode);
-  if (!receiver || !readDb().users.some((u) => u.accountId === receiver)) {
+  if (!receiver || !(await readDb()).users.some((u) => u.accountId === receiver)) {
     throw new ContractRefused("No collector has that code.");
   }
   const { hash } = await userCall(

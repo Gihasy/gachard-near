@@ -12,8 +12,8 @@ const STEPS = [
   ["Print and return", "Print a card and bring it back to digital with its code. It stays the same card."],
 ];
 
-export default function Home() {
-  const series = readDb().series.filter((s) => missingRarities(s).length === 0);
+export default async function Home() {
+  const series = (await readDb()).series.filter((s) => missingRarities(s).length === 0);
   return (
     <Page>
       <section className="py-6 sm:py-10">

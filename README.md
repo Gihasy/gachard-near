@@ -76,6 +76,14 @@ node --env-file=../frontend/.env.local e2e.mjs
 The last recorded run, with its transaction links, is in
 [`near-e2e/last-run.json`](near-e2e/last-run.json).
 
+To run the whole app path over HTTP against any running copy, local or hosted, including
+a pack, a print, a PDF, a redeem and a creator upload:
+
+```bash
+cd near-e2e
+node app-flow.mjs http://localhost:3000
+```
+
 ### Contract tests
 
 Needs Rust. `--no-abi` is required on Windows.
@@ -103,9 +111,12 @@ cargo near build non-reproducible-wasm --no-abi
   stops the platform's own account moving cards, but whoever holds the custodial key store
   could sign as those users. This is the honest limit of "no wallet".
 - **Testnet only.** Cards have no cash value.
-- **Local data.** App data is a JSON file for one Node process. There is no hosted demo yet.
+- **Data stores.** Locally, app data is a JSON file for one Node process. Hosted, it is one
+  MongoDB document with artwork alongside. Both are demo-sized.
+- **Uploads are open and unreviewed**, with caps per account and per hour. Do not read a
+  series on a hosted demo as endorsed by anyone.
 - **`next build` downloads Google Fonts** and failed once on a transient network error. The
-  demo runs in dev mode, which falls back to system fonts.
+  local demo runs in dev mode, which falls back to system fonts.
 
 ## Prior work
 
@@ -121,12 +132,12 @@ This is disclosed as the hackathon rules ask (Q-002, Q-003).
 - Reused from the baseline: the visual tokens in `frontend/app/globals.css`,
   `frontend/lib/crypto.ts`, `frontend/components/Logo.tsx`, and the images in
   `frontend/public`.
-- Libraries: `near-sdk`, `near-api-js`, Next.js, React, Tailwind, `pdf-lib`, `qrcode`, `sharp`,
-  `google-auth-library`.
+- Libraries: `near-sdk`, `near-api-js`, Next.js, React, Tailwind, `pdf-lib`, `qrcode`, `mongodb`,
+  `google-auth-library`, and `sharp` for the seed script only.
 - Much of the code was written with an AI coding agent, Claude Code, under the author's
   direction.
 
-Why each decision was made is in [`DECISIONS.md`](DECISIONS.md). ADR-041 to ADR-043 cover this
+Why each decision was made is in [`DECISIONS.md`](DECISIONS.md). ADR-041 to ADR-044 cover this
 version. Older ADRs describe the Monad product.
 
 ## License

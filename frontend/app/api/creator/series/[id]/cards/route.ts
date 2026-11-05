@@ -6,7 +6,7 @@ export async function POST(request: Request, ctx: { params: Promise<{ id: string
   const user = await currentUser();
   if (!user) return Response.json({ error: "Please sign in." }, { status: 401 });
   const seriesId = Number((await ctx.params).id);
-  if (readDb().series.find((s) => s.id === seriesId)?.ownerUserId !== user.id) {
+  if ((await readDb()).series.find((s) => s.id === seriesId)?.ownerUserId !== user.id) {
     return Response.json({ error: "This is not your series." }, { status: 403 });
   }
   try {
@@ -25,3 +25,6 @@ export async function POST(request: Request, ctx: { params: Promise<{ id: string
     return failure(error);
   }
 }
+
+// Waits for a transaction to land.
+export const maxDuration = 30;

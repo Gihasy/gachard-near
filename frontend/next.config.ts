@@ -3,7 +3,7 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   poweredByHeader: false,
   reactStrictMode: true,
-  serverExternalPackages: ["near-api-js", "sharp"],
+  serverExternalPackages: ["near-api-js", "mongodb"],
   async headers() {
     return [
       {

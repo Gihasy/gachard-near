@@ -12,3 +12,6 @@ export async function POST(request: Request, ctx: { params: Promise<{ id: string
     return failure(error);
   }
 }
+
+// Waits for a transaction to land.
+export const maxDuration = 30;

@@ -12,7 +12,7 @@ export const dynamic = "force-dynamic";
 export default async function Creator() {
   const user = await currentUser();
   if (!user) redirect("/login?next=/creator");
-  const mine = readDb().series.filter((s) => s.ownerUserId === user.id);
+  const mine = (await readDb()).series.filter((s) => s.ownerUserId === user.id);
   return (
     <Page>
       <Title sub="Your art, your rates, your prices. Your community needs no wallet to collect.">Release a series</Title>

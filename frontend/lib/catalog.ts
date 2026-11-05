@@ -1,17 +1,22 @@
 /**
- * Series, cards and artwork. A creator's own account signs these, so the chain
- * records them as the issuer. The database row is a cache for listing pages.
+ * Series and cards. A creator's own account signs these, so the chain records
+ * them as the issuer. The database row is a cache for listing pages.
  */
-import { createHash } from "node:crypto";
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
-import sharp from "sharp";
-import { DATA_DIR, withDb, type SeriesRow, type TemplateRow, type User } from "./db.ts";
+import { storeArt } from "./art.ts";
+import { readDb, withDb, type SeriesRow, type TemplateRow, type User } from "./db.ts";
 import { ContractRefused, platformCall, userCall } from "./near.ts";
 
 export const RARITIES = ["Common", "Rare", "Epic", "Legendary"];
-export const ART_DIR = join(DATA_DIR, "art");
-const MAX_UPLOAD = 8 * 1024 * 1024;
+
+// A public URL with open uploads and no review (ADR-044). The caps limit how much
+// can be published, and how fast it spends the platform's funds.
+const MAX_SERIES_PER_USER = 3;
+const MAX_SERIES_PER_HOUR = 10;
+const MAX_CARDS_PER_SERIES = 20;
+const MAX_CARDS_PER_HOUR = 60;
+const HOUR = 3_600_000;
+
+const withinHour = (iso: string) => Date.now() - Date.parse(iso) < HOUR;
 
 export async function createSeries(
   user: User,
@@ -19,6 +24,13 @@ export async function createSeries(
   ratesBps: number[],
   prices: number[],
 ): Promise<SeriesRow> {
+  const { series: all } = await readDb();
+  if (all.filter((s) => s.ownerUserId === user.id).length >= MAX_SERIES_PER_USER) {
+    throw new ContractRefused(`An account can release ${MAX_SERIES_PER_USER} series in this demo.`);
+  }
+  if (all.filter((s) => withinHour(s.createdAt)).length >= MAX_SERIES_PER_HOUR) {
+    throw new ContractRefused("Too many new series this hour. Please try again later.");
+  }
   if (!user.approvedCreator) {
     await platformCall("approve_creator", { creator: user.accountId });
     await withDb((d) => {
@@ -35,29 +47,10 @@ export async function createSeries(
     ratesBps,
     prices,
     templates: [],
+    createdAt: new Date().toISOString(),
   };
   await withDb((d) => d.series.push(series));
   return series;
-}
-
-/** Stores one normalised file named by its hash, the hash the chain records. */
-export async function storeArt(input: Buffer) {
-  if (input.length > MAX_UPLOAD) throw new ContractRefused("Artwork must be under 8 MB.");
-  let bytes: Buffer;
-  try {
-    bytes = await sharp(input)
-      .rotate()
-      .resize({ width: 1630, withoutEnlargement: true })
-      .webp({ quality: 90 })
-      .toBuffer();
-  } catch {
-    throw new ContractRefused("That file is not a readable image.");
-  }
-  const digest = createHash("sha256").update(bytes);
-  const hex = digest.copy().digest("hex");
-  mkdirSync(ART_DIR, { recursive: true });
-  writeFileSync(join(ART_DIR, `${hex}.webp`), bytes);
-  return { media: `/api/art/${hex}.webp`, mediaHash: digest.digest("base64") };
 }
 
 export async function addCard(
@@ -67,6 +60,15 @@ export async function addCard(
   rarity: number,
   art: Buffer,
 ): Promise<TemplateRow> {
+  const { series: all } = await readDb();
+  const series = all.find((s) => s.id === seriesId);
+  if (series && series.templates.length >= MAX_CARDS_PER_SERIES) {
+    throw new ContractRefused(`A series can hold ${MAX_CARDS_PER_SERIES} cards in this demo.`);
+  }
+  const recent = all.flatMap((s) => s.templates).filter((t) => withinHour(t.createdAt)).length;
+  if (recent >= MAX_CARDS_PER_HOUR) {
+    throw new ContractRefused("Too many new cards this hour. Please try again later.");
+  }
   const { media, mediaHash } = await storeArt(art);
   const { value } = await userCall(user, "add_template", {
     series_id: seriesId,
@@ -75,7 +77,14 @@ export async function addCard(
     media,
     media_hash: mediaHash,
   });
-  const template: TemplateRow = { id: value as number, name, rarity, media, mediaHash };
+  const template: TemplateRow = {
+    id: value as number,
+    name,
+    rarity,
+    media,
+    mediaHash,
+    createdAt: new Date().toISOString(),
+  };
   await withDb((d) => d.series.find((s) => s.id === seriesId)?.templates.push(template));
   return template;
 }
@@ -85,19 +94,4 @@ export function missingRarities(series: SeriesRow): string[] {
   return RARITIES.filter(
     (_, rarity) => series.ratesBps[rarity] > 0 && !series.templates.some((t) => t.rarity === rarity),
   );
-}
-
-/**
- * Whether the stored file still hashes to what the chain records. Null means it
- * could not be checked, which must never read as a pass.
- */
-export function artMatches(media: string, mediaHashBase64: string): boolean | null {
-  const file = media.match(/^\/api\/art\/([0-9a-f]{64})\.webp$/)?.[1];
-  if (!file) return null;
-  try {
-    const bytes = readFileSync(join(ART_DIR, `${file}.webp`));
-    return createHash("sha256").update(bytes).digest("base64") === mediaHashBase64;
-  } catch {
-    return null;
-  }
 }

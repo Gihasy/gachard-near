@@ -4,6 +4,34 @@ import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import { inputClass, secondaryBtn } from "@/components/ui";
 
+const MAX_WIDTH = 1630; // bleed width at 600 dpi, docs/CREATOR-ASSET-GUIDE.md
+
+/**
+ * Turns any image the browser can read into a JPEG the server and the PDF can
+ * use. Done here so the server never decodes an image (ADR-044).
+ */
+async function toJpeg(file: File): Promise<Blob> {
+  let bitmap: ImageBitmap;
+  try {
+    bitmap = await createImageBitmap(file);
+  } catch {
+    throw new Error("That file is not a readable image.");
+  }
+  const scale = Math.min(1, MAX_WIDTH / bitmap.width);
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.round(bitmap.width * scale);
+  canvas.height = Math.round(bitmap.height * scale);
+  const context = canvas.getContext("2d");
+  if (!context) throw new Error("This browser cannot prepare the image.");
+  context.fillStyle = "#ffffff"; // JPEG has no transparency
+  context.fillRect(0, 0, canvas.width, canvas.height);
+  context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+  bitmap.close();
+  const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.9));
+  if (!blob) throw new Error("This browser cannot prepare the image.");
+  return blob;
+}
+
 export default function AddCardForm({ seriesId }: { seriesId: number }) {
   const router = useRouter();
   const form = useRef<HTMLFormElement>(null);
@@ -18,7 +46,9 @@ export default function AddCardForm({ seriesId }: { seriesId: number }) {
         setBusy(true);
         setError("");
         try {
-          const response = await fetch(`/api/creator/series/${seriesId}/cards`, { method: "POST", body: new FormData(e.currentTarget) });
+          const body = new FormData(e.currentTarget);
+          body.set("art", await toJpeg(body.get("art") as File), "art.jpg");
+          const response = await fetch(`/api/creator/series/${seriesId}/cards`, { method: "POST", body });
           const data = await response.json();
           if (!response.ok) throw new Error(data.error);
           form.current?.reset();
