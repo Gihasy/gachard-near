@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { CATEGORIES, DEFAULT_CATEGORY } from "@/lib/categories";
 import { post } from "@/lib/client";
 import { ErrorLine, inputClass, primaryBtn, RARITY_COLOR } from "@/components/ui";
 
@@ -10,6 +11,7 @@ const RARITIES = ["Common", "Rare", "Epic", "Legendary"];
 export default function CreateSeriesForm() {
   const router = useRouter();
   const [name, setName] = useState("");
+  const [category, setCategory] = useState(DEFAULT_CATEGORY);
   const [rates, setRates] = useState([70, 20, 8, 2]);
   const [prices, setPrices] = useState([40, 120, 360, 1200]);
   const [busy, setBusy] = useState(false);
@@ -24,7 +26,7 @@ export default function CreateSeriesForm() {
         setBusy(true);
         setError("");
         try {
-          await post("/api/creator/series", { name, ratesPct: rates, prices });
+          await post("/api/creator/series", { name, category, ratesPct: rates, prices });
           setName("");
           router.refresh();
         } catch (err) {
@@ -34,6 +36,13 @@ export default function CreateSeriesForm() {
       }}
     >
       <input className={inputClass} value={name} onChange={(e) => setName(e.target.value)} placeholder="Series name" aria-label="Series name" maxLength={64} required data-testid="series-name" />
+
+      <label className="block text-xs text-cn-text-3">
+        What collectors will find it under
+        <select className={`${inputClass} mt-1`} value={category} onChange={(e) => setCategory(e.target.value)} data-testid="series-category">
+          {CATEGORIES.map((c) => <option key={c} value={c} className="bg-cn-surface-1">{c}</option>)}
+        </select>
+      </label>
 
       {/* The rates at a glance, as a pack's odds really split. */}
       <div>

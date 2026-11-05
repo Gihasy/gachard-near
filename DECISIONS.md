@@ -1496,6 +1496,8 @@ their community collects it without meeting a wallet, a gas fee or a chain word.
 - **The redeem code is stored encrypted before the lock is sent**, because a lock whose code was lost could never be redeemed. So the app checks the holder itself before storing it, or a stranger's print request would overwrite the holder's code. The contract alone would have refused the lock, but after the damage.
 - **A refused meta transaction refunds its 1 yocto deposit to the user who signed it**, not to the platform that attached it. This is inferred from exact balance changes in `near-e2e/e2e.mjs`, not read in a specification. It is dust, but it means a user's balance can rise.
 
+**Amendment, 5 November 2026: the landing page speaks to collectors.** The author asked for it: a visitor should first be able to find a favorite and collect. The creator path is unchanged and is the page's closing section. So the page leads with search and categories, and a series has an off-chain `category`. The hackathon entry itself is still a creator release platform, and the README says so.
+
 ## ADR-044: A Hosted Demo on Vercel, With MongoDB and No Image Library on the Server
 
 **Status**: Accepted, 5 November 2026. Built and verified on Vercel: `near-e2e/app-flow.mjs` passed against the deployed URL with Atlas on 5 November 2026.

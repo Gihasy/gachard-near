@@ -239,34 +239,42 @@ input[type="number"] { -moz-appearance: textfield; }
 .tilt[data-active="true"] .holo { opacity: 0.85; }
 
 /* ---- Hero: the same card on a screen and in a hand ---- */
-/* Each image meets its panel's bottom edge, which hides where the photo was cut. */
-.duo { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 0.5rem; max-width: 640px; margin-inline: auto; }
-.duo-panel {
-  position: relative;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  min-width: 0;
-  border-radius: var(--cn-r-lg);
-  border: 1px solid var(--cn-line);
-  background: radial-gradient(90% 60% at 50% 55%, #c295fc40, transparent), linear-gradient(180deg, #1a1b2bd9, #12131fd9);
-  box-shadow: inset 0 1px 0 #ffffff0d;
+/* ---- Hero: three favorites from different worlds ---- */
+.trio { position: relative; height: clamp(300px, 40vw, 480px); }
+.trio-glow {
+  position: absolute;
+  inset: 6% 12%;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, #c295fc66, #ff9ef122 60%, transparent);
+  filter: blur(26px);
 }
-.duo-panel img { display: block; width: 100%; height: auto; user-select: none; }
-/* Fades out the app's old tab bar under the card. */
-.duo-phone { mask-image: linear-gradient(#000 76%, transparent 87%); }
-.duo-tag { padding: 0.75rem 0 0.25rem; color: var(--cn-text-2); font-size: 0.75rem; font-weight: 600; }
-.duo-print {
-  display: inline-flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 0.15rem;
-  width: 44px;
-  height: 56px;
+.trio-card {
+  --w: clamp(150px, 19vw, 262px);
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: var(--w);
+  margin-left: calc(var(--w) / -2);
+  transform: translate(var(--x), calc(-50% + var(--y))) rotate(var(--r));
+  transition: transform 500ms var(--ease-out);
+}
+.trio:hover .trio-card { transform: translate(calc(var(--x) * 1.12), calc(-50% + var(--y))) rotate(var(--r)); }
+
+/* ---- A filter ---- */
+.chip {
+  min-height: 40px;
+  padding-inline: 1rem;
   border-radius: 999px;
+  border: 1px solid var(--cn-line-strong);
+  background: #ffffff0a;
+  color: var(--cn-text-2);
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 200ms ease, color 200ms ease, border-color 200ms ease;
 }
+.chip:hover { background: #ffffff14; color: var(--cn-text-1); }
+.chip[aria-pressed="true"] { background: var(--cn-crystal-lilac); border-color: transparent; color: var(--cn-text-on-crystal); }
 @keyframes float {
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(-10px); }

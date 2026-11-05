@@ -169,7 +169,7 @@ export default function CardActions({ tokenId, status, media, cardName, qr, isHo
             </div>
           ) : (
             <>
-              <p className="mt-1 text-sm text-cn-text-2 leading-relaxed">It takes the physical card. A card that is lost or stolen can never return to digital.</p>
+              <p className="mt-1 text-sm text-cn-text-2 leading-relaxed">It takes the physical card, so one that is lost or stolen can never return. In this hackathon demo, a button stands in for posting it.</p>
               <button className={`${secondaryBtn} mt-4`} onClick={() => setConfirming("return")} data-testid="return">Return to digital</button>
             </>
           )}

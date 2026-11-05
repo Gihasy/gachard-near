@@ -1,6 +1,6 @@
 [package]
 name = "gachard-cards"
-description = "Creator-released TCG cards as NEP-245 tokens, with on-chain origin, print lock and redeem"
+description = "Creator-released TCG cards as NEP-245 tokens, with on-chain origin, printing and a two-party return"
 version = "0.1.0"
 edition = "2024"
 resolver = "3"

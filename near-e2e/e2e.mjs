@@ -2,7 +2,7 @@
 //
 // Claim under test: a creator and collectors with no gas money can release,
 // receive, move, print and return cards. The platform pays gas and the 1 yocto
-// deposit. Their own balances must not change by a single yoctoNEAR.
+// deposit. Their balances must not fall: a refused call's deposit refund is counted below.
 //
 // Run: node --env-file=../frontend/.env.local e2e.mjs
 // The platform key comes from that file, which is not in this repository.

@@ -211,7 +211,7 @@ export default function PackReveal({ initial }: { initial: View }) {
         ) : view.allOpen ? (
           <div className="pop flex flex-wrap items-center justify-between gap-5">
             <div>
-              <p className="text-sm text-cn-text-3">This pack</p>
+              <p className="text-sm text-cn-text-3">This pack, in simulated Credits</p>
               <p className="font-display font-bold text-3xl text-cn-credits tabular mt-1" data-testid="pack-price">
                 {view.price?.toLocaleString("en-US")} <span className="text-base font-semibold">Credits</span>
               </p>

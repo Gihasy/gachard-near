@@ -20,8 +20,7 @@ Limits worth knowing:
   It does not prove they own the IP, and it does not mean they approved each mint.
 - History in the contract keeps the most recent 32 entries and a true total.
   The full record is in the NEP-245 events.
-- A redeem code is visible on chain once used. It is dead by then, because the
-  print cycle has moved on.
+- Print serials are not secret: each is in its print's QR code. Only a hash is on chain.
 
 ## Build and test
 

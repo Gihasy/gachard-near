@@ -10,7 +10,7 @@ const poppins = Poppins({ variable: "--font-poppins", subsets: ["latin"], weight
 
 export const metadata: Metadata = {
   title: "Gachard",
-  description: "Creators release their own trading cards. Every card can be verified and printed, and collectors never need a crypto wallet.",
+  description: "Find your favorite characters, VTubers and creators, and collect their trading cards. Every card can be verified and printed, with no crypto wallet.",
   manifest: "/manifest.json",
   icons: { icon: "/favicon.png", apple: "/icons/icon-192.png" },
 };
@@ -28,7 +28,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
           <div className="max-w-7xl mx-auto px-4 sm:px-6 py-7 flex flex-wrap items-center justify-between gap-3">
             <Logo size={22} showWordmark />
             <p className="text-xs text-cn-text-3" data-testid="test-notice">
-              Test version · cards have no cash value · payments are simulated
+              Test version · cards have no cash value · payments are simulated · Gachard holds account keys
             </p>
           </div>
         </footer>

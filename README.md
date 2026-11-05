@@ -29,7 +29,7 @@ takes the physical card, so one that is lost or stolen stays lost.
 | Who released a card | The creator's own account signs `create_series` and `add_template` | same |
 | No gas for users | NEP-366 meta transactions: the user signs, the platform pays gas and the 1 yocto deposit | [`frontend/lib/near.ts`](frontend/lib/near.ts) |
 | No wallet | A named sub-account per user, created at sign-in | same |
-| Platform cannot take a card | No method moves a card except the holder's own call | contract tests |
+| No method lets the platform move a card | Only the holder's own call moves one. See the limit on the contract's key [below](#what-is-simulated-and-what-is-not-claimed) | contract tests |
 | Print and return | A printed card stays with its holder's account. Returning takes the holder's request and the platform's confirmation, under the same token id | contract, `print_lock`, `request_return`, `confirm_return` |
 | A QR for each print | The chain keeps a hash of each print's serial, so anyone can tell a current print from a cancelled one | contract, `print_state` |
 | Public proof | Scan reads the contract live, and each history row links to NearBlocks | [`frontend/app/scan/[id]/page.tsx`](frontend/app/scan/[id]/page.tsx) |
@@ -52,41 +52,41 @@ Open http://localhost:3000, or the hosted demo, then:
 
 1. **Sign in.** Click Sign in, then Continue with a demo account. You see 5,000 Credits and
    no wallet prompt.
-2. **Open a pack.** Open Crystal Night: Starter Set, then Open a pack. You see five
+2. **Open a pack.** On the home page, search or filter for a series. Open Crystal Night: Starter Set, then Open a pack for free. You see five
    face-down cards and no price.
 3. **See before paying.** Click Open all. You see each card and the pack's price, which is
-   the sum of its cards' prices. Skip charges nothing.
+   the sum of its cards' prices. Skip, pay nothing, charges nothing.
 4. **Buy.** Click Buy this pack. Credits fall by exactly that price and five cards are
    minted to your account.
 5. **Verify.** Click Print or verify the first card. You see the holder, who released it, and
-   whether the artwork file matches the hash on chain. Click check independently: NearBlocks
+   whether the artwork file matches the public record. Click check independently: NearBlocks
    shows the same transaction, outside this app.
 6. **Print.** Click Print this card, read the simulation notice, then Print and create PDF. The status
-   reads Printed (hackathon demo PDF). Download the PDF: it holds the card and a QR code. The address the QR opens is printed at the foot of each page.
-7. **Scan as someone else.** Open that address in a private window, or sign in with a new
-   demo account there. You see the card and its holder, and nothing to press. Pick a username
-   for that account under Collection.
-8. **Transfer, then return.** Back as the holder, transfer the card to that username. It
+   reads Printed (hackathon demo PDF). Click Download print PDF: it holds the card and a QR code. The address the QR opens is printed at the foot of each page.
+7. **Scan as someone else.** In a private window, sign in with a new demo account and open
+   that address. You see the card and its holder, and nothing to press. Your username is under
+   Collection, and you can change it there.
+8. **Transfer, then return.** Back as the holder, enter that username, then click Continue and Transfer. It
    stays printed, and its history updates. As the new holder, open the card and click Return to digital, then
    Request return. A button stands in for posting the card: click Simulate: card received
    and destroyed. The same token id is digital again. Open the QR's address once more: it
    now reads VOID.
 9. **Release your own.** Open Create, publish a series, and add a card for each rarity that
-   has a rate. It goes live on the home page. A record of what your account published is on
-   chain.
+   has a rate. It goes live on the home page. On any of its cards, Released by links to your account on
+   NearBlocks.
 
 ### Check each claim
 
-| Claim | How to check | What you should see |
+| Claim | How to check | What passes |
 |---|---|---|
 | Users pay nothing and need no wallet | `e2e.mjs`, below | `paid nothing` for each account, from its exact balance |
-| The platform cannot take a card | `cargo test platform_cannot_move` | The contract refuses it |
-| Having the paper gives no power | `cargo test finder_of_a_printed_card` and `e2e.mjs` | `Only the holder can transfer`, `Only the holder can return` |
-| The platform cannot return a card nobody asked to return | `cargo test platform_cannot_return` | `Card is not being returned` |
-| A returned card's old QR reads VOID | `cargo test print_state_follows_the_card` and `app-flow.mjs` | `The old QR reads VOID` |
+| No method lets the platform move a card | `cargo test platform_cannot_move` | The test passes |
+| Having the paper gives no power | `cargo test finder_of_a_printed_card` and `e2e.mjs` | Tests pass. `e2e.mjs` prints `Someone with the paper but not the account cannot move it` and `cannot return it` |
+| The platform cannot return a card nobody asked to return | `cargo test platform_cannot_return` | The test passes |
+| A returned card's old QR reads VOID | `cargo test print_state_follows_the_card` and `app-flow.mjs` | The test passes, and `app-flow.mjs` prints `The old QR reads VOID` |
 | A price stays hidden until every card is open | `app-flow.mjs` | `Price is still hidden at card four` |
 | The art matches its hash on chain | `app-flow.mjs` | `Artwork matches the chain's hash` |
-| Scan can be checked outside this app | Click check independently on any history row | The same transaction on NearBlocks |
+| Scan can be checked outside this app | Click check independently on a history row | The transaction on NearBlocks. A row with no saved hash links to the contract instead |
 
 ### Prove it without a browser
 
@@ -116,7 +116,7 @@ on whichever copy it runs against, so prefer a local one.
 
 ### Contract tests
 
-Needs Rust. `--no-abi` is required on Windows.
+Needs Rust, and `cargo-near` for the build. `--no-abi` is required on Windows.
 
 ```bash
 cd gachard-cards
@@ -153,6 +153,9 @@ cargo near build non-reproducible-wasm --no-abi
 - **Users here are custodial.** Gachard holds each account's encrypted key. The contract
   stops the platform's own account moving cards, but whoever holds the custodial key store
   could sign as those users. This is the honest limit of "no wallet".
+- **The platform could replace the contract.** The contract account still has a full-access
+  key, the same one the platform uses, so it could deploy different code. "No method moves a
+  card" describes this contract, not a promise about what its deployer could do later.
 - **Testnet only.** Cards have no cash value.
 - **Data stores.** Locally, app data is a JSON file for one Node process. Hosted, it is one
   MongoDB document with artwork alongside. Both are demo-sized.
@@ -173,12 +176,12 @@ This is disclosed as the hackathon rules ask (Q-002, Q-003).
   [diff from `pre-hackathon` to `hackathon-submission`](https://github.com/Gihasy/gachard-near/compare/pre-hackathon...hackathon-submission).** That covers the contract, all NEAR integration, the new app and
   the end-to-end check. Solidity, `ethers`, Pyth and Privy were removed.
 - Reused from the baseline: the visual tokens in `frontend/app/globals.css`,
-  `frontend/lib/crypto.ts`, `frontend/components/Logo.tsx`, and the images in
-  `frontend/public`.
+  `frontend/lib/crypto.ts`, `frontend/lib/session.ts` (in part), `frontend/components/Logo.tsx`,
+  `design/gachard.pen`, `docs/CREATOR-ASSET-GUIDE.md`, and the images in `frontend/public`.
 - Libraries: `near-sdk`, `near-api-js`, Next.js, React, Tailwind, `pdf-lib`, `qrcode`, `mongodb`,
   `google-auth-library`, and `sharp` for the seed script only.
-- Much of the code was written with an AI coding agent, Claude Code, under the author's
-  direction.
+- Much of the code was written with AI coding agents under the author's direction: Claude Code
+  here, and MiMoCode for the earlier Monad version (ADR-015).
 
 Why each decision was made is in [`DECISIONS.md`](DECISIONS.md). ADR-041 to ADR-045 cover this
 version. Older ADRs describe the Monad product.

@@ -13,7 +13,7 @@ import { currentUser, nameOf } from "@/lib/users";
 export const dynamic = "force-dynamic";
 
 const ROW: Record<string, { label: string; Icon: typeof CheckIcon }> = {
-  Mint: { label: "Released", Icon: SparkIcon },
+  Mint: { label: "Minted", Icon: SparkIcon },
   Transfer: { label: "Changed hands", Icon: SendIcon },
   Print: { label: "Printed", Icon: PrintIcon },
   ReturnRequested: { label: "Return requested", Icon: SendIcon },
@@ -121,13 +121,18 @@ export default async function CardRecord({ params, searchParams }: {
                 {collectorLabel(card.owner_id)} <ExternalIcon width={12} height={12} />
               </a>
             </Fact>
-            <Fact label="Released by">{nameOf(card.creator, users)}</Fact>
+            <Fact label="Released by">
+              {nameOf(card.creator, users)}
+              <a className="mt-0.5 flex items-center gap-1 text-xs font-medium text-cn-lavender hover:underline" target="_blank" rel="noreferrer" href={explorer.account(card.creator)}>
+                {collectorLabel(card.creator)} <ExternalIcon width={12} height={12} />
+              </a>
+            </Fact>
             <Fact label="Times printed"><span className="tabular">{card.print_cycle}</span></Fact>
             <Fact label="Artwork file" testid="art-check"><ArtCheck value={card.artMatches} /></Fact>
           </dl>
           <p className="text-xs text-cn-text-3 leading-relaxed">
             {digital
-              ? "This record is read live from a public ledger. The links below let you check it without trusting this site."
+              ? "This record is read live from a public ledger, and the links let you check it there. Usernames are this app's own."
               : "Buying this card? Have the physical card in front of you, and pay only after your username shows as Holder here. The paper alone proves nothing."}
           </p>
 
@@ -143,6 +148,9 @@ export default async function CardRecord({ params, searchParams }: {
 
           <Panel>
             <h2 className="font-display font-semibold text-base">History</h2>
+            {card.print_cycle > 0 ? (
+              <p className="mt-1 text-xs text-cn-text-3 leading-relaxed">Hackathon simulation: in this demo, printing is a PDF and a button stands in for sending a card back.</p>
+            ) : null}
             <ol className="timeline mt-5 space-y-5 text-sm" data-testid="history">
               {[...card.history].reverse().map((h, i) => {
                 const row = ROW[h.kind] ?? { label: h.kind, Icon: CheckIcon };

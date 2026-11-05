@@ -45,6 +45,8 @@ export interface SeriesRow {
   ownerUserId: string;
   creatorAccount: string;
   name: string;
+  /** Off chain, for browsing. Series from before it count as Other. */
+  category?: string;
   ratesBps: number[];
   prices: number[];
   templates: TemplateRow[];

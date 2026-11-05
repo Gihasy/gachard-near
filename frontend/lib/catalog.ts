@@ -2,6 +2,7 @@
  * Series and cards. A creator's own account signs these, so the chain records
  * them as the issuer. The database row is a cache for listing pages.
  */
+import { DEFAULT_CATEGORY } from "./categories.ts";
 import { storeArt } from "./art.ts";
 import { readDb, withDb, type SeriesRow, type TemplateRow, type User } from "./db.ts";
 import { ContractRefused, platformCall, userCall } from "./near.ts";
@@ -23,6 +24,7 @@ export async function createSeries(
   name: string,
   ratesBps: number[],
   prices: number[],
+  category: string = DEFAULT_CATEGORY,
 ): Promise<SeriesRow> {
   const { series: all } = await readDb();
   if (all.filter((s) => s.ownerUserId === user.id).length >= MAX_SERIES_PER_USER) {
@@ -44,6 +46,7 @@ export async function createSeries(
     ownerUserId: user.id,
     creatorAccount: user.accountId,
     name,
+    category,
     ratesBps,
     prices,
     templates: [],

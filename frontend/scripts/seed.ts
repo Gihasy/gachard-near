@@ -39,7 +39,7 @@ const creator: User = {
 };
 await withDb((d) => d.users.push(creator));
 
-const series = await createSeries(creator, "Crystal Night: Starter Set", [7000, 2000, 800, 200], [40, 120, 360, 1200]);
+const series = await createSeries(creator, "Crystal Night: Starter Set", [7000, 2000, 800, 200], [40, 120, 360, 1200], "Games & stories");
 for (const [name, rarity, file] of CARDS) {
   console.log(`Seed: adding ${name}...`);
   // The same conversion the upload form does in the browser.

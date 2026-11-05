@@ -48,6 +48,9 @@ export const CreateIcon = (p: SVGProps<SVGSVGElement>) => (
 export const ScanIcon = (p: SVGProps<SVGSVGElement>) => (
   <Icon {...p}><path d="M4 8V6a2 2 0 0 1 2-2h2M16 4h2a2 2 0 0 1 2 2v2M20 16v2a2 2 0 0 1-2 2h-2M8 20H6a2 2 0 0 1-2-2v-2M4 12h16" /></Icon>
 );
+export const SearchIcon = (p: SVGProps<SVGSVGElement>) => (
+  <Icon {...p}><circle cx="11" cy="11" r="7" /><path d="m20 20-3.8-3.8" /></Icon>
+);
 export const ArrowIcon = (p: SVGProps<SVGSVGElement>) => (
   <Icon {...p}><path d="M5 12h14M13 6l6 6-6 6" /></Icon>
 );

@@ -1,25 +1,38 @@
 import Link from "next/link";
 import PackArt from "@/components/PackArt";
 import PrintSheet from "@/components/PrintSheet";
+import SeriesBrowser, { type SeriesItem } from "@/components/SeriesBrowser";
+import TiltCard from "@/components/TiltCard";
 import {
   ArrowIcon,
   CheckIcon,
   PrintIcon,
   ScanIcon,
-  SeriesIcon,
+  SearchIcon,
   SparkIcon,
   UserIcon,
 } from "@/components/icons";
-import { CardImage, Eyebrow, Rarity, primaryBtn, secondaryBtn } from "@/components/ui";
+import { CardImage, Eyebrow, inputClass, primaryBtn } from "@/components/ui";
+import { CATEGORIES, DEFAULT_CATEGORY } from "@/lib/categories";
 import { missingRarities, RARITIES } from "@/lib/catalog";
 import { readDb } from "@/lib/db";
 import { qrDataUrl, siteOrigin } from "@/lib/qr";
+import { nameOf } from "@/lib/users";
 
 export const dynamic = "force-dynamic";
 
-const RAIL = ["common-1", "rare-2", "legendary-1", "epic-1", "common-2", "rare-1", "epic-2", "legendary-2"];
+const FAVORITES = [
+  { src: "/cards/demo/aika-legendary.jpg", rarity: "Legendary", r: "-11deg", x: "-58%", y: "16px" },
+  { src: "/cards/demo/noa-epic.jpg", rarity: "Epic", r: "11deg", x: "58%", y: "16px" },
+  { src: "/cards/demo/mochi-legendary.jpg", rarity: "Legendary", r: "0deg", x: "0%", y: "-10px" },
+];
 
-const PROMISES = ["No wallet to set up", "No network fees", "Verify any card"];
+const RAIL = [
+  "demo/mochi-epic.jpg", "rare-2.webp", "demo/aika-epic.jpg", "legendary-1.webp", "demo/noa-rare.jpg", "epic-1.webp",
+  "demo/mochi-rare.jpg", "demo/aika-rare.jpg", "legendary-2.webp", "demo/noa-legendary.jpg", "demo/aika-common.jpg", "demo/mochi-common.jpg",
+];
+
+const PROMISES = ["No wallet to set up", "No network fees", "Pay only for what you see"];
 
 const PRINT_STEPS = [
   { title: "Own the digital card", text: "It lives in your collection, with its own public record." },
@@ -53,28 +66,52 @@ function Tile({ icon, title, text, children, className = "" }: {
   );
 }
 
-export default async function Home() {
-  const series = (await readDb()).series.filter((s) => missingRarities(s).length === 0);
-  const sampleQr = await qrDataUrl(`${await siteOrigin()}/scan`);
+export default async function Home({ searchParams }: {
+  searchParams: Promise<{ q?: string | string[]; category?: string | string[] }>;
+}) {
+  const [{ series, users }, { q, category }, origin] = await Promise.all([readDb(), searchParams, siteOrigin()]);
+  const sampleQr = await qrDataUrl(`${origin}/scan`);
+
+  const items: SeriesItem[] = series
+    .filter((s) => missingRarities(s).length === 0)
+    .map((s) => ({
+      id: s.id,
+      name: s.name,
+      category: s.category ?? DEFAULT_CATEGORY,
+      creator: nameOf(s.creatorAccount, users),
+      cardCount: s.templates.length,
+      covers: [...s.templates]
+        .sort((a, b) => b.rarity - a.rarity)
+        .slice(0, 3)
+        .map((t) => ({ id: t.id, media: t.media, rarity: RARITIES[t.rarity] })),
+    }));
+  const categories = CATEGORIES.filter((name) => items.some((item) => item.category === name));
+
   return (
     <>
       {/* ---- Hero ---- */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 pt-10 sm:pt-16 grid lg:grid-cols-[1.02fr_1fr] gap-6 items-center">
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 pt-10 sm:pt-16 grid lg:grid-cols-[1.1fr_1fr] gap-10 lg:gap-6 items-center">
         <div className="rise">
-          <Eyebrow>For creators and IP owners</Eyebrow>
+          <Eyebrow>For collectors</Eyebrow>
           <h1 className="mt-5 font-display font-bold text-[2.15rem] leading-[1.12] sm:text-5xl xl:text-[3.5rem]">
-            Release digital trading cards{" "}
-            <span className="crystal-text">your fans can also print.</span>
+            Find your favorites.{" "}
+            <span className="crystal-text">Collect their cards.</span>
           </h1>
           <p className="mt-5 max-w-xl text-cn-text-2 text-base sm:text-lg leading-relaxed">
-            Every card is digital from birth and can be verified by anyone. Its holder can turn it
-            into a physical card whenever they want. Nobody sets up a wallet or pays network fees.
+            Characters, VTubers, actors and whole worlds release their own trading cards here.
+            Open a pack for free, keep what you love, and print any card you own.
           </p>
-          <div className="mt-7 flex flex-wrap gap-3">
-            <Link className={primaryBtn} href="#series">Browse series <ArrowIcon width={16} height={16} /></Link>
-            <Link className={secondaryBtn} href="/creator">Release a series</Link>
-          </div>
-          <ul className="mt-7 grid grid-cols-2 sm:flex sm:flex-wrap gap-x-5 gap-y-2 text-sm text-cn-text-2">
+          <form action="/#series" method="get" className="mt-7 flex gap-2 max-w-xl">
+            <label className="relative flex-1 min-w-0">
+              <span className="sr-only">Search series</span>
+              <SearchIcon width={18} height={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-cn-text-3" />
+              <input className={`${inputClass} !pl-11`} type="search" name="q" placeholder="Search your favorite" />
+            </label>
+            <button className={`${primaryBtn} shrink-0`}>
+              Find <ArrowIcon width={16} height={16} />
+            </button>
+          </form>
+          <ul className="mt-6 grid grid-cols-2 sm:flex sm:flex-wrap gap-x-5 gap-y-2 text-sm text-cn-text-2">
             {PROMISES.map((p) => (
               <li key={p} className="inline-flex items-center gap-1.5">
                 <CheckIcon width={15} height={15} className="text-cn-crystal shrink-0" /> {p}
@@ -88,37 +125,84 @@ export default async function Home() {
           </ul>
         </div>
 
-        <figure className="m-0">
-          <div className="duo">
-            <div className="duo-panel">
-              <span className="duo-tag">On screen</span>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img className="duo-phone" src="/cards/digital-card.webp" alt="A trading card on a phone" width={500} height={700} draggable={false} />
+        <div className="trio" aria-hidden="true">
+          <div className="trio-glow" />
+          {FAVORITES.map((card) => (
+            <div key={card.src} className="trio-card" style={{ "--r": card.r, "--x": card.x, "--y": card.y } as React.CSSProperties}>
+              <TiltCard src={card.src} alt="" rarity={card.rarity} eager />
             </div>
-            <a href="#print" className="duo-print crystal-calm" aria-label="See how printing works">
-              <PrintIcon width={18} height={18} />
-              <ArrowIcon width={14} height={14} />
-            </a>
-            <div className="duo-panel">
-              <span className="duo-tag">In hand</span>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/cards/real-card.webp" alt="The same card, printed and held in a hand" width={500} height={700} draggable={false} />
-            </div>
-          </div>
-          <figcaption className="mt-2 text-center text-xs text-cn-text-3 leading-relaxed">
-            Illustration of a production print. In this hackathon demo, you print a PDF yourself.
-          </figcaption>
-        </figure>
+          ))}
+        </div>
       </section>
 
       {/* ---- A moving rail of art ---- */}
       <section className="rail mt-10 sm:mt-14" aria-hidden="true">
         <div className="rail-track">
-          {[...RAIL, ...RAIL].map((name, i) => (
+          {[...RAIL, ...RAIL].map((file, i) => (
             <div key={i} className="w-28 sm:w-36 shrink-0 opacity-80">
-              <CardImage src={`/cards/${name}.webp`} alt="" />
+              <CardImage src={`/cards/${file}`} alt="" eager />
             </div>
           ))}
+        </div>
+      </section>
+
+      {/* ---- Find your favorite ---- */}
+      <section id="series" className="max-w-7xl mx-auto px-4 sm:px-6 mt-16 sm:mt-20 scroll-mt-24">
+        <h2 className="font-display font-bold text-2xl sm:text-4xl">Who do you collect?</h2>
+        {items.length === 0 ? (
+          <div className="panel mt-6 p-8 sm:p-10 text-center">
+            <p className="font-display font-semibold text-lg">Nothing is live yet.</p>
+            <p className="mt-2 text-cn-text-2">Be the first to release a series.</p>
+            <Link className={`${primaryBtn} mt-5`} href="/creator">Release a series</Link>
+          </div>
+        ) : (
+          <>
+            <SeriesBrowser
+              items={items}
+              categories={categories}
+              initialQuery={typeof q === "string" ? q : ""}
+              initialCategory={typeof category === "string" ? category : ""}
+            />
+            <p className="mt-4 text-xs text-cn-text-3">
+              Demo series. Mochi Puffs, Aika Nova and Noa Vantor are invented, and are not real people or brands.
+            </p>
+          </>
+        )}
+      </section>
+
+      {/* ---- How collecting works ---- */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 mt-16 sm:mt-24">
+        <h2 className="font-display font-bold text-2xl sm:text-4xl max-w-2xl leading-tight">
+          See every card before you pay for it.
+        </h2>
+        <div className="mt-8 grid md:grid-cols-2 gap-4">
+          <Tile
+            icon={<UserIcon />}
+            title="Open a pack for free"
+            text="Sign in the way you sign in anywhere else. Turn over five cards, then buy the pack or skip it. Skipping costs nothing."
+          >
+            <div className="mt-6 grid grid-cols-5 gap-2 -mb-14">
+              {["card-back.webp", "demo/mochi-rare.jpg", "demo/aika-epic.jpg", "card-back.webp", "card-back.webp"].map((file, i) => (
+                <CardImage key={i} src={`/cards/${file}`} alt="" rarity={file.includes("epic") ? "Epic" : file.includes("rare") ? "Rare" : undefined} />
+              ))}
+            </div>
+          </Tile>
+          <Tile
+            icon={<ScanIcon />}
+            title="Know it is the real thing"
+            text="Every card has a public record of who released it, who has held it and each time it was printed. Check it outside this site, in one click."
+          >
+            <ol className="mt-5 flex flex-wrap items-center gap-2 text-xs font-semibold">
+              {RECORD.map(({ label, Icon }, i) => (
+                <li key={label} className="flex items-center gap-2">
+                  {i ? <ArrowIcon width={14} height={14} className="text-cn-text-3" /> : null}
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-cn-line-strong bg-white/[.04] px-3 py-1.5">
+                    <Icon width={14} height={14} className="text-cn-lavender" /> {label}
+                  </span>
+                </li>
+              ))}
+            </ol>
+          </Tile>
         </div>
       </section>
 
@@ -168,106 +252,16 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* ---- How it works ---- */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 mt-16 sm:mt-24">
-        <h2 className="font-display font-bold text-2xl sm:text-4xl max-w-2xl leading-tight">
-          One card, from a creator&apos;s art to a collector&apos;s hand.
-        </h2>
-        <div className="mt-8 grid md:grid-cols-6 gap-4">
-          <Tile
-            className="md:col-span-3"
-            icon={<SeriesIcon />}
-            title="Creators release"
-            text="Publish your own series with your art, your rates and your prices. Your account is on record as the one who released it."
-          >
-            <div className="mt-6 flex -space-x-9 -mb-16">
-              {["rare-2", "epic-1", "legendary-2", "common-1"].map((n, i) => (
-                <div key={n} className="w-28" style={{ transform: `rotate(${(i - 1.5) * 5}deg) translateY(${Math.abs(i - 1.5) * 5}px)` }}>
-                  <CardImage src={`/cards/${n}.webp`} alt="" />
-                </div>
-              ))}
-            </div>
-          </Tile>
-          <Tile
-            className="md:col-span-3"
-            icon={<UserIcon />}
-            title="Collectors see before paying"
-            text="Sign in and open a pack for free, one card at a time. Then buy it or skip it. You only ever pay for cards you have seen."
-          >
-            <div className="mt-6 grid grid-cols-5 gap-2 -mb-14">
-              {["card-back", "card-back", "epic-2", "common-2", "card-back"].map((n, i) => (
-                <CardImage key={i} src={`/cards/${n}.webp`} alt="" rarity={n === "epic-2" ? "Epic" : undefined} />
-              ))}
-            </div>
-          </Tile>
-          <Tile
-            className="md:col-span-6"
-            icon={<ScanIcon />}
-            title="Anyone verifies"
-            text="Every card has a public record of who released it, who has held it and each time it was printed. Check it outside this site, in one click."
-          >
-            <ol className="mt-5 flex flex-wrap items-center gap-2 text-xs font-semibold">
-              {RECORD.map(({ label, Icon }, i) => (
-                <li key={label} className="flex items-center gap-2">
-                  {i ? <ArrowIcon width={14} height={14} className="text-cn-text-3" /> : null}
-                  <span className="inline-flex items-center gap-1.5 rounded-full border border-cn-line-strong bg-white/[.04] px-3 py-1.5">
-                    <Icon width={14} height={14} className="text-cn-lavender" /> {label}
-                  </span>
-                </li>
-              ))}
-            </ol>
-          </Tile>
-        </div>
-      </section>
-
-      {/* ---- Live series ---- */}
-      <section id="series" className="max-w-7xl mx-auto px-4 sm:px-6 mt-16 sm:mt-24 scroll-mt-24">
-        <h2 className="font-display font-bold text-2xl sm:text-4xl">Live series</h2>
-        {series.length === 0 ? (
-          <div className="panel mt-6 p-8 sm:p-10 text-center">
-            <p className="font-display font-semibold text-lg">Nothing is live yet.</p>
-            <p className="mt-2 text-cn-text-2">Be the first to release a series.</p>
-            <Link className={`${primaryBtn} mt-5`} href="/creator">Release a series</Link>
-          </div>
-        ) : (
-          <div className="mt-6 grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {series.map((s) => {
-              const best = [...s.templates].sort((a, b) => b.rarity - a.rarity);
-              return (
-                <Link key={s.id} href={`/series/${s.id}`} data-testid="series-card" className="panel panel-link group block p-5 overflow-hidden">
-                  <div className="relative h-52 flex items-center justify-center">
-                    <div className="absolute inset-x-8 inset-y-2 rounded-full blur-3xl opacity-40 bg-cn-lavender" />
-                    <div className="flex -space-x-14 relative">
-                      {best.slice(0, 3).map((t, i) => (
-                        <div key={t.id} className="w-32 transition-transform duration-500 group-hover:-translate-y-1" style={{ transform: `rotate(${(i - 1) * 8}deg)`, zIndex: i === 1 ? 2 : 1 }}>
-                          <CardImage src={t.media} alt="" rarity={RARITIES[t.rarity]} />
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="mt-4 flex items-end justify-between gap-3">
-                    <div className="min-w-0">
-                      <h3 className="font-display font-semibold text-base leading-snug">{s.name}</h3>
-                      <p className="mt-1 inline-flex items-center gap-1.5 text-sm text-cn-text-3">{s.templates.length} cards, all printable <PrintIcon width={14} height={14} /></p>
-                    </div>
-                    {best[0] ? <Rarity value={`${RARITIES[best[0].rarity]}`} /> : null}
-                  </div>
-                </Link>
-              );
-            })}
-          </div>
-        )}
-      </section>
-
       {/* ---- Creator call ---- */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 mt-16 sm:mt-24">
         <div className="crystal-mesh rounded-[28px] p-8 sm:p-12 grid md:grid-cols-[1fr_auto] gap-8 items-center">
           <div>
-            <h2 className="font-display font-bold text-2xl sm:text-4xl leading-tight max-w-2xl">
+            <p className="text-sm font-bold opacity-70">For creators and IP owners</p>
+            <h2 className="mt-2 font-display font-bold text-2xl sm:text-4xl leading-tight max-w-2xl">
               Your community should not need a crypto tutorial.
             </h2>
             <p className="mt-3 max-w-xl leading-relaxed opacity-80">
-              Publish a series in minutes. Fans sign in the way they sign in anywhere else, and can print any card they collect.
+              Publish your own series in minutes, with your art, your rates and your prices. Your account is on record as the one who released it.
             </p>
             <Link
               href="/creator"
