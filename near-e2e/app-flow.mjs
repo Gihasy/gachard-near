@@ -71,6 +71,8 @@ async function main() {
   check("A series is live on the home page", Boolean(seriesId));
   if (!seriesId) throw new Error("No series to test with. Seed the database first.");
 
+  check("Home says any card can be printed, and that it is a simulation", /also be <span[^>]*>printed/.test(home.html) && home.html.includes("Hackathon simulation."));
+
   check("Signed-out pack request is refused", (await anon.post("/api/packs", { seriesId })).status === 401);
   check("Signed-out collection redirects to sign-in", (await anon.request("/collection")).status === 307);
 

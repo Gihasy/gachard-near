@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import OpenPackButton from "@/components/OpenPackButton";
 import PackArt from "@/components/PackArt";
+import { PrintIcon } from "@/components/icons";
 import TiltCard from "@/components/TiltCard";
 import { Eyebrow, Page, Panel, Rarity, RARITY_COLOR } from "@/components/ui";
 import { missingRarities, RARITIES } from "@/lib/catalog";
@@ -36,6 +37,9 @@ export default async function SeriesPage({ params }: { params: Promise<{ id: str
             <h1 className="mt-4 font-display font-bold text-2xl sm:text-4xl leading-tight break-words">{series.name}</h1>
             <p className="mt-3 text-cn-text-2 leading-relaxed max-w-lg">
               Opening is free. See all {CARDS_PER_PACK} cards, then buy or skip. You only pay for what you have seen.
+            </p>
+            <p className="mt-3 inline-flex items-center gap-1.5 text-sm font-semibold">
+              <PrintIcon width={16} height={16} className="text-cn-lavender" /> Every card you buy can also be printed.
             </p>
           </div>
           <div className="panel p-5 sm:col-span-2 md:col-span-1">

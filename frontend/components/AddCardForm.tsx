@@ -104,7 +104,7 @@ export default function AddCardForm({ seriesId }: { seriesId: number }) {
           <button className={secondaryBtn} disabled={busy} data-testid="add-card">{busy ? "Adding..." : "Add card"}</button>
         </div>
         <p className="mt-2 text-xs text-cn-text-3 leading-relaxed">
-          A card cannot be changed once added. Its artwork&apos;s fingerprint goes on the public record. Best at 63 x 88 proportions.
+          A card cannot be changed once added. Its artwork&apos;s fingerprint goes on the public record. Best at 63 x 88 proportions, because collectors can print it: a QR code goes on the bottom right.
         </p>
         <ErrorLine>{error}</ErrorLine>
       </div>

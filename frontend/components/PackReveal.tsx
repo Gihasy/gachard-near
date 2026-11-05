@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { post } from "@/lib/client";
-import { ArrowIcon, CheckIcon, CrystalStar } from "@/components/icons";
+import { ArrowIcon, CheckIcon, CrystalStar, PrintIcon } from "@/components/icons";
 import { CardImage, ErrorLine, Rarity, RARITY_COLOR, primaryBtn, secondaryBtn } from "@/components/ui";
 
 interface Card { name: string; rarity: string; media: string; price: number }
@@ -193,11 +193,11 @@ export default function PackReveal({ initial }: { initial: View }) {
               <span className="crystal-calm grid place-items-center size-11 rounded-full shrink-0"><CheckIcon /></span>
               <div>
                 <h2 className="font-display font-semibold text-lg">These cards are yours.</h2>
-                <p className="mt-1 text-sm text-cn-text-2">Each has its own public record. Open one to verify or print it.</p>
+                <p className="mt-1 text-sm text-cn-text-2">They are digital now, and any of them can be printed. Each has its own public record.</p>
               </div>
             </div>
             <div className="flex flex-wrap gap-3">
-              <Link className={secondaryBtn} href={`/scan/${view.tokenIds[0]}`}>See the first card&apos;s record</Link>
+              <Link className={secondaryBtn} href={`/scan/${view.tokenIds[0]}#print`}><PrintIcon width={16} height={16} /> Print or verify the first card</Link>
               <Link className={primaryBtn} href="/collection">Go to collection <ArrowIcon width={16} height={16} /></Link>
             </div>
           </div>

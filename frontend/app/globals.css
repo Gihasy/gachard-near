@@ -238,42 +238,164 @@ input[type="number"] { -moz-appearance: textfield; }
 }
 .tilt[data-active="true"] .holo { opacity: 0.85; }
 
-/* ---- Hero fan ---- */
-.fan { position: relative; height: clamp(300px, 46vw, 500px); }
-.fan-card {
+/* ---- Hero: the same card on a screen and in a hand ---- */
+.duo { position: relative; aspect-ratio: 7 / 6; max-width: 640px; margin-inline: auto; overflow-x: clip; overflow-y: visible; }
+.duo-glow {
+  position: absolute;
+  inset: 8% 10%;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, #c295fc66, #ff9ef122 60%, transparent);
+  filter: blur(26px);
+}
+.duo-phone, .duo-hand { position: absolute; top: 2%; width: 60%; }
+.duo-phone img, .duo-hand img { display: block; width: 100%; height: auto; user-select: none; }
+.duo-phone { left: -3%; rotate: -6deg; animation: float 8s ease-in-out infinite; }
+/* Fades out the app's old tab bar under the card. */
+.duo-phone img { mask-image: linear-gradient(#000 76%, transparent 87%); }
+.duo-hand { right: -3%; top: 6%; rotate: 5deg; animation: float 8s ease-in-out -4s infinite; filter: drop-shadow(0 26px 40px #0009); }
+.duo-tag {
+  position: absolute;
+  top: 0;
+  padding: 0.25rem 0.7rem;
+  border-radius: 999px;
+  border: 1px solid var(--cn-line-strong);
+  background: #12131fd9;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+.duo-tag[data-side="left"] { left: 8%; }
+.duo-tag[data-side="right"] { right: 8%; }
+.duo-print {
   position: absolute;
   left: 50%;
-  top: 50%;
-  width: clamp(118px, 17vw, 232px);
-  margin-left: calc(clamp(118px, 17vw, 232px) / -2);
-  transform: translate(var(--x), calc(-50% + var(--y))) rotate(var(--r));
-  transition: transform 600ms var(--ease-out);
-  animation: fan-in 900ms var(--ease-out) both;
-  animation-delay: var(--delay);
+  bottom: 5%;
+  translate: -50% 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 44px;
+  padding-inline: 1.1rem;
+  border-radius: 999px;
+  font-size: 0.875rem;
+  font-weight: 700;
 }
-.fan:hover .fan-card { transform: translate(calc(var(--x) * 1.28), calc(-50% + var(--y) - 6px)) rotate(calc(var(--r) * 1.12)); }
-.fan-float { animation: float 7s ease-in-out infinite; animation-delay: var(--delay); }
 @keyframes float {
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(-10px); }
 }
-@keyframes fan-in {
-  from { opacity: 0; translate: 0 44px; }
-  to { opacity: 1; translate: 0 0; }
-}
+
 /* Movement only. Text must read in a screenshot taken the moment a page loads. */
 @keyframes rise {
   from { translate: 0 18px; }
   to { translate: 0 0; }
 }
-.fan-glow {
-  position: absolute;
-  inset: 8% 14%;
-  border-radius: 50%;
-  background: radial-gradient(closest-side, #c295fc66, #ff9ef122 60%, transparent);
-  filter: blur(26px);
-}
 .rise { animation: rise 800ms var(--ease-out) both; }
+
+/* ---- The print file ---- */
+.print-panel { border-color: #c9b3fb4d; box-shadow: 0 24px 60px -36px #c295fcb0, inset 0 1px 0 #ffffff14; }
+.print-stage { position: relative; overflow: hidden; }
+.print-stage::before {
+  content: "";
+  position: absolute;
+  inset: -30% auto auto -15%;
+  width: 60%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, #c295fc2e, transparent);
+  pointer-events: none;
+}
+/* Side by side, overlapping only in the margins, so the back's code panel shows. */
+.sheets { position: relative; width: min(100%, 580px); margin-inline: auto; padding-bottom: 12%; }
+.sheets-front { position: relative; width: 54%; rotate: -2.5deg; }
+.sheets-back { position: absolute; top: 12%; right: 0; width: 54%; rotate: 3deg; }
+
+.sheet {
+  container-type: inline-size;
+  position: relative;
+  aspect-ratio: 4 / 5;
+  border-radius: 3px;
+  overflow: hidden;
+  background: #f6f4ee;
+  color: #1a1a24;
+  box-shadow: 0 30px 60px -28px #000, 0 0 0 1px #0000001a;
+}
+.sheet-note {
+  position: absolute;
+  inset: 4% 6% auto;
+  font-size: 2.9cqw;
+  line-height: 1.25;
+  font-weight: 700;
+  color: #bf1a33;
+}
+.sheet-foot {
+  position: absolute;
+  inset: auto 6% 3.5%;
+  font-size: 2.5cqw;
+  line-height: 1.25;
+  color: #1a1a24;
+}
+.sheet-card {
+  position: absolute;
+  left: 50%;
+  top: 52%;
+  width: 54%;
+  aspect-ratio: 63 / 88;
+  translate: -50% -50%;
+}
+.sheet-art { position: absolute; inset: 0; overflow: hidden; background: #e8e5dc; }
+.sheet-art > img:first-child { display: block; width: 100%; height: 100%; object-fit: cover; }
+.sheet-qr { position: absolute; right: 4.76%; bottom: 3.41%; width: 19%; aspect-ratio: 1; background: #fff; }
+.sheet-code {
+  position: absolute;
+  inset: auto 8% 11%;
+  display: grid;
+  gap: 1cqw;
+  padding: 2.4cqw;
+  background: #fff;
+  color: #1a1a24;
+  font-size: 2.1cqw;
+}
+.sheet-code b { color: #bf1a33; }
+.sheet-code strong { font-size: 2.7cqw; white-space: nowrap; }
+
+/* Crop marks sit on the card's edges, outside its corners, as in the PDF. */
+.crop { position: absolute; width: 11%; aspect-ratio: 1; }
+.crop::before, .crop::after { content: ""; position: absolute; background: #1a1a24; }
+.crop::before { width: 65%; height: 1px; }
+.crop::after { width: 1px; height: 65%; }
+.crop[data-corner^="t"] { bottom: 100%; }
+.crop[data-corner^="b"] { top: 100%; }
+.crop[data-corner$="l"] { right: 100%; }
+.crop[data-corner$="r"] { left: 100%; }
+.crop[data-corner^="t"]::before { bottom: 0; }
+.crop[data-corner^="b"]::before { top: 0; }
+.crop[data-corner$="l"]::before { left: 0; }
+.crop[data-corner$="r"]::before { right: 0; }
+.crop[data-corner^="t"]::after { top: 0; }
+.crop[data-corner^="b"]::after { bottom: 0; }
+.crop[data-corner$="l"]::after { right: 0; }
+.crop[data-corner$="r"]::after { left: 0; }
+
+/* The negative delay means the first thing seen is a finished print. */
+.sheet[data-live] .sheet-art { animation: print-in 9s linear -5s infinite; }
+.print-head {
+  position: absolute;
+  inset-inline: -6%;
+  height: 2px;
+  background: var(--cn-logo-violet);
+  box-shadow: 0 0 14px 3px #c295fcb0;
+  opacity: 0;
+  animation: print-head 9s linear -5s infinite;
+}
+@keyframes print-in {
+  0% { clip-path: inset(0 0 100% 0); }
+  36%, 100% { clip-path: inset(0 0 0 0); }
+}
+@keyframes print-head {
+  0% { top: 0; opacity: 1; }
+  36% { top: 100%; opacity: 1; }
+  37%, 100% { top: 100%; opacity: 0; }
+}
 
 /* ---- Moving rail of art ---- */
 .rail { mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent); overflow: hidden; }
@@ -390,5 +512,6 @@ button.flip:hover:not(:disabled) .flip-inner { transform: translateY(-5px); }
     animation-delay: 0ms !important;
     transition-duration: 1ms !important;
   }
-  .crystal-mesh::after, .fan-float, .pack-idle, .rail-track { animation: none !important; }
+  .crystal-mesh::after, .duo-phone, .duo-hand, .pack-idle, .rail-track, .sheet[data-live] .sheet-art { animation: none !important; }
+  .print-head { display: none; }
 }

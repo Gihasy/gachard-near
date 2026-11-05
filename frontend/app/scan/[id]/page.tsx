@@ -6,6 +6,7 @@ import { CheckIcon, ExternalIcon, PrintIcon, SendIcon, SparkIcon } from "@/compo
 import { Panel, Rarity } from "@/components/ui";
 import { readCard } from "@/lib/cards";
 import { collectorCode, collectorLabel, contractId, explorer } from "@/lib/near";
+import { qrDataUrl, siteOrigin } from "@/lib/qr";
 import { currentUser } from "@/lib/users";
 
 export const dynamic = "force-dynamic";
@@ -40,6 +41,7 @@ export default async function CardRecord({ params }: { params: Promise<{ id: str
   const user = await currentUser();
   const isHolder = user?.accountId === card.owner_id;
   const printed = card.status === "Printed";
+  const qr = await qrDataUrl(`${await siteOrigin()}/scan/${id}`);
 
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
@@ -80,6 +82,9 @@ export default async function CardRecord({ params }: { params: Promise<{ id: str
           <CardActions
             tokenId={id}
             status={card.status}
+            media={card.media}
+            cardName={card.cardName}
+            qr={qr}
             isHolder={isHolder}
             signedIn={Boolean(user)}
             myCode={user ? collectorCode(user.accountId) : null}

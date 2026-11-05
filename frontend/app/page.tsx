@@ -1,32 +1,40 @@
 import Link from "next/link";
 import PackArt from "@/components/PackArt";
-import TiltCard from "@/components/TiltCard";
+import PrintSheet from "@/components/PrintSheet";
 import {
   ArrowIcon,
   CheckIcon,
-  CrystalStar,
   PrintIcon,
   ScanIcon,
   SeriesIcon,
+  SparkIcon,
   UserIcon,
 } from "@/components/icons";
 import { CardImage, Eyebrow, Rarity, primaryBtn, secondaryBtn } from "@/components/ui";
 import { missingRarities, RARITIES } from "@/lib/catalog";
 import { readDb } from "@/lib/db";
+import { qrDataUrl, siteOrigin } from "@/lib/qr";
 
 export const dynamic = "force-dynamic";
 
-const FAN = [
-  { src: "/cards/rare-1.webp", rarity: "Rare", x: "-68%", y: "22px", r: "-15deg", delay: "160ms" },
-  { src: "/cards/epic-2.webp", rarity: "Epic", x: "-36%", y: "4px", r: "-7deg", delay: "80ms" },
-  { src: "/cards/legendary-1.webp", rarity: "Legendary", x: "0%", y: "-8px", r: "0deg", delay: "0ms" },
-  { src: "/cards/legendary-2.webp", rarity: "Legendary", x: "36%", y: "4px", r: "7deg", delay: "80ms" },
-  { src: "/cards/epic-1.webp", rarity: "Epic", x: "68%", y: "22px", r: "15deg", delay: "160ms" },
-];
-
 const RAIL = ["common-1", "rare-2", "legendary-1", "epic-1", "common-2", "rare-1", "epic-2", "legendary-2"];
 
-const PROMISES = ["No wallet to set up", "No network fees", "Verify any card", "Print it, return it"];
+const PROMISES = ["No wallet to set up", "No network fees", "Verify any card"];
+
+const PRINT_STEPS = [
+  { title: "Own the digital card", text: "It lives in your collection, with its own public record." },
+  { title: "Get the print file", text: "Choose Print. The card locks and you get a PDF with crop marks, a QR code and a redeem code." },
+  { title: "Print it and cut it out", text: "Anyone who scans the QR reads the card's live record." },
+  { title: "Bring it back anytime", text: "Whoever enters the code receives the card in digital form. Same card, same history." },
+];
+
+const PRINT_SPECS = ["63 x 88 mm", "3 mm bleed", "Crop marks", "QR and redeem code"];
+
+const RECORD = [
+  { label: "Released", Icon: SparkIcon },
+  { label: "Printed", Icon: PrintIcon },
+  { label: "Returned to digital", Icon: CheckIcon },
+];
 
 function Tile({ icon, title, text, children, className = "" }: {
   icon: React.ReactNode;
@@ -47,6 +55,7 @@ function Tile({ icon, title, text, children, className = "" }: {
 
 export default async function Home() {
   const series = (await readDb()).series.filter((s) => missingRarities(s).length === 0);
+  const sampleQr = await qrDataUrl(`${await siteOrigin()}/scan`);
   return (
     <>
       {/* ---- Hero ---- */}
@@ -54,12 +63,12 @@ export default async function Home() {
         <div className="rise">
           <Eyebrow>For creators and IP owners</Eyebrow>
           <h1 className="mt-5 font-display font-bold text-[2.15rem] leading-[1.12] sm:text-5xl xl:text-[3.5rem]">
-            Release your own trading cards.{" "}
-            <span className="crystal-text">Your community just collects.</span>
+            Release digital trading cards{" "}
+            <span className="crystal-text">your fans can also print.</span>
           </h1>
           <p className="mt-5 max-w-xl text-cn-text-2 text-base sm:text-lg leading-relaxed">
-            Every card is digital from birth, can be verified by anyone, and can be printed.
-            Nobody has to set up a wallet or pay network fees to collect one.
+            Every card is digital from birth and can be verified by anyone. Its holder can turn it
+            into a physical card whenever they want. Nobody sets up a wallet or pays network fees.
           </p>
           <div className="mt-7 flex flex-wrap gap-3">
             <Link className={primaryBtn} href="#series">Browse series <ArrowIcon width={16} height={16} /></Link>
@@ -71,23 +80,33 @@ export default async function Home() {
                 <CheckIcon width={15} height={15} className="text-cn-crystal shrink-0" /> {p}
               </li>
             ))}
+            <li>
+              <a href="#print" className="inline-flex items-center gap-1.5 font-semibold text-cn-text-1 underline decoration-cn-lavender underline-offset-4 hover:text-cn-lavender transition">
+                <PrintIcon width={15} height={15} className="text-cn-lavender shrink-0" /> Print any card
+              </a>
+            </li>
           </ul>
         </div>
 
-        <div className="fan" aria-hidden="true">
-          <div className="fan-glow" />
-          {FAN.map((card, i) => (
-            <div
-              key={card.src}
-              className="fan-card"
-              style={{ "--x": card.x, "--y": card.y, "--r": card.r, "--delay": card.delay, zIndex: i === 2 ? 3 : i === 1 || i === 3 ? 2 : 1 } as React.CSSProperties}
-            >
-              <div className="fan-float" style={{ "--delay": `${i * -1.3}s` } as React.CSSProperties}>
-                <TiltCard src={card.src} alt="" rarity={card.rarity} eager />
-              </div>
+        <figure className="m-0">
+          <div className="duo">
+            <div className="duo-glow" aria-hidden="true" />
+            <div className="duo-phone">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/cards/digital-card.webp" alt="A trading card on a phone" width={500} height={700} draggable={false} />
             </div>
-          ))}
-        </div>
+            <div className="duo-hand">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/cards/real-card.webp" alt="The same card, printed and held in a hand" width={500} height={700} draggable={false} />
+            </div>
+            <span className="duo-tag" data-side="left">On screen</span>
+            <span className="duo-tag" data-side="right">In hand</span>
+            <a href="#print" className="duo-print crystal-calm"><PrintIcon width={16} height={16} /> Print</a>
+          </div>
+          <figcaption className="mt-2 text-center text-xs text-cn-text-3 leading-relaxed">
+            Illustration of a production print. In this hackathon demo, you print a PDF yourself.
+          </figcaption>
+        </figure>
       </section>
 
       {/* ---- A moving rail of art ---- */}
@@ -98,6 +117,52 @@ export default async function Home() {
               <CardImage src={`/cards/${name}.webp`} alt="" />
             </div>
           ))}
+        </div>
+      </section>
+
+      {/* ---- Digital to print ---- */}
+      <section id="print" className="max-w-7xl mx-auto px-4 sm:px-6 mt-16 sm:mt-24 scroll-mt-24">
+        <div className="panel print-stage p-5 sm:p-10 grid lg:grid-cols-[1fr_1.05fr] gap-10 lg:gap-14 items-center">
+          <div className="sheets">
+            <div className="sheets-back">
+              <PrintSheet src="/cards/card-back.webp" side="back" label="Back page of the print file, with a space for the redeem code" />
+            </div>
+            <div className="sheets-front">
+              <PrintSheet
+                src="/cards/legendary-1.webp"
+                qr={sampleQr}
+                label="Front page of the print file: the card with crop marks, a QR code and a simulation notice"
+                footer="In production, cards are printed and shipped by the platform."
+                live
+              />
+            </div>
+          </div>
+          <div>
+            <Eyebrow>Digital first, printable anytime</Eyebrow>
+            <h2 className="mt-4 font-display font-bold text-2xl sm:text-4xl leading-tight">
+              Every digital card can also be <span className="crystal-text">printed.</span>
+            </h2>
+            <ol className="mt-7 space-y-5">
+              {PRINT_STEPS.map((step, i) => (
+                <li key={step.title} className="flex gap-4">
+                  <span className="grid place-items-center size-8 shrink-0 rounded-full border border-cn-line-strong bg-white/[.05] font-display text-xs font-semibold tabular">{i + 1}</span>
+                  <div>
+                    <h3 className="font-semibold">{step.title}</h3>
+                    <p className="mt-0.5 text-sm text-cn-text-2 leading-relaxed">{step.text}</p>
+                  </div>
+                </li>
+              ))}
+            </ol>
+            <ul className="mt-6 flex flex-wrap gap-2">
+              {PRINT_SPECS.map((spec) => (
+                <li key={spec} className="rounded-full border border-cn-line-strong bg-white/[.04] px-3 py-1 text-xs font-medium text-cn-text-2">{spec}</li>
+              ))}
+            </ul>
+            <p className="mt-6 rounded-2xl border border-[#f7c96b40] bg-[#f7c96b12] px-4 py-3 text-sm leading-relaxed text-cn-text-2">
+              <strong className="font-semibold text-cn-credits">Hackathon simulation.</strong>{" "}
+              In production, the platform would print and ship the card. Here you print the PDF yourself.
+            </p>
+          </div>
         </div>
       </section>
 
@@ -134,23 +199,22 @@ export default async function Home() {
             </div>
           </Tile>
           <Tile
-            className="md:col-span-2"
+            className="md:col-span-6"
             icon={<ScanIcon />}
             title="Anyone verifies"
-            text="Every card has a public record of who released it and who has held it. Check it outside this site, in one click."
-          />
-          <Tile
-            className="md:col-span-2"
-            icon={<PrintIcon />}
-            title="Print it"
-            text="Get a print-ready card with its own QR code and redeem code. In this demo it is a PDF you print yourself."
-          />
-          <Tile
-            className="md:col-span-2"
-            icon={<CrystalStar size={20} />}
-            title="Bring it back"
-            text="Enter the code and the card returns to digital. It stays the same card, with its whole history intact."
-          />
+            text="Every card has a public record of who released it, who has held it and each time it was printed. Check it outside this site, in one click."
+          >
+            <ol className="mt-5 flex flex-wrap items-center gap-2 text-xs font-semibold">
+              {RECORD.map(({ label, Icon }, i) => (
+                <li key={label} className="flex items-center gap-2">
+                  {i ? <ArrowIcon width={14} height={14} className="text-cn-text-3" /> : null}
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-cn-line-strong bg-white/[.04] px-3 py-1.5">
+                    <Icon width={14} height={14} className="text-cn-lavender" /> {label}
+                  </span>
+                </li>
+              ))}
+            </ol>
+          </Tile>
         </div>
       </section>
 
@@ -182,7 +246,7 @@ export default async function Home() {
                   <div className="mt-4 flex items-end justify-between gap-3">
                     <div className="min-w-0">
                       <h3 className="font-display font-semibold text-base truncate">{s.name}</h3>
-                      <p className="mt-1 text-sm text-cn-text-3">{s.templates.length} cards</p>
+                      <p className="mt-1 inline-flex items-center gap-1.5 text-sm text-cn-text-3">{s.templates.length} cards, all printable <PrintIcon width={14} height={14} /></p>
                     </div>
                     {best[0] ? <Rarity value={`${RARITIES[best[0].rarity]}`} /> : null}
                   </div>
@@ -201,7 +265,7 @@ export default async function Home() {
               Your community should not need a crypto tutorial.
             </h2>
             <p className="mt-3 max-w-xl leading-relaxed opacity-80">
-              Publish a series in minutes. Fans sign in the way they sign in anywhere else.
+              Publish a series in minutes. Fans sign in the way they sign in anywhere else, and can print any card they collect.
             </p>
             <Link
               href="/creator"

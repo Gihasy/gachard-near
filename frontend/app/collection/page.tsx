@@ -2,7 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import CopyCode from "@/components/CopyCode";
 import TiltCard from "@/components/TiltCard";
-import { ArrowIcon } from "@/components/icons";
+import { ArrowIcon, PrintIcon } from "@/components/icons";
 import { CardImage, Eyebrow, Page, Rarity, primaryBtn } from "@/components/ui";
 import { cardsOf } from "@/lib/cards";
 import { collectorCode, collectorLabel } from "@/lib/near";
@@ -21,7 +21,7 @@ export default async function Collection() {
         <div>
           <Eyebrow>{collectorLabel(user.accountId)}</Eyebrow>
           <h1 className="mt-4 font-display font-bold text-2xl sm:text-4xl">Your collection</h1>
-          <p className="mt-2 text-cn-text-2">{cards.length} {cards.length === 1 ? "card" : "cards"}</p>
+          <p className="mt-2 text-cn-text-2">{cards.length} {cards.length === 1 ? "card" : "cards"}{cards.length ? ". Open any card to verify or print it." : ""}</p>
         </div>
         {code ? (
           <div>
@@ -55,7 +55,7 @@ export default async function Collection() {
                 {c.status === "Printed" ? (
                   <span className="text-[11px] font-semibold rounded-full bg-white/10 px-2 py-0.5 text-cn-text-2">Printed</span>
                 ) : (
-                  <span className="text-xs text-cn-text-3 tabular">#{c.tokenId}</span>
+                  <span className="inline-flex items-center gap-1 text-xs text-cn-text-3 tabular" title="Can be printed"><PrintIcon width={13} height={13} /> #{c.tokenId}</span>
                 )}
               </div>
             </Link>
