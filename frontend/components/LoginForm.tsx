@@ -3,7 +3,7 @@
 import Script from "next/script";
 import { useCallback, useRef, useState } from "react";
 import { post } from "@/lib/client";
-import { primaryBtn } from "@/components/ui";
+import { ErrorLine, primaryBtn } from "@/components/ui";
 
 declare global {
   interface Window {
@@ -64,7 +64,7 @@ export default function LoginForm({ next, demo, googleClientId }: { next: string
         </>
       ) : null}
       {!demo && !googleClientId ? <p className="text-sm text-cn-text-2">Sign-in is not set up on this server.</p> : null}
-      {error ? <p className="text-sm text-cn-danger" role="alert">{error}</p> : null}
+      <ErrorLine>{error}</ErrorLine>
     </div>
   );
 }

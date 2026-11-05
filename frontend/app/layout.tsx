@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Plus_Jakarta_Sans, Unbounded, Poppins } from "next/font/google";
 import "./globals.css";
+import Logo from "@/components/Logo";
 import Nav from "@/components/Nav";
 
 const jakarta = Plus_Jakarta_Sans({ variable: "--font-jakarta", subsets: ["latin"], display: "swap" });
@@ -14,16 +15,22 @@ export const metadata: Metadata = {
   icons: { icon: "/favicon.png", apple: "/icons/icon-192.png" },
 };
 
-export const viewport = { themeColor: "#0B0E1A" };
+export const viewport = { themeColor: "#0A0B14" };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en" className={`${jakarta.variable} ${unbounded.variable} ${poppins.variable} h-full antialiased`}>
-      <body className="min-h-full flex flex-col bg-cn-bg text-cn-text-1" style={{ fontFamily: "var(--font-jakarta), system-ui, sans-serif" }}>
+      <body className="min-h-full flex flex-col">
+        <div className="aurora" aria-hidden="true" />
         <Nav />
         <main className="flex-1 w-full">{children}</main>
-        <footer className="border-t border-cn-line py-5 px-4 text-center text-xs text-cn-text-3" data-testid="test-notice">
-          Test version · cards have no cash value · payments are simulated
+        <footer className="border-t border-cn-line mt-10 pb-20 md:pb-0">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 py-7 flex flex-wrap items-center justify-between gap-3">
+            <Logo size={22} showWordmark />
+            <p className="text-xs text-cn-text-3" data-testid="test-notice">
+              Test version · cards have no cash value · payments are simulated
+            </p>
+          </div>
         </footer>
       </body>
     </html>

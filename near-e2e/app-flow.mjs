@@ -100,7 +100,7 @@ async function main() {
   const again = await alice.post(`/api/packs/${packId}/buy`);
   check("It cannot be bought twice", again.status === 400);
   const collection = await alice.page("/collection");
-  check("Credits fell by the price", collection.html.replaceAll("<!-- -->", "").includes(`${(5000 - view.price).toLocaleString("en-US")} Credits`));
+  check("Credits fell by the price", collection.html.replace(/<[^>]*>/g, "").includes(`${(5000 - view.price).toLocaleString("en-US")} Credits`));
 
   const record = await anon.page(`/scan/${token}`);
   check("Anyone can read the card's record", record.status === 200 && record.html.includes("Digital"));

@@ -1,35 +1,38 @@
 import Link from "next/link";
 import Logo from "@/components/Logo";
 import LogoutButton from "@/components/LogoutButton";
+import { TabBar, TopLinks } from "@/components/NavLinks";
+import { CrystalStar } from "@/components/icons";
+import { primaryBtn } from "@/components/ui";
 import { currentUser } from "@/lib/users";
 
 export default async function Nav() {
   const user = await currentUser();
   return (
-    <header className="border-b border-cn-line bg-cn-surface-1/80 backdrop-blur">
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-3 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm">
-        <Link href="/" aria-label="Gachard home">
-          <Logo size={30} showWordmark />
-        </Link>
-        <nav className="flex flex-wrap gap-4 text-cn-text-2">
-          <Link className="hover:text-cn-text-1" href="/#series">Series</Link>
-          <Link className="hover:text-cn-text-1" href="/collection">Collection</Link>
-          <Link className="hover:text-cn-text-1" href="/creator">Create</Link>
-          <Link className="hover:text-cn-text-1" href="/scan">Scan</Link>
-        </nav>
-        <div className="ml-auto flex items-center gap-4">
-          {user ? (
-            <>
-              <span className="text-cn-credits font-semibold tabular" data-testid="credits">
-                {user.credits.toLocaleString("en-US")} Credits
-              </span>
-              <LogoutButton />
-            </>
-          ) : (
-            <Link className="text-cn-text-1 font-semibold" href="/login">Sign in</Link>
-          )}
+    <>
+      <header className="nav-glass sticky top-0 z-40 border-b border-cn-line">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center gap-6">
+          <Link href="/" aria-label="Gachard home" className="shrink-0">
+            <Logo size={30} showWordmark />
+          </Link>
+          <TopLinks />
+          <div className="ml-auto flex items-center gap-3 text-sm">
+            {user ? (
+              <>
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-cn-line-strong bg-white/5 px-3 py-1.5 text-cn-credits font-semibold tabular" data-testid="credits">
+                  <CrystalStar size={12} />
+                  {user.credits.toLocaleString("en-US")}
+                  <span className="sr-only sm:not-sr-only"> Credits</span>
+                </span>
+                <LogoutButton />
+              </>
+            ) : (
+              <Link className={`${primaryBtn} !min-h-10 !px-5`} href="/login">Sign in</Link>
+            )}
+          </div>
         </div>
-      </div>
-    </header>
+      </header>
+      <TabBar />
+    </>
   );
 }

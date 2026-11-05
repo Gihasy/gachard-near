@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import AddCardForm from "@/components/AddCardForm";
 import CreateSeriesForm from "@/components/CreateSeriesForm";
+import { ArrowIcon, CheckIcon } from "@/components/icons";
 import { CardImage, Page, Panel, Rarity, Title } from "@/components/ui";
 import { missingRarities, RARITIES } from "@/lib/catalog";
 import { readDb } from "@/lib/db";
@@ -15,8 +16,10 @@ export default async function Creator() {
   const mine = (await readDb()).series.filter((s) => s.ownerUserId === user.id);
   return (
     <Page>
-      <Title sub="Your art, your rates, your prices. Your community needs no wallet to collect.">Release a series</Title>
-      <p className="mb-6 text-xs text-cn-text-3 leading-relaxed max-w-2xl">
+      <Title eyebrow="Creator studio" sub="Your art, your rates, your prices. Your community needs no wallet to collect.">
+        Release a series
+      </Title>
+      <p className="mb-6 rounded-2xl border border-cn-line bg-white/[.03] px-4 py-3 text-xs text-cn-text-3 leading-relaxed">
         Demo: anyone can upload here and nothing is reviewed. A card&apos;s record shows which account
         released it, not that the account owns the rights to the art.
       </p>
@@ -25,20 +28,24 @@ export default async function Creator() {
           const missing = missingRarities(s);
           return (
             <Panel key={s.id}>
-              <div className="flex flex-wrap justify-between gap-3 items-baseline">
-                <h2 className="text-lg font-semibold">{s.name}</h2>
+              <div className="flex flex-wrap justify-between gap-3 items-center">
+                <h2 className="font-display font-semibold text-lg break-words min-w-0">{s.name}</h2>
                 {missing.length ? (
-                  <span className="text-sm text-cn-text-3" data-testid="series-state">Needs: {missing.join(", ")}</span>
+                  <span className="rounded-full bg-[#f7c96b1f] px-3 py-1 text-xs font-semibold text-cn-credits" data-testid="series-state">
+                    Needs: {missing.join(", ")}
+                  </span>
                 ) : (
-                  <Link className="text-sm underline text-cn-success" href={`/series/${s.id}`} data-testid="series-state">Live: view the series</Link>
+                  <Link className="inline-flex items-center gap-1.5 rounded-full bg-[#7ee0a61f] px-3 py-1 text-xs font-semibold text-cn-success hover:underline" href={`/series/${s.id}`} data-testid="series-state">
+                    <CheckIcon width={14} height={14} /> Live: view the series <ArrowIcon width={13} height={13} />
+                  </Link>
                 )}
               </div>
               {s.templates.length ? (
-                <div className="mt-4 grid grid-cols-3 sm:grid-cols-5 md:grid-cols-6 gap-3">
+                <div className="mt-5 grid grid-cols-3 sm:grid-cols-5 md:grid-cols-6 gap-3">
                   {s.templates.map((t) => (
-                    <div key={t.id}>
-                      <CardImage src={t.media} alt={t.name} />
-                      <p className="mt-1 text-xs truncate">{t.name}</p>
+                    <div key={t.id} className="pop">
+                      <CardImage src={t.media} alt={t.name} rarity={RARITIES[t.rarity]} />
+                      <p className="mt-2 text-xs font-medium truncate">{t.name}</p>
                       <Rarity value={RARITIES[t.rarity]} />
                     </div>
                   ))}
@@ -49,7 +56,7 @@ export default async function Creator() {
           );
         })}
         <Panel>
-          <h2 className="font-semibold mb-4">New series</h2>
+          <h2 className="font-display font-semibold text-lg mb-4">{mine.length ? "Another series" : "Your first series"}</h2>
           <CreateSeriesForm />
         </Panel>
       </div>

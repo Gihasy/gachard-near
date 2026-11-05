@@ -4,14 +4,19 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { post } from "@/lib/client";
-import { primaryBtn } from "@/components/ui";
+import { ErrorLine, primaryBtn } from "@/components/ui";
+import { ArrowIcon } from "@/components/icons";
 
 export default function OpenPackButton({ seriesId, signedIn }: { seriesId: number; signedIn: boolean }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   if (!signedIn) {
-    return <Link className={`${primaryBtn} w-full`} href={`/login?next=/series/${seriesId}`}>Sign in to open a pack</Link>;
+    return (
+      <Link className={`${primaryBtn} w-full`} href={`/login?next=/series/${seriesId}`}>
+        Sign in to open a pack <ArrowIcon width={16} height={16} />
+      </Link>
+    );
   }
   return (
     <>
@@ -31,9 +36,9 @@ export default function OpenPackButton({ seriesId, signedIn }: { seriesId: numbe
           }
         }}
       >
-        Open a pack
+        {busy ? "Opening..." : "Open a pack for free"}
       </button>
-      {error ? <p className="mt-3 text-sm text-cn-danger" role="alert">{error}</p> : null}
+      <ErrorLine>{error}</ErrorLine>
     </>
   );
 }

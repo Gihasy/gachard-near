@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { post } from "@/lib/client";
-import { inputClass, primaryBtn, RARITY_COLOR } from "@/components/ui";
+import { ErrorLine, inputClass, primaryBtn, RARITY_COLOR } from "@/components/ui";
 
 const RARITIES = ["Common", "Rare", "Epic", "Legendary"];
 
@@ -18,7 +18,7 @@ export default function CreateSeriesForm() {
 
   return (
     <form
-      className="space-y-4"
+      className="space-y-5"
       onSubmit={async (e) => {
         e.preventDefault();
         setBusy(true);
@@ -34,21 +34,37 @@ export default function CreateSeriesForm() {
       }}
     >
       <input className={inputClass} value={name} onChange={(e) => setName(e.target.value)} placeholder="Series name" aria-label="Series name" maxLength={64} required data-testid="series-name" />
-      <div className="grid grid-cols-3 gap-x-3 gap-y-2 items-center text-sm">
-        <span className="text-cn-text-3 text-xs">Rarity</span>
-        <span className="text-cn-text-3 text-xs">Rate %</span>
-        <span className="text-cn-text-3 text-xs">Price (Credits)</span>
+
+      {/* The rates at a glance, as a pack's odds really split. */}
+      <div>
+        <div className="flex h-2.5 rounded-full overflow-hidden bg-white/10" aria-hidden="true">
+          {RARITIES.map((r, i) => (
+            <span key={r} className="transition-all duration-300" style={{ width: `${Math.max(0, rates[i])}%`, background: RARITY_COLOR[r] }} />
+          ))}
+        </div>
+        <p className={`mt-2 text-xs ${total === 100 ? "text-cn-text-3" : "text-cn-danger font-semibold"}`}>
+          Rates add up to {total}%. They must add up to 100%.
+        </p>
+      </div>
+
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {RARITIES.map((r, i) => (
-          <div key={r} className="contents">
-            <span style={{ color: RARITY_COLOR[r] }} className="font-medium">{r}</span>
-            <input className={inputClass} type="number" min={0} max={100} step="any" aria-label={`${r} rate`} value={rates[i]} onChange={(e) => setRates(rates.map((v, j) => (j === i ? Number(e.target.value) : v)))} />
-            <input className={inputClass} type="number" min={1} step={1} aria-label={`${r} price`} value={prices[i]} onChange={(e) => setPrices(prices.map((v, j) => (j === i ? Number(e.target.value) : v)))} />
-          </div>
+          <fieldset key={r} className="rounded-2xl border border-cn-line bg-white/[.03] p-3">
+            <legend className="px-1 text-sm font-semibold" style={{ color: RARITY_COLOR[r] }}>{r}</legend>
+            <label className="block text-xs text-cn-text-3">
+              Rate %
+              <input className={`${inputClass} mt-1 !min-h-10 tabular`} type="number" min={0} max={100} step="any" aria-label={`${r} rate`} value={rates[i]} onChange={(e) => setRates(rates.map((v, j) => (j === i ? Number(e.target.value) : v)))} />
+            </label>
+            <label className="mt-2 block text-xs text-cn-text-3">
+              Price in Credits
+              <input className={`${inputClass} mt-1 !min-h-10 tabular`} type="number" min={1} step={1} aria-label={`${r} price`} value={prices[i]} onChange={(e) => setPrices(prices.map((v, j) => (j === i ? Number(e.target.value) : v)))} />
+            </label>
+          </fieldset>
         ))}
       </div>
-      <p className={`text-xs ${total === 100 ? "text-cn-text-3" : "text-cn-danger"}`}>Rates add up to {total}%. They must add up to 100%.</p>
+
       <button className={primaryBtn} disabled={busy || total !== 100} data-testid="create-series">{busy ? "Publishing..." : "Publish series"}</button>
-      {error ? <p className="text-sm text-cn-danger" role="alert">{error}</p> : null}
+      <ErrorLine>{error}</ErrorLine>
     </form>
   );
 }
