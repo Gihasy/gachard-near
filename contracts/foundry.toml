@@ -1,0 +1,24 @@
+[profile.default]
+src = "src"
+out = "out"
+libs = ["lib"]
+solc = "0.8.28"
+evm_version = "cancun"
+via_ir = true
+use_literal_content = true
+# Test vectors and Season 0 are read; LocalDevV2 writes deployments/local-v2.json.
+fs_permissions = [
+  { access = "read", path = "./test/v2/vectors" },
+  { access = "read", path = "./script/v2" },
+  { access = "read-write", path = "./deployments" },
+]
+
+[rpc_endpoints]
+monad_testnet = "https://testnet-rpc.monad.xyz"
+
+# v2 (ADR-040) builds with the optimizer. The default profile stays exactly as
+# v1 was compiled and verified on Sourcify, so v1 remains reproducible.
+# Build, test and deploy v2 with FOUNDRY_PROFILE=v2.
+[profile.v2]
+optimizer = true
+optimizer_runs = 200

@@ -1,0 +1,616 @@
+# Gachard on Monad
+
+A digital-native collectible card game (TCG) platform built on **Monad Testnet**. Brands and IP owners can issue cards that users buy, collect, print as physical cards, and redeem back to digital, with blockchain completely hidden from the end user.
+
+Monad's sub-second blocks make it viable to treat a pack opening as a synchronous, consumer-grade interaction. Measured block time on Monad Testnet is **~0.3s** (sampled over 2,000 blocks), which is what lets `mintBatch()` confirm inside the reveal animation rather than behind a pending spinner. Monad reports throughput of ~10,000 TPS; we have not independently measured that.
+
+## Live Demo
+
+- **App**: https://gachard-monad.vercel.app
+- **Admin Console**: https://gachard-monad.vercel.app/admin
+- **Smart Contract (GachardCard):** [0x2a05a2e3b0e7355b97de593e354063e9474c9d08](https://testnet.monadvision.com/address/0x2a05a2e3b0e7355b97de593e354063e9474c9d08) (verified on Sourcify)
+- **Smart Contract (PackEntropy):** [0x6B53C35e8baBaaBe4DD725573C3f612121764542](https://testnet.monadvision.com/address/0x6B53C35e8baBaaBe4DD725573C3f612121764542) (verified on Sourcify)
+
+## Features
+
+### Core Loop
+
+```mermaid
+flowchart TD
+    A([Log in with Google]) --> B[Top up Credits]
+    B --> C{Choose a pack}
+    C -->|Standard · 500 CR| D[5 cards<br/>1 guaranteed Rare+]
+    C -->|Booster · 800 CR| E[10 cards<br/>2 guaranteed Rare+]
+    D --> F[[Provably fair reveal]]
+    E --> F
+    F --> G[(Your Collection)]
+    G --> H{What next?}
+    H -->|Trade| I[Marketplace<br/>buy and sell for Crystal]
+    H -->|Print| J[Physical card<br/>digital copy locks]
+    H -->|Dismantle| K[Burn for Crystal]
+    J --> L[Ship and claim]
+    L --> M[Redeem<br/>physical back to digital]
+    M --> G
+    I --> G
+
+    classDef entry fill:#8B5CF6,stroke:#B8ACFF,color:#fff
+    classDef key fill:#00CCFF,stroke:#7DF9FF,color:#06121a
+    classDef own fill:#00FF88,stroke:#00CC66,color:#06210f
+    classDef act fill:#FF6BBA,stroke:#CC3388,color:#fff
+    classDef burn fill:#B8ACFF,stroke:#8B5CF6,color:#161029
+    class A entry
+    class F key
+    class G own
+    class I,J,M act
+    class K burn
+```
+
+### Technical Architecture
+
+```mermaid
+flowchart LR
+    subgraph FE["Frontend · Next.js 16"]
+        direction TB
+        UiCollect["Collect<br/>buy and open packs"]
+        UiCollection["Collection<br/>print · dismantle"]
+        UiTrade["Trade<br/>marketplace"]
+        UiProfile["Profile<br/>wallet entry point"]
+        UiWallet["Wallet<br/>hold · move · return · transfer"]
+        UiAdmin["Admin console<br/>flow public · people locked"]
+    end
+
+    subgraph BE["Backend · API Routes"]
+        direction TB
+        ApiMint["POST /api/mint<br/>request randomness"]
+        ApiFulfill["POST /api/mint/fulfill<br/>poll · fulfill · recover"]
+        ApiCards["GET /api/cards"]
+        ApiMarket["/api/marketplace"]
+        ApiPrivy["/api/privy<br/>export · import · send"]
+        ApiRecon["POST /api/privy/reconcile<br/>chain is the truth"]
+    end
+
+    subgraph AI["AI · MiMo"]
+        direction TB
+        AiRisk["wash-trade risk score"]
+        AiInsight["market insight<br/>price suggestion"]
+    end
+
+    subgraph CH["Monad Testnet"]
+        direction TB
+        ScPack["PackEntropy<br/>seed + commitment"]
+        ScCard["GachardCard<br/>ERC-1155"]
+        ScPyth["Pyth Entropy<br/>external RNG"]
+    end
+
+    subgraph PV["Privy · self-custody"]
+        direction TB
+        PvWallet["embedded wallet<br/>keys held by the user"]
+        PvSign["sponsored signing<br/>Privy pays the gas"]
+    end
+
+    subgraph DB["MongoDB Atlas"]
+        direction TB
+        DbTx[("transactions")]
+        DbCards[("cards")]
+        DbUsers[("users")]
+    end
+
+    UiCollect --> ApiMint
+    UiCollect -. "poll every 2s" .-> ApiFulfill
+    UiCollection --> ApiCards
+    UiTrade --> ApiMarket
+    UiAdmin -. "confirm-all" .-> ApiFulfill
+    UiProfile --> DbUsers
+    UiWallet --> ApiPrivy
+    UiWallet -. "Refresh" .-> ApiRecon
+
+    ApiMint -- "requestPack" --> ScPack
+    ScPack -- "requestV2" --> ScPyth
+    ScPyth -. "entropyCallback<br/>writes seed" .-> ScPack
+    ApiFulfill -- "fulfillPack" --> ScPack
+    ScPack -- "mintBatch" --> ScCard
+
+    ApiMint --> DbTx
+    ApiFulfill --> DbCards
+    ApiCards --> DbCards
+    ApiMarket --> AiRisk
+    ApiMarket --> AiInsight
+    AiRisk -- "recordVerification" --> ScCard
+
+    ApiPrivy -- "one EIP-712 signature<br/>per selection" --> PvWallet
+    ApiPrivy --> PvSign
+    PvSign -- "safeTransferFrom" --> ScCard
+    ApiRecon -. "reads balances only<br/>never sends" .-> ScCard
+
+    style FE fill:#12152e,stroke:#8B5CF6,color:#fff
+    style BE fill:#12152e,stroke:#00CCFF,color:#fff
+    style AI fill:#12152e,stroke:#FF6BBA,color:#fff
+    style CH fill:#12152e,stroke:#00FF88,color:#fff
+    style PV fill:#12152e,stroke:#B8ACFF,color:#fff
+    style DB fill:#12152e,stroke:#FFC466,color:#fff
+```
+
+### Pack Opening, Step by Step
+
+A pack is three separate transactions, and the randomness arrives from outside our
+system in the middle of them. This is what makes the result checkable by anyone.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor U as Collector
+    participant App as Gachard app
+    participant API as Backend
+    participant PE as PackEntropy
+    participant Pyth as Pyth Entropy
+    participant GC as GachardCard
+
+    U->>App: Buy a pack
+    App->>API: POST /api/mint
+    API->>PE: requestPack()
+    PE->>Pyth: requestV2()
+    API-->>App: sequenceNumber (pack pending)
+
+    Note over Pyth,PE: Randomness is produced outside our system
+
+    Pyth-->>PE: entropyCallback() writes seed on-chain
+
+    loop every 2s until the seed lands
+        App->>API: POST /api/mint/fulfill
+        API->>PE: getSeed()
+    end
+
+    API->>API: derive rarities from the seed
+    API->>PE: fulfillPack(rarities)
+    PE->>PE: store keccak256(seed, rarities)
+    PE->>GC: mintBatch()
+    API-->>App: cards revealed
+
+    Note over U,GC: Anyone can re-derive the result from the on-chain seed<br/>and check it against the stored commitment
+```
+
+### Card Lifecycle
+
+```mermaid
+stateDiagram-v2
+    direction LR
+    [*] --> Digital: pack opened
+
+    state "Vaulted (physical exists)" as Vaulted {
+        [*] --> Locked
+        Locked --> Printing
+        Printing --> Shipping
+        Shipping --> Real: owner claims via QR
+    }
+
+    Digital --> Listed: list on marketplace
+    Listed --> Digital: cancel, or sold to new owner
+    Digital --> Vaulted: request print
+    Vaulted --> Digital: redeem code destroys the physical
+    Digital --> Burned: dismantle
+    Burned --> [*]
+
+    Digital --> Exported: move to your own wallet
+    Exported --> Digital: return to Gachard
+    Exported --> Released: transfer to an outside address
+    Released --> Exported: sent back in from outside
+
+    note right of Vaulted
+        Transfers blocked on-chain
+        Same token ID throughout
+    end note
+
+    note right of Exported
+        Shown as "In Your Wallet"
+        Not printable, listable
+        or dismantlable while out
+    end note
+
+    note right of Released
+        Shown as "Sent Away"
+        Gachard cannot bring it back
+        Only the chain says it returned
+    end note
+
+    note right of Burned
+        Permanent on-chain burn
+        Pays out Crystal
+    end note
+```
+
+### Core Loop Detail
+- **Login**: Google OAuth + demo account (custodial wallet, hidden from user)
+- **Buy Pack**: Standard (5 cards / 500 Credits) or Booster (10 cards / 800 Credits)
+- **Collect**: NFT cards minted on-chain, stored in user's collection
+- **Print**: Physical card printing (+$14.99 shipping), card locked in vault
+- **Claim Shipping**: User scans QR code on receipt → status becomes "Real"
+- **Redeem**: Enter Card ID + Redeem Code from physical card → back to digital
+- **Move to your own wallet** *(optional)*: Send a card out to a Privy wallet only you control, bring it back, or transfer it anywhere. One signature covers a whole selection (`/wallet`)
+
+### Additional Features
+- **Scan & Verify**: QR code scanning for card authenticity verification. The scan page shows the five most recent transactions and the full history on request. Owners appear by a public name they chose, or as an anonymous "Collector #…" label; usernames and wallet addresses never appear on this public page (ADR-032, amended)
+- **Public Name**: Each collector chooses a public name once, and can switch it between Public and Private at any time. A private name stays reserved for its owner. Until a name is chosen, the app and the scan page show an anonymous `Collector #…` label, and the email-derived username appears nowhere (ADR-032, amended)
+- **Credit System**: Top up credits to purchase packs
+- **Transaction History**: The 50 most recent transactions on the Profile page
+- **Unique Card ID**: Each card has a unique hex ID (e.g. `#8a866`)
+- **Invoice ID**: Each transaction has an Invoice ID (e.g. `GC-20260730-a3f1`)
+- **Admin Console**: Manage users, transactions, cards, print requests, monitor MON balances. Every tab has search, filters and sorting matched to what that tab is for. Readable without an account so the print-to-approval flow can be followed, but the people in that flow are not public: personal fields are withheld until an admin signs in, and state-changing routes need credentials
+- **Trade Marketplace**: Buy/sell cards between users with FVM pricing. **No fee** — dismantling a duplicate is the only source of Crystal, so the market is where an unwanted card becomes the one you wanted, and taking a cut there would tax the recovery from a bad pull (ADR-024)
+- **Dismantle & Crystal**: Burn cards to earn Crystal currency
+- **AI Anomaly Detection**: Wash-trading detection on marketplace
+- **Support Gachard**: Floating CTA for early supporters, shown on the homepage only
+- **Pyth Entropy**: Provably fair pack randomness with on-chain verifiable RNG
+- **Privy Embedded Wallet**: Optional self-custody wallet. A card can be moved out to a wallet whose keys the user holds, brought back, or transferred anywhere else, with Privy paying the gas (`/wallet`)
+
+## Quick Start
+
+### Prerequisites
+- Node.js 18+
+- MongoDB Atlas account (free tier)
+- Google Cloud Console OAuth credentials
+
+### Frontend + Backend (Single Service)
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Backend runs via Next.js API routes (`app/api/`), no separate service needed.
+
+### Smart Contracts (Foundry)
+```bash
+cd contracts
+forge install
+forge build
+forge test
+```
+
+### Environment Variables
+Copy [`frontend/.env.local.example`](frontend/.env.local.example) to
+`frontend/.env.local` and fill it in. Each variable is annotated there, and the
+deployment-specific notes are in [Deployment → Frontend (Vercel)](#frontend-vercel).
+
+## Stack
+
+| Layer | Technology |
+|-------|-----------|
+| Frontend | Next.js 16 (App Router), React 19, Tailwind CSS 4 |
+| Backend | Next.js API Routes (single service) |
+| Database | MongoDB Atlas (free tier) |
+| Blockchain | Monad Testnet, ERC-1155 |
+| Smart Contracts | Solidity 0.8.28, Foundry, OpenZeppelin v5 |
+| Wallet | Custodial (ethers.js v6), sponsored gas |
+| Auth | Google OAuth + demo accounts |
+| Payment | Simulated checkout (demo), no payment processor integrated |
+| AI | MiMo LLM (trade risk scoring, market insight, price suggestion) |
+| RNG | Pyth Entropy (on-chain verifiable) |
+| Wallet (optional) | Privy Embedded Wallet (self-custody, v3.44.0) |
+| Hosting | Vercel (frontend + backend) |
+
+## Architecture
+
+### Key Design Decisions
+- **ADR-002**: Custodial wallet, hidden from user
+- **ADR-003**: Gas fees sponsored by platform
+- **ADR-004**: Lock in-place via status flag (not burn)
+- **ADR-017**: Next.js API routes as sole backend
+- **ADR-018**: Async pattern for blockchain transactions
+- **ADR-020**: AES-256-GCM encryption for private keys
+- **ADR-024**: Functional marketplace (trade system)
+- **ADR-025**: AI Anomaly Detection Oracle
+- **ADR-026**: Dismantle & Crystal (burn-to-earn)
+- **ADR-027**: Become a Creator (whitelist form)
+- **ADR-028**: Privy Integration (optional self-custody wallet)
+- **ADR-029**: Pyth Entropy for provably fair pack randomness
+- **ADR-030**: MiMo as the single AI provider
+- **ADR-031**: Card export and import via Privy, with server-side sponsored signing
+- **ADR-032**: One identity, the signed session cookie
+- **ADR-033**: Token metadata left empty, deliberately
+- **ADR-034**: The marketplace fee belongs to a self-custody marketplace *(proposed, not built)*
+- **ADR-035**: A cosmetics store as the intended Crystal sink *(proposed, not built)*
+- **ADR-036**: What a compromised admin key can do, and the order of the fixes
+- **ADR-037**: Find anomalies by checking state; log only what state cannot show *(stuck-in-flight panel built; the rest proposed)*
+
+The full ADR log is in [`DECISIONS.md`](DECISIONS.md), 37 records covering every
+architectural decision, including the ones that were superseded and the known
+limitations of each. The largest decisions also have dedicated specs:
+
+- [`docs/ENTROPY-INTEGRATION-SPEC.md`](docs/ENTROPY-INTEGRATION-SPEC.md), the provably-fair
+  pack randomness design: request/callback/fulfill flow, hash commitment, threat model
+- [`docs/INCIDENT-RUNBOOK.md`](docs/INCIDENT-RUNBOOK.md), what to do if the admin
+  key leaks: the one time-critical action first, the reasoning after it
+- [`docs/PRIVY-BEYOND-AUTH-EVALUATION.md`](docs/PRIVY-BEYOND-AUTH-EVALUATION.md) and
+  [`docs/PRIVY-BEYOND-AUTH-SPEC.md`](docs/PRIVY-BEYOND-AUTH-SPEC.md), the evidence that
+  export and import were possible and the seven-stage design that followed
+
+### Project Structure
+```
+gachard-monad/
+├── frontend/           # Next.js app (single service)
+│   ├── proxy.ts       # The auth gate. Renamed from middleware.ts (Next 16)
+│   ├── app/           # Pages & API routes
+│   ├── components/    # React components
+│   ├── lib/           # Utilities & blockchain
+│   ├── hooks/         # React hooks
+│   ├── scripts/       # suite-api.ts and operational scripts
+│   └── public/        # Static assets
+├── contracts/         # Solidity smart contracts (Foundry)
+│   ├── src/           # GachardCard.sol + PackEntropy.sol
+│   ├── test/          # 78 test cases
+│   └── script/        # Deploy scripts
+├── docs/              # Documentation
+├── scripts/           # Deployment scripts
+├── MEMORY.md          # Project status & working notes (not published)
+├── DECISIONS.md       # Architecture decisions, 37 ADRs and their amendments
+```
+
+## Deployment
+
+### Smart Contract (Monad Testnet)
+```bash
+# Auto-generate wallet and deploy
+deploy-auto.bat
+
+# Or manually with Foundry
+cd contracts
+forge create src/GachardCard.sol:GachardCard \
+  --rpc-url https://testnet-rpc.monad.xyz \
+  --private-key <YOUR_PRIVATE_KEY> \
+  --chain-id 10143
+
+# Deploy PackEntropy (auto-authorizes as minter)
+forge script script/DeployPackEntropy.s.sol --rpc-url monad_testnet --broadcast
+```
+
+### Frontend (Vercel)
+1. Push to `main` branch → auto-deploy
+2. Settings:
+   - Framework Preset: Next.js
+   - Root Directory: `frontend`
+3. Environment Variables:
+   - `MONGODB_URL`: MongoDB Atlas connection string
+   - `DATABASE_NAME`: gachard
+   - `GOOGLE_CLIENT_ID`: Google OAuth Client ID
+   - `GOOGLE_CLIENT_SECRET`: Google OAuth Client Secret
+   - `CONTRACT_ADDRESS`: GachardCard contract address
+   - `ENTROPY_CONTRACT_ADDRESS`: PackEntropy contract address (for on-chain RNG)
+   - `PYTH_ENTROPY_ADDRESS`: Pyth Entropy contract address (Monad Testnet)
+   - `ADMIN_WALLET_ADDRESS`: Admin wallet address
+   - `ADMIN_PRIVATE_KEY`: Admin wallet private key
+   - `RPC_URL`: Monad Testnet RPC URL
+   - `CHAIN_ID`: Monad Testnet Chain ID (10143)
+   - `ENCRYPTION_SECRET_KEY`: AES-256-GCM key (min 32 chars)
+   - `EMERGENCY_OWNER`: cold wallet that contract ownership is moved to if the admin key leaks. Required by `scripts/emergency-transfer-ownership.ts`, which refuses to run without it ([incident runbook](docs/INCIDENT-RUNBOOK.md))
+    - `ADMIN_USERNAME` / `ADMIN_PASSWORD`, Admin console credentials
+    - `NEXT_PUBLIC_PRIVY_APP_ID`: Privy App ID for embedded wallet (optional)
+   - `NEXT_PUBLIC_CONTRACT_ADDRESS`: GachardCard address for client-side links (admin panel)
+   - `MIMO_API_KEY`: MiMo LLM key. **Required for AI features.** Without it, trade risk
+     scoring and market insight silently return "AI scoring unavailable" instead of failing
+
+### Database Scripts
+```bash
+# Clean slate (delete all test data)
+cd frontend && npx tsx scripts/clean-slate.ts
+```
+
+## Blockchain Verification
+
+All blockchain transactions are verifiable on Monad Explorer:
+- **GachardCard**: [0x2a05a2e3b0e7355b97de593e354063e9474c9d08](https://testnet.monadvision.com/address/0x2a05a2e3b0e7355b97de593e354063e9474c9d08)
+- **PackEntropy**: [0x6B53C35e8baBaaBe4DD725573C3f612121764542](https://testnet.monadvision.com/address/0x6B53C35e8baBaaBe4DD725573C3f612121764542)
+- **Chain**: Monad Testnet (Chain ID 10143)
+- **Explorer**: https://testnet.monadvision.com
+- **Verification**: Sourcify exact_match ✅
+- **Pack Verification**: `/api/verify/pack/[txHash]`, verify rarity fairness on-chain
+
+### Admin Console Features
+- **System Health**: MON balances, Token Supply Integrity and Stuck in Flight in one section that is folded by default. The closed header still shows one line of status, and any alarm (unexplained minting, a stuck operation, a low balance) opens it on load
+- **Balance Monitoring**: Real-time MON balance for admin wallet (gas) and PackEntropy (entropy fee)
+- **Copy Address**: One-click copy for contract addresses with visual feedback
+- **Transaction Tracking**: All transactions with clickable txHash links to Monad Explorer
+- **User Wallets**: View user wallet addresses (admin sign-in required; withheld from anonymous visitors)
+- **One name per collector**: every panel names a user by their public name, shown to the admin even while private, or by their collector ID. The Users panel shows both, with the Public/Private state. The email-derived username appears nowhere
+- **Token IDs**: Track NFT tokens on blockchain
+- **Risk Scores**: AI anomaly detection results
+- **Token Supply Integrity**: compares `nextTokenId` on chain against the highest token id Gachard has acknowledged minting, and goes loud if tokens appear beyond it — the first thing a compromised admin key would do. The high-water mark lives outside the collections that get wiped, so clean-slate and test fixtures cannot make Gachard's own mints look unexplained, and it holds its alarm rather than clearing itself (ADR-036)
+- **Stuck in Flight**: lists every mint, purchase, dismantle, print, redeem and Privy transfer still pending after ten minutes, and every card still marked in flight after its record already says done. Reads the database only, so it keeps answering when the RPC does not (ADR-037)
+
+## API and Logic Tests
+
+```bash
+cd frontend && npx tsx scripts/suite-api.ts    # needs a server running
+```
+
+134 checks over authentication boundaries, the public marketplace response, the
+public admin tier, logout, redeem, the EIP-712 batch signature, rate limits,
+reconciliation, Privy binding, stuck marketplace purchases, released cards,
+scanned QR payloads, public names and the stuck-in-flight panel. It
+builds its own fixture, deletes it, and prints what it left behind.
+
+## Smart Contract Tests
+
+```
+Ran 2 test suites: 78 tests passed, 0 failed, 0 skipped (78 total tests)
+Compiler: Solc 0.8.28 + EVM cancun + via_ir
+```
+
+Test coverage: mint, print, redeem, transfer, burn, verification, access control, events, error handling, Pyth Entropy integration (20 tests).
+
+## Security
+
+Stated as a threat model rather than a claim of safety, because the claim
+would not survive anyone reading the contract.
+
+**What holds.** A request is authenticated by one signed, httpOnly session
+cookie and nothing else (ADR-032). The public scan page names a card's owners
+by a name they chose or an anonymous label, never by username, because the
+username is built from the email address and a cardId is short enough to
+enumerate. The admin console is readable without an
+account so the print-to-approval flow can be followed, but its routes withhold
+the people in that flow — email, recipient name, phone, address and the redeem
+code reach a signed-in admin only, and the header that decides this is stripped
+from every incoming request before the gate sets it. Custodial keys are
+encrypted at rest with AES-256-GCM.
+
+**The known gap.** The admin wallet is `owner()` of `GachardCard`, and
+`marketplaceTransfer` takes no signature from the card's holder. An exported
+card is `Exported` only in MongoDB — on chain it is still `Digital`, and
+transfers are blocked for `Vaulted` alone. So the self-custody path does not
+yet protect a card from Gachard's own key, which is not what ADR-031 promises.
+Closing that is the first item for the next contract: `marketplaceTransfer`
+requiring an EIP-712 signature from the holder, which turns bounded damage into
+impossible theft.
+
+A token minted by a stolen key is, separately, worthless inside Gachard: every
+action starts from a `cards` document, only `/api/mint` creates one, and
+nothing creates one by observing the chain. It cannot be sold, dismantled or
+printed.
+
+**What is built and rehearsed.** The admin console compares `nextTokenId`
+against the mints Gachard recorded and goes loud when tokens appear that
+nothing accounts for. `scripts/emergency-transfer-ownership.ts --confirm` moves
+both contracts to a cold wallet in one command; without `--confirm` it prints
+the plan and stops. Both were exercised for real on 7 October 2026 — ownership
+moved and was handed back — which is how the runbook came to document that
+`cast` is not on PowerShell's PATH and that a wallet extension holds the
+Ledger's USB connection.
+
+**What is deferred, and why.** The contract fixes are ordered in ADR-036 and
+deliberately not shipped before the submission: one week left, a demo still
+unrecorded, one dead contract already paid for in a previous migration, and
+exposure of a single testnet account holding nothing of value. Redeploying now
+would trade a mapped risk for an unmapped one.
+
+Full detail: [ADR-036](DECISIONS.md) and [`docs/INCIDENT-RUNBOOK.md`](docs/INCIDENT-RUNBOOK.md).
+
+## Pyth Entropy Integration
+
+Pack rarity is determined by **Pyth Entropy**, an on-chain verifiable RNG protocol on Monad Testnet. This replaces `Math.random()` with a 4-layer security model:
+
+1. **Access Control**: Only authorized contracts can request/fulfill entropy
+2. **Hash Commitment**: `keccak256(seed, rarities)` stored on-chain creates immutable binding
+3. **Structural Check**: On-chain validation ensures minimum Rare+ card count
+4. **Transparency**: Public verification endpoint at `/api/verify/pack/[txHash]`
+
+### Verifying a Pack Yourself
+
+Nothing here has to be taken on trust. The seed and the commitment are both
+public on-chain, so anyone can re-derive a pack's result and check it:
+
+```bash
+cd frontend && npx tsx scripts/verify-entropy-onchain.ts
+```
+
+It reads `getSeed(seq)` from the chain, recomputes the rarities with the
+deterministic shuffle, recomputes `keccak256(seed, rarities)`, and compares that
+against the `getRarityHash(seq)` stored on-chain, then cross-checks each minted
+token's `cardRarity()` and the Rare+ guarantee. Run against 9 live transactions:
+9 passed, 0 failed.
+
+The one thing the commitment does *not* prove is that the shuffle algorithm
+itself is unbiased. It proves the rarities were derived consistently from that
+seed. Closing that gap means moving the shuffle on-chain, at roughly 150k-200k
+extra gas per pack. That trade-off is recorded in ADR-029.
+
+### Recovering an Interrupted Pack
+
+Pack opening spans three transactions (request → Pyth callback → fulfill), so it
+can be interrupted between them. Recovery is on-chain-first: before doing
+anything, the endpoint asks the contract whether the sequence is already
+fulfilled, and if so reconstructs state from the chain rather than re-minting.
+
+Finding the `PackFulfilled` event for that reconstruction is anchored to
+`entropyRequestBlock`, the block the request landed in, captured from its
+receipt. Fulfillment can only occur at or after it, so the log scan runs forward
+from a known point and normally resolves in a single query. Scanning backwards
+from the chain head instead would be bounded by Monad's 100-block `eth_getLogs`
+cap and the 10s route budget to roughly ten minutes of history, which is shorter
+than the hour a client keeps a timed-out pack recoverable.
+
+### Cost per Pack Opening
+| Pack Type | Gas (Admin) | Entropy Fee (PackEntropy) | Total |
+|-----------|-------------|---------------------------|-------|
+| Standard (5 cards) | ~0.003 MON | ~0.03 MON | ~0.033 MON |
+| Booster (10 cards) | ~0.005 MON | ~0.03 MON | ~0.035 MON |
+
+All costs are sponsored by the platform. Users only pay with Credits.
+
+## Roadmap
+
+### True Digital Ownership (Shipped)
+
+A card can be moved out of Gachard's custody into a Privy wallet whose keys the
+user holds, brought back to resume marketplace trading, printing and
+dismantling, or transferred to any address at all. Privy pays the gas on both
+sponsored steps. This is ADR-031, and it is what closes the loop between
+custodial simplicity and real ownership: the user chooses their own level of
+control.
+
+Gachard can send a card out of that wallet only while the user grants it
+delegated access through Privy, which is what makes the return work, and
+**Withdraw access** on `/wallet` removes it in one click. That is protection at
+the application level. The contract does not enforce it yet: `marketplaceTransfer`
+is an owner-only function that takes no signature from the holder, so the admin
+key could still move a card held in a user's wallet. ADR-036 records this and
+the fix, which waits for the next contract version.
+
+Choosing which cards leave happens on `/wallet/move` and nowhere else, so the
+consumer surfaces carry no wallet actions for anyone (ADR-002, amended). One
+EIP-712 signature authorises a whole selection; the transfers still run one
+request per card, because ADR-018 caps a function at ten seconds.
+
+`/wallet` also shows **Wallet activity** — what came in and what went out,
+each row with a direction and a transaction hash linking to the explorer. It
+is the wallet's own ledger rather than the account's, and it is scoped to
+cards from the Gachard ecosystem: these are Gachard's records, not the chain,
+so a token sent to the address from outside the app appears only once the card
+list is refreshed, and then without a hash. The page says so rather than
+implying completeness.
+
+**Known limitation:** revealing the wallet's private key is built and switched
+off. `useExportWallet` is available on v3.44.0 — the constraint ADR-028
+described is gone — but a revealed key cannot be un-revealed, so it stays
+behind a deliberate flag rather than shipping by default.
+
+### Marketplace Fee and a Crystal Sink (Planned, Not Built)
+
+Trading inside Gachard is free and costs no export, wallet or signature. The
+8% fee that used to be deducted from Crystal sales was removed in September
+2026: it was taken from sellers and credited nowhere, and Crystal cannot be
+bought or cashed out, so it could never have become revenue.
+
+It is not abandoned, it is relocated. **ADR-034** records a marketplace for
+cards held in the user's own wallet, priced in something spendable, where a
+fee can actually be collected — and states plainly that it needs an escrow or
+approval-based contract that does not exist. `marketplaceTransfer()` is
+`onlyOwner` and works only because Gachard holds the token.
+
+Keeping in-app trading free is deliberate rather than a gap. Opening packs
+produces duplicates, dismantling one is the only way Crystal is created, and
+Crystal is what buys the card you actually wanted. Charging there would tax
+the recovery from a bad pull.
+
+That leaves Crystal with no sink at all, and **ADR-035** records the intended
+answer: a cosmetics store. Cosmetics only — selling cards would make Gachard a
+seller inside its own peer-to-peer market, and selling packs would cannibalise
+the main revenue line with a currency earned by destroying cards.
+
+### AI Vision Verification (Planned)
+
+AI-powered visual card analysis is planned as a complementary verification layer alongside the existing QR-based on-chain lookup, comparing a photographed card against its on-chain template to catch forgeries that carry a valid-looking QR code.
+
+**Current status:** Not implemented. No vision code exists yet. QR-based verification is the only method today. The AI that *is* live is text-based: trade risk scoring and marketplace insight, both via MiMo.
+
+## Notes for AI Coding Agents
+- Read `DECISIONS.md` and `docs/` before making changes (`MEMORY.md` is not published)
+- Do not use blockchain/crypto/on-chain terminology in user-facing UI
+- All changes must be compatible with locked ADRs
+- Test on mobile (iPhone 12 Pro/390px, Galaxy S8+/360px) before deploying
+- Use `getAuthenticatedUser(req)` for all API routes (server-side session)
+- The auth gate is `frontend/proxy.ts`, not `middleware.ts` — Next 16 renamed the convention, and a proxy always runs on the Node.js runtime
+- A public endpoint returns a document only through an explicit field list, and that list must not name people (ADR-032)
+- All blockchain transactions use async pattern (ADR-018)
+
+## License
+Private, Monad hackathon submission.

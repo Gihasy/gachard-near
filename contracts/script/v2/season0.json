@@ -1,0 +1,21 @@
+{
+  "note": "Season 0, the testnet season decided on 15 October 2026 (docs/PLAN-STORE-V2.md, P5): the 8 existing v1 artworks as the album, plus one Limited card whose artwork is still to be made. Used by LocalDevV2 and as the migration template map. The Limited caps are placeholders for local development until P9 is decided.",
+  "seriesId": 1,
+  "seriesName": "Gachard Originals",
+  "seasonId": 1,
+  "templateMap": {
+    "common-1": 101,
+    "common-2": 102,
+    "rare-1": 103,
+    "rare-2": 104,
+    "epic-1": 105,
+    "epic-2": 106,
+    "legendary-1": 107,
+    "legendary-2": 108
+  },
+  "rarities": [0, 0, 1, 1, 2, 2, 3, 3],
+  "albumSlots": [101, 102, 103, 104, 105, 106, 107, 108],
+  "limited": { "templateId": 201, "rarity": 3, "albumCap": 20, "storeCap": 5 },
+  "completion": { "templateId": 301 },
+  "seasonDays": 90
+}
