@@ -90,18 +90,20 @@ export default async function Home() {
 
         <figure className="m-0">
           <div className="duo">
-            <div className="duo-glow" aria-hidden="true" />
-            <div className="duo-phone">
+            <div className="duo-panel">
+              <span className="duo-tag">On screen</span>
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/cards/digital-card.webp" alt="A trading card on a phone" width={500} height={700} draggable={false} />
+              <img className="duo-phone" src="/cards/digital-card.webp" alt="A trading card on a phone" width={500} height={700} draggable={false} />
             </div>
-            <div className="duo-hand">
+            <a href="#print" className="duo-print crystal-calm" aria-label="See how printing works">
+              <PrintIcon width={18} height={18} />
+              <ArrowIcon width={14} height={14} />
+            </a>
+            <div className="duo-panel">
+              <span className="duo-tag">In hand</span>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src="/cards/real-card.webp" alt="The same card, printed and held in a hand" width={500} height={700} draggable={false} />
             </div>
-            <span className="duo-tag" data-side="left">On screen</span>
-            <span className="duo-tag" data-side="right">In hand</span>
-            <a href="#print" className="duo-print crystal-calm"><PrintIcon width={16} height={16} /> Print</a>
           </div>
           <figcaption className="mt-2 text-center text-xs text-cn-text-3 leading-relaxed">
             Illustration of a production print. In this hackathon demo, you print a PDF yourself.

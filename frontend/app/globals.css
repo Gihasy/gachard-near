@@ -239,45 +239,33 @@ input[type="number"] { -moz-appearance: textfield; }
 .tilt[data-active="true"] .holo { opacity: 0.85; }
 
 /* ---- Hero: the same card on a screen and in a hand ---- */
-.duo { position: relative; aspect-ratio: 7 / 6; max-width: 640px; margin-inline: auto; overflow-x: clip; overflow-y: visible; }
-.duo-glow {
-  position: absolute;
-  inset: 8% 10%;
-  border-radius: 50%;
-  background: radial-gradient(closest-side, #c295fc66, #ff9ef122 60%, transparent);
-  filter: blur(26px);
-}
-.duo-phone, .duo-hand { position: absolute; top: 2%; width: 60%; }
-.duo-phone img, .duo-hand img { display: block; width: 100%; height: auto; user-select: none; }
-.duo-phone { left: -3%; rotate: -6deg; animation: float 8s ease-in-out infinite; }
-/* Fades out the app's old tab bar under the card. */
-.duo-phone img { mask-image: linear-gradient(#000 76%, transparent 87%); }
-.duo-hand { right: -3%; top: 6%; rotate: 5deg; animation: float 8s ease-in-out -4s infinite; filter: drop-shadow(0 26px 40px #0009); }
-.duo-tag {
-  position: absolute;
-  top: 0;
-  padding: 0.25rem 0.7rem;
-  border-radius: 999px;
-  border: 1px solid var(--cn-line-strong);
-  background: #12131fd9;
-  font-size: 0.75rem;
-  font-weight: 600;
-}
-.duo-tag[data-side="left"] { left: 8%; }
-.duo-tag[data-side="right"] { right: 8%; }
-.duo-print {
-  position: absolute;
-  left: 50%;
-  bottom: 5%;
-  translate: -50% 0;
-  display: inline-flex;
+/* Each image meets its panel's bottom edge, which hides where the photo was cut. */
+.duo { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 0.5rem; max-width: 640px; margin-inline: auto; }
+.duo-panel {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 0.4rem;
-  min-height: 44px;
-  padding-inline: 1.1rem;
+  min-width: 0;
+  border-radius: var(--cn-r-lg);
+  border: 1px solid var(--cn-line);
+  background: radial-gradient(90% 60% at 50% 55%, #c295fc40, transparent), linear-gradient(180deg, #1a1b2bd9, #12131fd9);
+  box-shadow: inset 0 1px 0 #ffffff0d;
+}
+.duo-panel img { display: block; width: 100%; height: auto; user-select: none; }
+/* Fades out the app's old tab bar under the card. */
+.duo-phone { mask-image: linear-gradient(#000 76%, transparent 87%); }
+.duo-tag { padding: 0.75rem 0 0.25rem; color: var(--cn-text-2); font-size: 0.75rem; font-weight: 600; }
+.duo-print {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.15rem;
+  width: 44px;
+  height: 56px;
   border-radius: 999px;
-  font-size: 0.875rem;
-  font-weight: 700;
 }
 @keyframes float {
   0%, 100% { transform: translateY(0); }
@@ -512,6 +500,6 @@ button.flip:hover:not(:disabled) .flip-inner { transform: translateY(-5px); }
     animation-delay: 0ms !important;
     transition-duration: 1ms !important;
   }
-  .crystal-mesh::after, .duo-phone, .duo-hand, .pack-idle, .rail-track, .sheet[data-live] .sheet-art { animation: none !important; }
+  .crystal-mesh::after, .pack-idle, .rail-track, .sheet[data-live] .sheet-art { animation: none !important; }
   .print-head { display: none; }
 }
