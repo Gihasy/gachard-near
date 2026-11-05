@@ -177,7 +177,9 @@ This is disclosed as the hackathon rules ask (Q-002, Q-003).
   the end-to-end check. Solidity, `ethers`, Pyth and Privy were removed.
 - Reused from the baseline: the visual tokens in `frontend/app/globals.css`,
   `frontend/lib/crypto.ts`, `frontend/lib/session.ts` (in part), `frontend/components/Logo.tsx`,
-  `design/gachard.pen`, `docs/CREATOR-ASSET-GUIDE.md`, and the images in `frontend/public`.
+  `design/gachard.pen`, `docs/CREATOR-ASSET-GUIDE.md`, and the images in `frontend/public`,
+  including the pack art, relabelled for this version. The "One card, two worlds" line, the
+  scan steps and parts of the creator page's copy come from the Monad site.
 - Libraries: `near-sdk`, `near-api-js`, Next.js, React, Tailwind, `pdf-lib`, `qrcode`, `mongodb`,
   `google-auth-library`, and `sharp` for the seed script only.
 - Much of the code was written with AI coding agents under the author's direction: Claude Code

@@ -260,6 +260,46 @@ input[type="number"] { -moz-appearance: textfield; }
 }
 .trio:hover .trio-card { transform: translate(calc(var(--x) * 1.12), calc(-50% + var(--y))) rotate(var(--r)); }
 
+/* ---- One card, two worlds. Each image meets its panel's bottom edge, which hides where the photo was cut. ---- */
+.duo { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 0.625rem; }
+.duo-panel {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 0;
+  border-radius: var(--cn-r-lg);
+  border: 1px solid var(--cn-line);
+  background: radial-gradient(90% 60% at 50% 55%, #c295fc40, transparent), #0a0b1466;
+}
+.duo-panel img { display: block; width: 100%; height: auto; user-select: none; }
+/* Fades out the app's old tab bar under the card. */
+.duo-phone { mask-image: linear-gradient(#000 76%, transparent 87%); }
+.duo-tag { padding: 0.75rem 0 0.25rem; color: var(--cn-text-2); font-size: 0.75rem; font-weight: 600; }
+.duo-swap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  width: 3.25rem;
+  color: var(--cn-text-2);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  line-height: 1.15;
+  text-align: center;
+}
+.duo-swap i {
+  display: grid;
+  place-items: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 50%;
+  border: 1px solid var(--cn-credits);
+  color: var(--cn-credits);
+  font-style: normal;
+}
+
 /* ---- A filter ---- */
 .chip {
   min-height: 40px;

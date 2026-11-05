@@ -1,24 +1,61 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import AddCardForm from "@/components/AddCardForm";
 import CreateSeriesForm from "@/components/CreateSeriesForm";
-import { ArrowIcon, CheckIcon } from "@/components/icons";
-import { CardImage, Page, Panel, Rarity, Title } from "@/components/ui";
+import { ArrowIcon, CheckIcon, PrintIcon, ScanIcon, SeriesIcon } from "@/components/icons";
+import { CardImage, Eyebrow, Page, Panel, Rarity, primaryBtn } from "@/components/ui";
 import { missingRarities, RARITIES } from "@/lib/catalog";
 import { readDb } from "@/lib/db";
 import { currentUser } from "@/lib/users";
 
 export const dynamic = "force-dynamic";
 
+const BENEFITS = [
+  { Icon: SeriesIcon, title: "Just bring your art", text: "Publish a series in minutes, with your own rates and your own prices." },
+  { Icon: ScanIcon, title: "Your name on the record", text: "Your account signs what you release, so anyone can see that it came from you." },
+  { Icon: PrintIcon, title: "Digital and physical", text: "Every card can be printed. Your fans need no wallet and pay no network fees." },
+];
+
+function Pitch() {
+  return (
+    <section className="mb-10">
+      <Eyebrow>For creators and IP owners</Eyebrow>
+      <h1 className="mt-4 font-display font-bold text-3xl sm:text-5xl leading-tight max-w-3xl">
+        Turn your fans into <span className="crystal-text">collectors.</span>
+      </h1>
+      <p className="mt-4 max-w-2xl text-cn-text-2 sm:text-lg leading-relaxed">
+        Got a world people love? Release it as cards your community can collect, verify and hold, without a crypto tutorial.
+      </p>
+      <ul className="mt-7 grid md:grid-cols-3 gap-4">
+        {BENEFITS.map(({ Icon, title, text }) => (
+          <li key={title} className="panel p-5">
+            <span className="grid place-items-center size-10 rounded-xl bg-white/[.07] border border-cn-line text-cn-lavender"><Icon /></span>
+            <h2 className="mt-4 font-display font-semibold text-base">{title}</h2>
+            <p className="mt-2 text-sm text-cn-text-2 leading-relaxed">{text}</p>
+          </li>
+        ))}
+      </ul>
+      <p className="mt-4 rounded-2xl border border-[#f7c96b40] bg-[#f7c96b12] px-4 py-3 text-sm leading-relaxed text-cn-text-2" data-testid="creator-plan">
+        <strong className="font-semibold text-cn-credits">The plan for production, not part of this demo:</strong>{" "}
+        no upfront cost, with Gachard handling printing and shipping, and a revenue share on every pack sold. Nothing is charged or paid here.
+      </p>
+    </section>
+  );
+}
+
 export default async function Creator() {
   const user = await currentUser();
-  if (!user) redirect("/login?next=/creator");
+  if (!user) {
+    return (
+      <Page>
+        <Pitch />
+        <Link className={primaryBtn} href="/login?next=/creator">Sign in to release a series <ArrowIcon width={16} height={16} /></Link>
+      </Page>
+    );
+  }
   const mine = (await readDb()).series.filter((s) => s.ownerUserId === user.id);
   return (
     <Page>
-      <Title eyebrow="Creator studio" sub="Your art, your rates, your prices. Your community needs no wallet to collect.">
-        Release a series
-      </Title>
+      <Pitch />
       <p className="mb-6 rounded-2xl border border-cn-line bg-white/[.03] px-4 py-3 text-xs text-cn-text-3 leading-relaxed">
         Demo: anyone can upload here and nothing is reviewed. A card&apos;s record shows which account
         released it, not that the account owns the rights to the art.

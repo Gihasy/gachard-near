@@ -10,6 +10,7 @@ import {
   ScanIcon,
   SearchIcon,
   SparkIcon,
+  SwapIcon,
   UserIcon,
 } from "@/components/icons";
 import { CardImage, Eyebrow, inputClass, primaryBtn } from "@/components/ui";
@@ -208,7 +209,41 @@ export default async function Home({ searchParams }: {
 
       {/* ---- Digital to print ---- */}
       <section id="print" className="max-w-7xl mx-auto px-4 sm:px-6 mt-16 sm:mt-24 scroll-mt-24">
-        <div className="panel print-stage p-5 sm:p-10 grid lg:grid-cols-[1fr_1.05fr] gap-10 lg:gap-14 items-center">
+        <div className="panel print-stage p-5 sm:p-10">
+          <div className="grid lg:grid-cols-[1fr_1.15fr] gap-8 lg:gap-14 items-center">
+            <div>
+              <Eyebrow>Digital first, printable anytime</Eyebrow>
+              <h2 className="mt-4 font-display font-bold text-3xl sm:text-5xl leading-tight">
+                One card. <span className="crystal-text">Two worlds.</span>
+              </h2>
+              <p className="mt-4 max-w-md text-cn-text-2 leading-relaxed">
+                Every card starts digital. Print it to hold it, pass it on, or send it back to make it digital again.
+              </p>
+            </div>
+            <figure className="m-0">
+              <div className="duo">
+                <div className="duo-panel">
+                  <span className="duo-tag">On screen</span>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img className="duo-phone" src="/cards/digital-card.webp" alt="A trading card on a phone" width={500} height={700} loading="lazy" draggable={false} />
+                </div>
+                <div className="duo-swap" aria-hidden="true">
+                  <span>Print</span>
+                  <i><SwapIcon width={18} height={18} /></i>
+                  <span>Send back</span>
+                </div>
+                <div className="duo-panel">
+                  <span className="duo-tag">In hand</span>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src="/cards/real-card.webp" alt="The same card, printed and held in a hand" width={500} height={700} loading="lazy" draggable={false} />
+                </div>
+              </div>
+              <figcaption className="mt-2 text-center text-xs text-cn-text-3 leading-relaxed">
+                Illustration of a production print. In this hackathon demo, you print a PDF yourself.
+              </figcaption>
+            </figure>
+          </div>
+          <div className="mt-10 lg:mt-14 pt-10 lg:pt-14 border-t border-cn-line grid lg:grid-cols-[1fr_1.05fr] gap-10 lg:gap-14 items-center">
           <div className="print-show">
             <div className="print-show-back">
               <PrintSheet src="/cards/card-back.webp" side="back" marks={false} label="The back of a printed card, naming the print" />
@@ -221,10 +256,9 @@ export default async function Home({ searchParams }: {
             <span className="print-show-tag">A QR for each print</span>
           </div>
           <div>
-            <Eyebrow>Digital first, printable anytime</Eyebrow>
-            <h2 className="mt-4 font-display font-bold text-2xl sm:text-4xl leading-tight">
+            <h3 className="font-display font-bold text-2xl sm:text-3xl leading-tight">
               Every digital card can also be <span className="crystal-text">printed.</span>
-            </h2>
+            </h3>
             <ol className="mt-7 space-y-5">
               {PRINT_STEPS.map((step, i) => (
                 <li key={step.title} className="flex gap-4">
@@ -245,6 +279,7 @@ export default async function Home({ searchParams }: {
               <strong className="font-semibold text-cn-credits">Hackathon simulation.</strong>{" "}
               In production, the platform would print and ship the card, and destroy the ones sent back. Here you print the PDF yourself, and a button stands in for sending it back.
             </p>
+          </div>
           </div>
         </div>
       </section>

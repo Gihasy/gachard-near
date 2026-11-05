@@ -30,7 +30,12 @@ export default async function SeriesPage({ params }: { params: Promise<{ id: str
         <div className="absolute inset-0 bg-gradient-to-b from-transparent to-cn-bg" />
         <div className="relative max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-14 grid sm:grid-cols-[auto_1fr] md:grid-cols-[auto_1fr_minmax(280px,340px)] gap-6 md:gap-10 items-center">
           <div className="w-36 sm:w-44 mx-auto sm:mx-0 -rotate-3 pack-idle">
-            <PackArt name={series.name} cards={CARDS_PER_PACK} />
+            {series.name.startsWith("Crystal Night") ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src="/packs/crystal-night.webp" alt="" aria-hidden="true" className="w-full rounded-xl shadow-2xl" />
+            ) : (
+              <PackArt name={series.name} cards={CARDS_PER_PACK} />
+            )}
           </div>
           <div className="min-w-0">
             <Eyebrow>Released by {nameOf(series.creatorAccount, db.users)}</Eyebrow>

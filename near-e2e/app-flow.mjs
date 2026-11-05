@@ -74,6 +74,8 @@ async function main() {
   check("Home says any card can be printed, and that it is a simulation", /also be <span[^>]*>printed/.test(home.html) && home.html.includes("Hackathon simulation."));
 
   check("Signed-out pack request is refused", (await anon.post("/api/packs", { seriesId })).status === 401);
+  const pitch = await anon.page("/creator");
+  check("Signed-out creators see the pitch, and the plan is labelled", pitch.status === 200 && pitch.html.includes("not part of this demo"));
   check("Signed-out collection redirects to sign-in", (await anon.request("/collection")).status === 307);
 
   const [alice, bob] = [new Visitor(), new Visitor()];

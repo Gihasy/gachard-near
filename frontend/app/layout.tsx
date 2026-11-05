@@ -15,6 +15,13 @@ export const metadata: Metadata = {
   icons: { icon: "/favicon.png", apple: "/icons/icon-192.png" },
 };
 
+const SOCIAL = [
+  ["X", "https://x.com/gachardtcg"],
+  ["YouTube", "https://www.youtube.com/@gachardtcg"],
+  ["TikTok", "https://www.tiktok.com/@gachardtcg"],
+  ["Instagram", "https://www.instagram.com/gachardtcg"],
+];
+
 export const viewport = { themeColor: "#0A0B14" };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
@@ -27,6 +34,11 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         <footer className="border-t border-cn-line mt-10 pb-20 md:pb-0">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 py-7 flex flex-wrap items-center justify-between gap-3">
             <Logo size={22} showWordmark />
+            <nav aria-label="Gachard on social media" className="flex flex-wrap gap-x-4 gap-y-1 text-xs font-medium text-cn-text-2">
+              {SOCIAL.map(([name, href]) => (
+                <a key={name} href={href} target="_blank" rel="noreferrer" className="hover:text-cn-text-1 transition">{name}</a>
+              ))}
+            </nav>
             <p className="text-xs text-cn-text-3" data-testid="test-notice">
               Test version · cards have no cash value · payments are simulated · Gachard holds account keys
             </p>

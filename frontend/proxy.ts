@@ -23,7 +23,6 @@ export function proxy(request: NextRequest) {
 export const config = {
   matcher: [
     "/collection/:path*",
-    "/creator/:path*",
     "/pack/:path*",
     "/api/creator/:path*",
     "/api/packs/:path*",
