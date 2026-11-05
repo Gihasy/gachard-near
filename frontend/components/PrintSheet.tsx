@@ -25,7 +25,6 @@ export default function PrintSheet({ src, qr, side = "front", label, marks = tru
         {side === "back" ? (
           <div className="print-card-plate">
             <strong>Token 15 · Print 1</strong>
-            <span>Each print has its own serial</span>
           </div>
         ) : null}
         <span className="print-card-gloss" aria-hidden="true" />

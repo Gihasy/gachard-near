@@ -310,7 +310,7 @@ input[type="number"] { -moz-appearance: textfield; }
   background: radial-gradient(closest-side, #c295fc55, #ff9ef11a 62%, transparent);
   filter: blur(24px);
 }
-.print-show-back { position: absolute; top: 3%; right: 0; width: 56%; rotate: 7deg; }
+.print-show-back { position: absolute; top: 0; right: 0; width: 56%; rotate: 7deg; }
 .print-show-front { position: absolute; bottom: 7%; left: 5%; width: 62%; rotate: -5deg; }
 .print-show-dim {
   position: absolute;
@@ -339,7 +339,6 @@ input[type="number"] { -moz-appearance: textfield; }
 }
 .print-show-tag::before { content: ""; width: 7px; height: 7px; rotate: 45deg; border-radius: 1px; background: var(--cn-crystal); }
 @media (max-width: 640px) {
-  .print-card-plate span { display: none; }
   .print-show-tag { bottom: 0; }
 }
 
