@@ -1,0 +1,119 @@
+{
+  "ranAt": "2026-11-05T09:49:36.575Z",
+  "contract": "cards.gachard-dev-4f0c7e.testnet",
+  "tokenId": "2",
+  "seriesId": 2,
+  "failures": 0,
+  "steps": [
+    {
+      "name": "Three accounts created by the platform, no wallet involved",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Platform approves the creator",
+      "ok": true,
+      "detail": "https://testnet.nearblocks.io/txns/GsRdxm2DdPZid72dABbwrKR2xaKoeZvrYe8Fg13zUpcN"
+    },
+    {
+      "name": "Creator creates a series, gas paid by the platform",
+      "ok": true,
+      "detail": "https://testnet.nearblocks.io/txns/4gQt4DLK5ugupEGoZ5yKwZnbn68HCz9NGJboUhbDRZYc"
+    },
+    {
+      "name": "Creator adds a card with its artwork hash",
+      "ok": true,
+      "detail": "https://testnet.nearblocks.io/txns/FVWEg7jskUmA5fiFhF6wbKeUc4qgFjWE1FkXQuAvPa1L"
+    },
+    {
+      "name": "Chain names the creator as issuer",
+      "ok": true,
+      "detail": "c-ef38fc2426df.gachard-dev-4f0c7e.testnet"
+    },
+    {
+      "name": "Platform mints a card to Alice",
+      "ok": true,
+      "detail": "https://testnet.nearblocks.io/txns/ZKpM3czjkYJXMQh1NHNRndf1RPTowUEDw3kezZ4N82T"
+    },
+    {
+      "name": "Card records its origin",
+      "ok": true,
+      "detail": "token 2, series 2, template 1"
+    },
+    {
+      "name": "Stored art hash matches the file",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Platform cannot move Alice's card",
+      "ok": true,
+      "detail": "{\"ActionError\":{\"index\":0,\"kind\":{\"FunctionCallError\":{\"ExecutionError\":\"Smart contract panicked: Only the holder can transfer a card\"}}}} | {\"ActionError\":{\"in"
+    },
+    {
+      "name": "Alice sends the card to Bob, with no NEAR of her own",
+      "ok": true,
+      "detail": "https://testnet.nearblocks.io/txns/HPZGbuiYWDLWffQaN5ckZdBNKB4XRy7EeYSa8nZivPhu"
+    },
+    {
+      "name": "Bob now holds it",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Bob locks the card for print",
+      "ok": true,
+      "detail": "https://testnet.nearblocks.io/txns/J6a1g6pGsBoQ5QzrPwxJ8cfkfuN5Ta8kBnYb6Uvb6QmC"
+    },
+    {
+      "name": "Card reads Printed, still held by Bob",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "A printed card cannot move",
+      "ok": true,
+      "detail": "{\"ActionError\":{\"index\":0,\"kind\":{\"FunctionCallError\":{\"ExecutionError\":\"Smart contract panicked: Card is locked for print\"}}}}"
+    },
+    {
+      "name": "A wrong code is refused",
+      "ok": true,
+      "detail": "{\"ActionError\":{\"index\":0,\"kind\":{\"FunctionCallError\":{\"ExecutionError\":\"Smart contract panicked: Invalid redeem code\"}}}}"
+    },
+    {
+      "name": "Alice redeems with the code",
+      "ok": true,
+      "detail": "https://testnet.nearblocks.io/txns/Cyze4sSZ6Fnv1enpnyaUMN64A3VnZJVbtddgHqszMeiP"
+    },
+    {
+      "name": "Same token, digital again, held by Alice",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "History shows the whole trip",
+      "ok": true,
+      "detail": "Mint > Transfer > Print > Redeem"
+    },
+    {
+      "name": "The code cannot be used twice",
+      "ok": true,
+      "detail": "{\"ActionError\":{\"index\":0,\"kind\":{\"FunctionCallError\":{\"ExecutionError\":\"Smart contract panicked: Card is not printed\"}}}}"
+    },
+    {
+      "name": "c-ef38fc2426df paid nothing",
+      "ok": true,
+      "detail": "balance change 0 yocto, expected 0"
+    },
+    {
+      "name": "c-6e369bc10283 paid nothing",
+      "ok": true,
+      "detail": "balance change 1 yocto, expected 1"
+    },
+    {
+      "name": "c-a3cb2ad070fb paid nothing",
+      "ok": true,
+      "detail": "balance change 2 yocto, expected 2"
+    }
+  ]
+}

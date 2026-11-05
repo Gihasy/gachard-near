@@ -1,0 +1,12 @@
+{
+  "name": "gachard-near-e2e",
+  "private": true,
+  "type": "module",
+  "description": "End-to-end proof on NEAR testnet: users with no NEAR, gas paid by the platform.",
+  "scripts": {
+    "e2e": "node e2e.mjs"
+  },
+  "dependencies": {
+    "near-api-js": "7.4.0"
+  }
+}
