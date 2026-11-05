@@ -6,11 +6,20 @@ community collects it without meeting a wallet, a seed phrase or a gas fee.
 
 Built for NEAR HACKATHON. Tracks: `open`, `nfts`.
 
+- **Hosted demo:** https://gachard-near.vercel.app (testnet, simulated payments)
+- **Contract:** [`cards-v2.gachard-demo-6b9aead4.testnet`](https://testnet.nearblocks.io/address/cards-v2.gachard-demo-6b9aead4.testnet)
+- **Prior work is disclosed** [below](#prior-work). What is simulated is listed [here](#what-is-simulated-and-what-is-not-claimed).
+
 ## The problem
 
 A creator who wants verifiable collectible cards has to send their community through
 wallets, gas fees and seed phrases, and most of that community stops there. Gachard
 moves all of that behind an ordinary sign-in.
+
+A digital card can also become a physical one, and that creates a second problem: paper
+can be copied, lost or stolen. Here the paper never carries ownership. A QR code only opens
+the card's record, only the holder's account can transfer it, and returning it to digital
+takes the physical card, so one that is lost or stolen stays lost.
 
 ## How NEAR is used
 
@@ -27,7 +36,8 @@ moves all of that behind an ordinary sign-in.
 
 ## Try it
 
-Needs Node 22.22 or later and internet access. You need no account, key or funds:
+The steps below work on the hosted demo too. To run your own copy, you need Node 22.22 or
+later and internet access. You need no account, key or funds:
 setup creates a throwaway testnet account from the public faucet, deploys the contract
 from the committed wasm, and publishes a demo series with real transactions. Allow
 about a minute.
@@ -38,7 +48,7 @@ npm install
 npm run demo
 ```
 
-Open http://localhost:3000, then:
+Open http://localhost:3000, or the hosted demo, then:
 
 1. **Sign in.** Click Sign in, then Continue with a demo account. You see 5,000 Credits and
    no wallet prompt.
@@ -48,22 +58,35 @@ Open http://localhost:3000, then:
    the sum of its cards' prices. Skip charges nothing.
 4. **Buy.** Click Buy this pack. Credits fall by exactly that price and five cards are
    minted to your account.
-5. **Verify.** Click See the first card's record. You see the holder, who released it, and
+5. **Verify.** Click Print or verify the first card. You see the holder, who released it, and
    whether the artwork file matches the hash on chain. Click check independently: NearBlocks
    shows the same transaction, outside this app.
-6. **Print.** Click Print, read the simulation notice, then Print and create PDF. The status
-   reads Printed (hackathon demo PDF). Download the PDF: it holds the card and a QR code.
-7. **Scan as someone else.** Open the QR's address in a private window, or sign in with a
-   new demo account. You see the card and its holder, and nothing to press. Pick a username
+6. **Print.** Click Print this card, read the simulation notice, then Print and create PDF. The status
+   reads Printed (hackathon demo PDF). Download the PDF: it holds the card and a QR code. The address the QR opens is printed at the foot of each page.
+7. **Scan as someone else.** Open that address in a private window, or sign in with a new
+   demo account there. You see the card and its holder, and nothing to press. Pick a username
    for that account under Collection.
 8. **Transfer, then return.** Back as the holder, transfer the card to that username. It
-   stays printed, and its history updates. As the new holder, click Return to digital, then
+   stays printed, and its history updates. As the new holder, open the card and click Return to digital, then
    Request return. A button stands in for posting the card: click Simulate: card received
    and destroyed. The same token id is digital again. Open the QR's address once more: it
    now reads VOID.
 9. **Release your own.** Open Create, publish a series, and add a card for each rarity that
    has a rate. It goes live on the home page. A record of what your account published is on
    chain.
+
+### Check each claim
+
+| Claim | How to check | What you should see |
+|---|---|---|
+| Users pay nothing and need no wallet | `e2e.mjs`, below | `paid nothing` for each account, from its exact balance |
+| The platform cannot take a card | `cargo test platform_cannot_move` | The contract refuses it |
+| Having the paper gives no power | `cargo test finder_of_a_printed_card` and `e2e.mjs` | `Only the holder can transfer`, `Only the holder can return` |
+| The platform cannot return a card nobody asked to return | `cargo test platform_cannot_return` | `Card is not being returned` |
+| A returned card's old QR reads VOID | `cargo test print_state_follows_the_card` and `app-flow.mjs` | `The old QR reads VOID` |
+| A price stays hidden until every card is open | `app-flow.mjs` | `Price is still hidden at card four` |
+| The art matches its hash on chain | `app-flow.mjs` | `Artwork matches the chain's hash` |
+| Scan can be checked outside this app | Click check independently on any history row | The same transaction on NearBlocks |
 
 ### Prove it without a browser
 
@@ -87,6 +110,9 @@ a pack, a print, a PDF, a transfer, a return and a creator upload:
 cd near-e2e
 node app-flow.mjs http://localhost:3000
 ```
+
+It makes real transactions, and creates two accounts and a public series named `Flow <time>`
+on whichever copy it runs against, so prefer a local one.
 
 ### Contract tests
 
@@ -139,8 +165,8 @@ This is disclosed as the hackathon rules ask (Q-002, Q-003).
   earlier for a Monad Testnet version of Gachard.
 - Commit `c374d51`, tagged `pre-hackathon`, is an import of that codebase. It is dated inside
   the window, but none of it is hackathon work.
-- **What was built for this hackathon is the diff from `pre-hackathon` to
-  `hackathon-submission`.** That covers the contract, all NEAR integration, the new app and
+- **What was built for this hackathon is the
+  [diff from `pre-hackathon` to `hackathon-submission`](https://github.com/Gihasy/gachard-near/compare/pre-hackathon...hackathon-submission).** That covers the contract, all NEAR integration, the new app and
   the end-to-end check. Solidity, `ethers`, Pyth and Privy were removed.
 - Reused from the baseline: the visual tokens in `frontend/app/globals.css`,
   `frontend/lib/crypto.ts`, `frontend/components/Logo.tsx`, and the images in
@@ -150,7 +176,7 @@ This is disclosed as the hackathon rules ask (Q-002, Q-003).
 - Much of the code was written with an AI coding agent, Claude Code, under the author's
   direction.
 
-Why each decision was made is in [`DECISIONS.md`](DECISIONS.md). ADR-041 to ADR-044 cover this
+Why each decision was made is in [`DECISIONS.md`](DECISIONS.md). ADR-041 to ADR-045 cover this
 version. Older ADRs describe the Monad product.
 
 ## License
