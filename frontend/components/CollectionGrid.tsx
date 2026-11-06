@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type MouseEvent } from "react";
+import CardViewDialog from "@/components/CardViewDialog";
 import TiltCard from "@/components/TiltCard";
-import { LockIcon, SearchIcon } from "@/components/icons";
+import { CrystalGem, LockIcon, SearchIcon } from "@/components/icons";
 import { ErrorLine, inputClass, primaryBtn, Rarity, RARITY_COLOR, secondaryBtn } from "@/components/ui";
 import { post } from "@/lib/client";
 import type { OwnedCard } from "@/lib/cards";
@@ -39,6 +40,13 @@ export default function CollectionGrid({ cards, seriesNames, crystalByRarity, lo
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const dialog = useRef<HTMLDialogElement>(null);
+  const [viewing, setViewing] = useState<OwnedCard | null>(null);
+  // A plain click opens the quick look. A new tab still goes to the card's page.
+  const view = (event: MouseEvent, card: OwnedCard) => {
+    if (event.metaKey || event.ctrlKey || event.shiftKey || event.button !== 0) return;
+    event.preventDefault();
+    setViewing(card);
+  };
 
   useEffect(() => {
     if (!notice) return;
@@ -226,7 +234,7 @@ export default function CollectionGrid({ cards, seriesNames, crystalByRarity, lo
                     <p className="mt-2.5 text-sm font-semibold truncate">{first.name}</p>
                   </button>
                 ) : (
-                  <Link href={`/scan/${first.tokenId}`} className="group block rounded-lg">
+                  <Link href={`/scan/${first.tokenId}`} className="group block rounded-lg" onClick={(event) => view(event, first)} data-testid="open-card">
                     <TiltCard src={first.media} alt={first.name} rarity={first.rarity} />
                     <p className="mt-2.5 text-sm font-semibold truncate transition group-hover:text-cn-lavender">{first.name}</p>
                   </Link>
@@ -261,7 +269,7 @@ export default function CollectionGrid({ cards, seriesNames, crystalByRarity, lo
                           <button type="button" className="grid place-items-center size-8 text-sm font-bold disabled:opacity-40" disabled={count >= available} aria-label={`One more ${first.name}`} onClick={() => pick(copies, count + 1)}>+</button>
                         </span>
                       ) : <span className="text-xs text-cn-text-3">{count ? "Selected" : "Tap to select"}</span>}
-                      <span className="text-xs font-semibold text-cn-crystal tabular">+{crystalByRarity[first.rarity] ?? 0}</span>
+                      <span className="inline-flex items-center gap-1 text-xs font-semibold text-cn-crystal tabular"><CrystalGem size={12} />+{crystalByRarity[first.rarity] ?? 0}</span>
                     </div>
                   ) : (
                     <p className="mt-2 text-xs text-cn-text-3">{isLocked ? "Unlock it to dismantle" : "Printed cards cannot be dismantled"}</p>
@@ -272,7 +280,7 @@ export default function CollectionGrid({ cards, seriesNames, crystalByRarity, lo
                     <ul className="mt-1 flex flex-wrap gap-1">
                       {copies.map((c) => (
                         <li key={c.tokenId}>
-                          <Link href={`/scan/${c.tokenId}`} className="inline-block rounded-full border border-cn-line-strong px-2 py-0.5 tabular hover:text-cn-text-1 hover:border-cn-lavender">
+                          <Link href={`/scan/${c.tokenId}`} onClick={(event) => view(event, c)} className="inline-block rounded-full border border-cn-line-strong px-2 py-0.5 tabular hover:text-cn-text-1 hover:border-cn-lavender">
                             #{c.tokenId}{c.status === "Digital" ? "" : " · printed"}
                           </Link>
                         </li>
@@ -299,15 +307,33 @@ export default function CollectionGrid({ cards, seriesNames, crystalByRarity, lo
           <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
             <p className="text-sm font-semibold tabular" aria-live="polite">
               {selectedCount} {selectedCount === 1 ? "card" : "cards"} selected
-              {selectedCount ? <span className="ml-2 text-cn-crystal">+{totalCrystal.toLocaleString("en-US")} Crystal</span> : null}
+              {selectedCount ? <span className="ml-2 inline-flex items-center gap-1 text-cn-crystal"><CrystalGem size={14} />+{totalCrystal.toLocaleString("en-US")} Crystal</span> : null}
             </p>
             <div className="flex gap-2">
               <button type="button" className={secondaryBtn} onClick={stopSelecting}>Cancel</button>
-              <button type="button" className={primaryBtn} disabled={!selectedCount} onClick={() => { setError(""); dialog.current?.showModal(); }} data-testid="review-dismantle">Review</button>
+              <button type="button" className={primaryBtn} disabled={!selectedCount} onClick={() => { setError(""); dialog.current?.showModal(); }} data-testid="review-dismantle">Dismantle</button>
             </div>
           </div>
         </div>
       ) : null}
+
+      <CardViewDialog
+        card={viewing}
+        seriesName={viewing ? seriesNames[viewing.design.split(":")[0]] : undefined}
+        copies={viewing ? stacks.find((copies) => copies[0].design === viewing.design)?.length : undefined}
+        locked={viewing ? locked.has(viewing.design) : false}
+        onClose={() => setViewing(null)}
+        onToggleLock={() => { if (viewing) toggleLock(viewing.design); }}
+        onDismantle={() => {
+          if (!viewing) return;
+          setPicks({ [viewing.design]: 1 });
+          setError("");
+          setViewing(null);
+          setSelecting(true);
+          // After the quick look has closed, because only one dialog can sit on top.
+          setTimeout(() => dialog.current?.showModal(), 0);
+        }}
+      />
 
       <dialog ref={dialog} className="dismantle-dialog" aria-labelledby="dismantle-title" data-testid="dismantle-dialog" onCancel={(e) => { if (busy) e.preventDefault(); }}>
         <h2 id="dismantle-title" className="font-display font-semibold text-lg">Dismantle {selectedCount} {selectedCount === 1 ? "card" : "cards"}?</h2>
@@ -321,7 +347,7 @@ export default function CollectionGrid({ cards, seriesNames, crystalByRarity, lo
         </ul>
         <p className="mt-3 pt-3 border-t border-cn-line flex items-center justify-between gap-4 font-semibold">
           You get
-          <span className="font-display text-xl text-cn-crystal tabular" data-testid="dismantle-total">{totalCrystal.toLocaleString("en-US")} Crystal</span>
+          <span className="inline-flex items-center gap-1.5 font-display text-xl text-cn-crystal tabular" data-testid="dismantle-total"><CrystalGem size={20} />{totalCrystal.toLocaleString("en-US")} Crystal</span>
         </p>
         <div className="mt-4 rounded-2xl border border-[#ff7a8a66] bg-[#ff7a8a1a] p-3 text-sm leading-relaxed" role="alert">
           <strong className="font-semibold text-cn-danger">This cannot be undone.</strong>{" "}

@@ -63,6 +63,21 @@ export const ExternalIcon = (p: SVGProps<SVGSVGElement>) => (
 export const CheckIcon = (p: SVGProps<SVGSVGElement>) => (
   <Icon {...p}><path d="m5 12.5 4.5 4.5L19 7.5" /></Icon>
 );
+/** The Crystal currency: a cut gem, drawn in flat facets so it stays crisp when small. */
+export const CrystalGem = ({ size = 20, className = "" }: { size?: number; className?: string }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" className={`crystal-gem shrink-0 ${className}`} aria-hidden="true">
+    <path d="M7 3h10l5 6.5H2z" fill="#E4FFFA" />
+    <path d="M7 3 2 9.5h5.5z" fill="#A9F5EC" />
+    <path d="M17 3l5 6.5h-5.5z" fill="#C9B3FB" />
+    <path d="M7 3h10l-.5 6.5h-9z" fill="#F4FFFD" />
+    <path d="M12 3 7.5 9.5h9z" fill="#BFF8F1" />
+    <path d="M2 9.5h5.5L12 22z" fill="#6FE3D8" />
+    <path d="M7.5 9.5h9L12 22z" fill="#8FF0E6" />
+    <path d="M16.5 9.5H22L12 22z" fill="#A98BF5" />
+    <path d="M19.5 1.5 20 3l1.5.5L20 4l-.5 1.5L19 4l-1.5-.5L19 3z" fill="#fff" />
+  </svg>
+);
+
 export const LockIcon = ({ open = false, ...p }: SVGProps<SVGSVGElement> & { open?: boolean }) => (
   <Icon {...p}><rect x="5" y="11" width="14" height="10" rx="2" /><path d={open ? "M8 11V7a4 4 0 0 1 7.5-2" : "M8 11V7a4 4 0 0 1 8 0v4"} /></Icon>
 );

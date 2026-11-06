@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { post } from "@/lib/client";
+import { CrystalGem } from "@/components/icons";
 import { ErrorLine } from "@/components/ui";
 
 /** Trades Crystal for a card the collector is missing. */
@@ -32,7 +33,7 @@ export default function TradeButton({ seriesId, templateId, price, crystal }: { 
           setBusy(false);
         }}
       >
-        {busy ? "Trading..." : `${price} Crystal`}
+        {busy ? "Trading..." : <span className="inline-flex items-center justify-center gap-1"><CrystalGem size={12} /> {price}<span className="sr-only"> Crystal</span></span>}
       </button>
       <ErrorLine>{error}</ErrorLine>
     </>

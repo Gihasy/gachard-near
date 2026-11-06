@@ -297,6 +297,7 @@ h1, h2 { text-wrap: balance; }
 
 .ip-logo.ip-logo-small { width: 4rem; height: 3.75rem; }
 .series-row[open] .series-preview { display: none; }
+.crystal-gem { filter: drop-shadow(0 0 5px #8ff0e680); }
 .card-lock {
   position: absolute;
   top: 0.4rem;
@@ -329,6 +330,39 @@ h1, h2 { text-wrap: balance; }
 }
 @media (max-width: 767px) {
   .select-bar { bottom: calc(64px + env(safe-area-inset-bottom)); }
+}
+
+.card-view {
+  margin: auto;
+  width: min(calc(100vw - 2rem), 44rem);
+  max-height: calc(100dvh - 2rem);
+  overflow: auto;
+  padding: 1.25rem;
+  border-radius: var(--cn-r-lg);
+  border: 1px solid var(--cn-line-strong);
+  background: var(--cn-surface-1);
+  color: var(--cn-text-1);
+}
+.card-view::backdrop { background: #05060ce6; backdrop-filter: blur(6px); }
+.card-view-body { display: grid; gap: 1.25rem; }
+.card-view-art { width: min(100%, 15rem, calc((100dvh - 24rem) * 63 / 88)); min-width: 9rem; margin-inline: auto; }
+.card-view-close {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 999px;
+  border: 1px solid var(--cn-line-strong);
+  color: var(--cn-text-2);
+  cursor: pointer;
+  transition: color 150ms ease;
+}
+.card-view-close:hover { color: var(--cn-text-1); }
+@media (min-width: 640px) {
+  .card-view { padding: 1.5rem; }
+  .card-view-body { grid-template-columns: minmax(0, 20rem) minmax(0, 1fr); gap: 1.75rem; }
+  .card-view-art { width: min(100%, calc((100dvh - 5rem) * 63 / 88)); margin-inline: 0; }
 }
 
 .dismantle-dialog {

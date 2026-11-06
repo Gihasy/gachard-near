@@ -1,7 +1,9 @@
 import Link from "next/link";
+import { CardPeek } from "@/components/CardViewDialog";
 import { CheckIcon } from "@/components/icons";
 import TradeButton from "@/components/TradeButton";
 import { CardImage, Rarity, SeriesName } from "@/components/ui";
+import { splitSeriesName } from "@/lib/series-name";
 import { RARITIES } from "@/lib/catalog";
 import type { OwnedCard } from "@/lib/cards";
 import type { SeriesRow } from "@/lib/db";
@@ -85,9 +87,9 @@ export default function SeriesProgress({ series, cards, crystal }: { series: Ser
                 {slots.map(({ template: t, tokenId }) => (
                   <li key={t.id} className="min-w-0">
                     {tokenId ? (
-                      <Link href={`/scan/${tokenId}`} className="block rounded-lg" aria-label={t.name}>
+                      <CardPeek card={cards.find((card) => card.tokenId === tokenId)!} seriesName={splitSeriesName(s.name).title} label={t.name}>
                         <CardImage src={t.media} alt="" rarity={RARITIES[t.rarity]} />
-                      </Link>
+                      </CardPeek>
                     ) : (
                       <div className="grid place-items-center aspect-[63/88] rounded-lg border border-dashed border-cn-line-strong bg-white/[.02] font-display font-bold text-xl text-cn-text-3" data-testid="missing-card" role="img" aria-label={`Missing: ${t.name}`}>
                         ?
