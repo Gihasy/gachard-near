@@ -30,7 +30,7 @@ function Pitch() {
         Turn your fans into <span className="crystal-text">collectors.</span>
       </h1>
       <p className="mt-4 max-w-2xl text-cn-text-2 sm:text-lg leading-relaxed">
-        Got a world people love? Release it as cards your community can collect, verify and hold, without a crypto tutorial.
+        Got a world people love? Release it as cards your community can collect, verify and hold.
       </p>
       <p className="mt-6 rounded-2xl border border-[#f7c96b40] bg-[#f7c96b12] px-4 py-3 text-sm leading-relaxed text-cn-text-2" data-testid="creator-plan">
         <strong className="font-semibold text-cn-credits">The plan for production, not part of this demo:</strong>{" "}

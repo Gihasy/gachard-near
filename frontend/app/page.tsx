@@ -229,10 +229,10 @@ export default async function Home({ searchParams }: {
           <div>
             <p className="text-sm font-bold opacity-70">For creators and IP owners</p>
             <h2 className="mt-2 font-display font-bold text-2xl sm:text-4xl leading-tight max-w-2xl">
-              Your community should not need a crypto tutorial.
+              Give your fans something to collect.
             </h2>
             <p className="mt-3 max-w-xl leading-relaxed opacity-80">
-              Publish your own series in minutes, with your art, your rates and your prices. Your account is on record as the one who released it.
+              Release your own trading cards with your art and your odds, with nothing to print up front. Every card shows you as the one who released it.
             </p>
             <Link
               href="/creator"
