@@ -4,22 +4,23 @@
  */
 const STEPS = [
   { title: "Add a series", text: "Upload a logo, write a title and a description, and set the odds for each rarity. The odds set the price of a pack." },
-  { title: "Add your cards", text: "For each card, upload an image, name it and choose its rarity. Gachard frames each one, and they stay drafts you can change or remove. Every rarity with odds needs a card, up to 20 in all." },
-  { title: "Publish", text: "Publish when you are happy with the cards. They are then permanent, and the series goes live. You can still edit the series, and your studio shows its sales." },
+  { title: "Add your cards", text: "For each card, upload an image, name it, choose its rarity and add a line of text if you like. Gachard frames it, and it stays a draft you can change or remove. Every rarity with odds needs a card, up to 20 in all." },
+  { title: "Publish", text: "Publish when you are happy with the cards. They are then permanent, and the series goes live. You can still edit or delete the series, and your studio shows its sales." },
 ];
 
 const ART = [
-  ["Shape", "63 × 88 mm, the size of a standard trading card"],
+  ["Art only", "No text or border. The frame adds the card's name, rarity, your logo and your username"],
+  ["Shape", "A tall portrait. It fills the card, and only a little is cropped"],
+  ["Subject", "Keep it near the middle, because the top and bottom sit under the card's text"],
   ["File size", "815 × 1110 px or larger. 1630 × 2220 px is best for print"],
   ["Format", "PNG, JPG or WebP, in sRGB colour"],
   ["Keep it readable", "The subject should still be clear at a small size"],
-  ["Your own design", "Switch off the Gachard frame, then follow the print zones below"],
 ];
 
 const ZONES = [
   { color: "#FF7A8A", name: "Cut area", text: "3 mm on every side is trimmed off in print. Extend your background here." },
   { color: "#C9B3FB", name: "Safe area", text: "Keep names, faces and logos 3 mm inside the cut line." },
-  { color: "#F7C96B", name: "QR zone", text: "12 mm in the bottom right corner. Keep it plain, because the QR prints over it." },
+  { color: "#F7C96B", name: "QR zone", text: "12 mm in the bottom right corner, 1 mm inside the safe area. Keep it plain, because the QR prints over it." },
 ];
 
 const RECIPE = [
@@ -31,6 +32,7 @@ const RECIPE = [
 
 const RULES = [
   { title: "Only art you have the rights to", text: "Your own work, or work you have permission to use. A card's record shows who released it, not who owns the rights." },
+  { title: "Finish your title and logo first", text: "They appear on each card's frame. Drafts update when you change them, but a published card keeps what it shows." },
   { title: "A card is permanent", text: "A card's name, art and rarity go on a public blockchain and cannot be edited. You can still change the series around it." },
   { title: "Leave these to Gachard", text: "Do not draw a price, a QR code, a serial number or the Gachard logo on a card." },
 ];
@@ -42,8 +44,8 @@ function CardDiagram() {
       <rect x="1.5" y="1.5" width="687" height="937" rx="16" fill="none" stroke="#FF7A8A" strokeWidth="3" />
       <rect x="30" y="30" width="630" height="880" rx="30" fill="#24253A" stroke="#FF7A8A" strokeWidth="4" strokeDasharray="16 12" />
       <rect x="60" y="60" width="570" height="820" rx="12" fill="none" stroke="#C9B3FB" strokeWidth="4" />
-      <rect x="510" y="760" width="120" height="120" rx="10" fill="#F7C96B33" stroke="#F7C96B" strokeWidth="4" />
-      <text x="570" y="830" textAnchor="middle" fontSize="38" fontWeight="700" fill="#F7C96B">QR</text>
+      <rect x="500" y="750" width="120" height="120" rx="10" fill="#F7C96B33" stroke="#F7C96B" strokeWidth="4" />
+      <text x="560" y="820" textAnchor="middle" fontSize="38" fontWeight="700" fill="#F7C96B">QR</text>
       <text x="345" y="400" textAnchor="middle" fontSize="44" fontWeight="600" fill="#C9B3FB">Your art</text>
       <text x="345" y="455" textAnchor="middle" fontSize="30" fill="#B9B8CE">63 × 88 mm after the cut</text>
     </svg>
@@ -79,26 +81,29 @@ export default function CreatorGuide({ open }: { open: boolean }) {
 
         <section>
           <h3 className="font-display font-semibold text-base">Prepare your card art</h3>
+          <dl className="mt-3 grid sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-3 text-sm">
+            {ART.map(([label, value]) => (
+              <div key={label}>
+                <dt className="text-xs text-cn-text-3">{label}</dt>
+                <dd className="mt-0.5 text-cn-text-2 leading-relaxed">{value}</dd>
+              </div>
+            ))}
+          </dl>
+        </section>
+
+        <section>
+          <h3 className="font-display font-semibold text-base">Using your own card design?</h3>
+          <p className="mt-1 text-sm text-cn-text-2 leading-relaxed">Switch off the Gachard frame when you add the card. It is then used exactly as you made it, so follow these print zones.</p>
           <div className="mt-3 grid md:grid-cols-[minmax(0,14rem)_1fr] gap-6 items-center">
             <CardDiagram />
-            <div className="min-w-0">
-              <ul className="space-y-2.5">
-                {ZONES.map(({ color, name, text }) => (
-                  <li key={name} className="flex gap-3 text-sm">
-                    <span className="mt-1.5 size-2.5 rounded-full shrink-0" style={{ background: color }} aria-hidden="true" />
-                    <span className="text-cn-text-2 leading-relaxed"><strong className="font-semibold text-cn-text-1">{name}.</strong> {text}</span>
-                  </li>
-                ))}
-              </ul>
-              <dl className="mt-4 grid sm:grid-cols-2 gap-x-6 gap-y-3 text-sm">
-                {ART.map(([label, value]) => (
-                  <div key={label}>
-                    <dt className="text-xs text-cn-text-3">{label}</dt>
-                    <dd className="mt-0.5 text-cn-text-2 leading-relaxed">{value}</dd>
-                  </div>
-                ))}
-              </dl>
-            </div>
+            <ul className="min-w-0 space-y-2.5">
+              {ZONES.map(({ color, name, text }) => (
+                <li key={name} className="flex gap-3 text-sm">
+                  <span className="mt-1.5 size-2.5 rounded-full shrink-0" style={{ background: color }} aria-hidden="true" />
+                  <span className="text-cn-text-2 leading-relaxed"><strong className="font-semibold text-cn-text-1">{name}.</strong> {text}</span>
+                </li>
+              ))}
+            </ul>
           </div>
         </section>
 
@@ -119,7 +124,7 @@ export default function CreatorGuide({ open }: { open: boolean }) {
 
         <section>
           <h3 className="font-display font-semibold text-base">Before you publish</h3>
-          <ul className="mt-3 grid md:grid-cols-3 gap-3">
+          <ul className="mt-3 grid sm:grid-cols-2 gap-3">
             {RULES.map(({ title, text }) => (
               <li key={title} className="rounded-2xl bg-white/[.035] border border-cn-line p-4">
                 <p className="text-sm font-semibold">{title}</p>

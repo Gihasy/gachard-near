@@ -4,7 +4,7 @@
  * nothing, and the text sits on dark fades over it.
  *
  * The layout matches scripts/make-series-art.mjs. A printed card is trimmed about 36 px
- * inside this image on every side, and its QR prints at x 591-730, y 906-1048 (lib/pdf.ts).
+ * inside this image on every side, and its QR prints at x 579-718, y 894-1036 (lib/pdf.ts).
  * So the border sits inside the trim, and only a faint star is in the QR zone.
  */
 const W = 800;
@@ -145,7 +145,7 @@ export async function renderCard({ source, name, rarity, flavor, series, logo, b
     mark.close();
     textX = 78 + box.w + 18;
   }
-  const width = 586 - textX;
+  const width = 570 - textX;
   font("700 19px");
   context.fillStyle = light;
   context.fillText("RELEASED ON GACHARD", textX, 956, width);

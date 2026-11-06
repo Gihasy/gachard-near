@@ -6,7 +6,7 @@ import DeleteSeries from "@/components/DeleteSeries";
 import EditSeries from "@/components/EditSeries";
 import SeriesDrafts from "@/components/SeriesDrafts";
 import { ArrowIcon, CheckIcon } from "@/components/icons";
-import { CardImage, Eyebrow, Page, Panel, Rarity, SeriesName, primaryBtn } from "@/components/ui";
+import { CardImage, Eyebrow, Page, Rarity, SeriesName, primaryBtn } from "@/components/ui";
 import { missingRarities, missingToPublish, RARITIES } from "@/lib/catalog";
 import { readDb, type SeriesRow } from "@/lib/db";
 import { splitSeriesName } from "@/lib/series-name";
@@ -74,8 +74,9 @@ export default async function Creator() {
           const frame = { series: splitSeriesName(s.name).title, logo: s.logo, by: user.username ? `@${user.username}` : undefined };
           const revenue = revenueOf(s.id, offers);
           return (
-            <Panel key={s.id}>
-              <div className="flex flex-wrap justify-between gap-3 items-center">
+            // A series still being put together stays open. A finished one folds away.
+            <details key={s.id} className="series-row panel overflow-hidden" open={mine.length === 1 || needed.length > 0 || drafts.length > 0} data-testid="creator-series">
+              <summary className="flex flex-wrap justify-between gap-3 items-center p-5 sm:p-6 cursor-pointer select-none list-none hover:bg-white/[.02] transition">
                 <div className="flex items-center gap-3 min-w-0">
                   {s.logo ? (
                     // eslint-disable-next-line @next/next/no-img-element
@@ -84,8 +85,10 @@ export default async function Creator() {
                   <div className="min-w-0">
                     <h3 className="font-display font-semibold text-lg break-words"><SeriesName name={s.name} /></h3>
                     {s.description ? <p className="mt-0.5 text-sm text-cn-text-2 leading-relaxed">{s.description}</p> : null}
+                    <p className="mt-0.5 text-xs text-cn-text-3 tabular">{s.templates.length + drafts.length} {s.templates.length + drafts.length === 1 ? "card" : "cards"}{missing.length === 0 ? `, ${revenue.packs} ${revenue.packs === 1 ? "pack" : "packs"} sold` : ""}</p>
                   </div>
                 </div>
+                <div className="flex items-center gap-3">
                 {missing.length ? (
                   <span className="rounded-full bg-[#f7c96b1f] px-3 py-1 text-xs font-semibold text-cn-credits" data-testid="series-state">
                     {needed.length ? `Needs: ${needed.join(", ")}` : "Ready to publish"}
@@ -95,7 +98,12 @@ export default async function Creator() {
                     <CheckIcon width={14} height={14} /> Live: view the series <ArrowIcon width={13} height={13} />
                   </Link>
                 )}
-              </div>
+                <span className="series-chevron text-cn-text-3 shrink-0" aria-hidden="true">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg>
+                </span>
+                </div>
+              </summary>
+              <div className="px-5 sm:px-6 pb-6">
               <EditSeries series={{ id: s.id, name: s.name, description: s.description, category: s.category, logo: s.logo, ratesBps: s.ratesBps, prices: s.prices }} />
               {missing.length ? null : (
                 <dl className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-3" data-testid="series-revenue" data-creator={revenue.creator} data-gachard={revenue.gachard}>
@@ -137,7 +145,8 @@ export default async function Creator() {
               />
               <AddCardForm key={s.templates.length + drafts.length} seriesId={s.id} rates={s.ratesBps} suggested={suggestedRarity(s)} frame={frame} />
               <DeleteSeries seriesId={s.id} name={s.name} published={s.templates.length} packsSold={revenue.packs} />
-            </Panel>
+              </div>
+            </details>
           );
         })}
       </div>

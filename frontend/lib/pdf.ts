@@ -83,8 +83,9 @@ export async function printPdf(card: {
       width: mm(TRIM.width + BLEED * 2), height: mm(TRIM.height + BLEED * 2),
     });
     const zone = 12;
-    const qx = x + mm(TRIM.width - 3 - zone);
-    const qy = y + mm(3);
+    // 1 mm inside the safe area, so the QR does not sit on its edge.
+    const qx = x + mm(TRIM.width - 4 - zone);
+    const qy = y + mm(4);
     // An SVG path is drawn down from its anchor, so the anchor is the zone's top left.
     for (const layer of [qr.plate, ...qr.layers]) {
       const [r, g, b] = [1, 3, 5].map((at) => parseInt(layer.color.slice(at, at + 2), 16) / 255);
