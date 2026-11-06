@@ -4,12 +4,16 @@ import Link from "next/link";
 import { useState } from "react";
 import { post } from "@/lib/client";
 import { ArrowIcon, CheckIcon, CrystalStar, PrintIcon } from "@/components/icons";
+import PackArt from "@/components/PackArt";
 import { CardImage, ErrorLine, Rarity, RARITY_COLOR, primaryBtn, secondaryBtn } from "@/components/ui";
+import { splitSeriesName } from "@/lib/series-name";
 
 interface Card { name: string; rarity: string; media: string }
 interface View {
   id: string;
   seriesId: number;
+  seriesName: string;
+  logo?: string;
   status: string;
   cards: (Card | null)[];
   allOpen: boolean;
@@ -97,6 +101,19 @@ export default function PackReveal({ initial }: { initial: View }) {
   const [opened, setOpened] = useState<Set<number>>(new Set());
   const [opening, setOpening] = useState(false);
   const [error, setError] = useState("");
+  // A pack nobody has opened yet starts sealed. Coming back to one shows the cards.
+  const [sealed, setSealed] = useState(initial.status === "bought" && !initial.cards.some(Boolean));
+  const [tearing, setTearing] = useState(false);
+
+  const tear = () => {
+    const still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (still) {
+      setSealed(false);
+      return;
+    }
+    setTearing(true);
+    setTimeout(() => setSealed(false), 650);
+  };
 
   const openedCount = view.cards.filter(Boolean).length;
   const tally = view.allOpen
@@ -138,9 +155,21 @@ export default function PackReveal({ initial }: { initial: View }) {
     setOpening(false);
   };
 
+  if (sealed) {
+    return (
+      <div className="py-4 sm:py-8 flex flex-col items-center text-center">
+        <button type="button" className={`pack-seal ${tearing ? "pack-tearing" : "pack-idle"}`} onClick={tear} disabled={tearing} aria-label="Open your pack" data-testid="tear-pack">
+          <PackArt name={splitSeriesName(initial.seriesName).title} cards={initial.cards.length} logo={initial.logo} />
+        </button>
+        <button type="button" className={`${primaryBtn} mt-8`} onClick={tear} disabled={tearing}>Open your pack</button>
+        <p className="mt-3 text-sm text-cn-text-3">Your {initial.cards.length} cards are already yours.</p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4 sm:gap-5">
+      <div className="deal grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4 sm:gap-5">
         {view.cards.map((card, i) => (
           <PackCard
             key={i}
@@ -193,7 +222,7 @@ export default function PackReveal({ initial }: { initial: View }) {
                 {openedCount} of {view.cards.length} open.
               </p>
             </div>
-            <button className={secondaryBtn} data-testid="open-all" disabled={opening} onClick={revealAll}>
+            <button className={primaryBtn} data-testid="open-all" disabled={opening} onClick={revealAll}>
               {opening ? "Opening..." : "Open all"}
             </button>
           </div>

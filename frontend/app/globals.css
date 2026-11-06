@@ -250,6 +250,51 @@ input[type="number"] { -moz-appearance: textfield; }
   vertical-align: middle;
   white-space: nowrap;
 }
+a:focus-visible, button:focus-visible, summary:focus-visible, [role="tab"]:focus-visible {
+  outline: 2px solid var(--cn-crystal-lavender);
+  outline-offset: 2px;
+}
+::selection { background: #c9b3fb55; }
+html { -webkit-tap-highlight-color: transparent; }
+h1, h2 { text-wrap: balance; }
+
+.skeleton {
+  background: linear-gradient(100deg, #ffffff0a 30%, #ffffff17 50%, #ffffff0a 70%);
+  background-size: 220% 100%;
+  animation: skeleton 1.5s ease-in-out infinite;
+}
+@keyframes skeleton { from { background-position: 120% 0; } to { background-position: -120% 0; } }
+
+/* Phones: buying stays one tap away, above the tab bar. */
+.buy-bar {
+  position: fixed;
+  inset: auto 0 calc(64px + env(safe-area-inset-bottom));
+  z-index: 30;
+  padding: 0.625rem 1rem;
+  border-top: 1px solid var(--cn-line);
+  background: #0a0b14e6;
+  backdrop-filter: blur(14px);
+}
+@media (max-width: 767px) { .buy-bar ~ * { padding-bottom: 5rem; } }
+
+.pack-seal { display: block; width: min(15rem, 62vw); cursor: pointer; border-radius: 1rem; }
+.pack-tearing { animation: pack-tear 650ms var(--ease-out) both; pointer-events: none; }
+@keyframes pack-tear {
+  0% { transform: scale(1) rotate(-3deg); }
+  25% { transform: scale(1.04) rotate(2deg); }
+  45% { transform: scale(1.06) rotate(-2deg); opacity: 1; filter: brightness(1.15); }
+  100% { transform: scale(1.35); opacity: 0; filter: brightness(2) blur(6px); }
+}
+.deal > * { animation: deal 520ms var(--ease-out) both; }
+.deal > *:nth-child(2) { animation-delay: 70ms; }
+.deal > *:nth-child(3) { animation-delay: 140ms; }
+.deal > *:nth-child(4) { animation-delay: 210ms; }
+.deal > *:nth-child(5) { animation-delay: 280ms; }
+@keyframes deal { from { opacity: 0; transform: translateY(26px) scale(.94); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .skeleton, .pack-tearing, .deal > * { animation: none; }
+}
+
 .ip-logo.ip-logo-small { width: 4rem; height: 3.75rem; }
 .series-row[open] .series-preview { display: none; }
 .series-row summary::-webkit-details-marker { display: none; }

@@ -38,6 +38,7 @@ export function packView(offer: PackOffer, series: SeriesRow) {
     id: offer.id,
     seriesId: series.id,
     seriesName: series.name,
+    logo: series.logo,
     status: offer.status,
     cards,
     allOpen: offer.revealed.every(Boolean),
@@ -77,7 +78,9 @@ export async function buyPack(userId: string, seriesId: number) {
       id: randomBytes(12).toString("hex"),
       userId,
       seriesId,
-      templateIds: Array.from({ length: CARDS_PER_PACK }, () => drawTemplate(series)),
+      // The rarest last, so a pack builds to its best card.
+      templateIds: Array.from({ length: CARDS_PER_PACK }, () => drawTemplate(series))
+        .sort((a, b) => series.templates.find((t) => t.id === a)!.rarity - series.templates.find((t) => t.id === b)!.rarity),
       revealed: Array(CARDS_PER_PACK).fill(false),
       status: "minting",
       tokenIds: [],

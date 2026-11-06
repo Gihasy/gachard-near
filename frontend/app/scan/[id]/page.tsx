@@ -113,7 +113,7 @@ export default async function CardRecord({ params, searchParams }: {
           ) : null}
 
           <div>
-            <p className="text-sm text-cn-text-2"><SeriesName name={card.seriesName} /></p>
+            <Link href={`/series/${card.series_id}`} className="text-sm text-cn-text-2 hover:text-cn-lavender transition"><SeriesName name={card.seriesName} /></Link>
             <h1 className="mt-1 font-display font-bold text-2xl sm:text-4xl break-words">
               {card.cardName} <span className="text-cn-text-3 font-medium">#{id}</span>
             </h1>
@@ -188,7 +188,7 @@ export default async function CardRecord({ params, searchParams }: {
                       rel="noreferrer"
                       href={h.txHash ? explorer.tx(h.txHash) : explorer.account(contractId())}
                     >
-                      check independently <ExternalIcon width={13} height={13} />
+                      View on NearBlocks <ExternalIcon width={13} height={13} />
                     </a>
                   </li>
                 );

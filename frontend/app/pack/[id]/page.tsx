@@ -18,7 +18,7 @@ export default async function PackPage({ params }: { params: Promise<{ id: strin
   if (!offer || !series) notFound();
   return (
     <Page>
-      <Title eyebrow={splitSeriesName(series.name).title} sub="These cards are already yours. Turn them over one by one, or all at once.">
+      <Title eyebrow={splitSeriesName(series.name).title} sub="Turn the cards over one by one, or all at once. The rarest comes last.">
         Open your pack
       </Title>
       <PackReveal initial={packView(offer, series)} />

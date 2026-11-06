@@ -36,13 +36,6 @@ const RAIL = [
 const PROMISES = ["No wallet to set up", "No network fees", "Odds on every pack"];
 
 // Written as what collecting tends to feel like, not as quotes: no real person said these.
-const WORRIES = [
-  { title: "Stuck on one card", text: "You keep opening packs, and the card you want never comes." },
-  { title: "Is it even real?", text: "A picture of a card proves nothing, and anyone can copy one." },
-  { title: "A wallet, just to collect?", text: "You came for a card, not for seed phrases and network fees." },
-  { title: "A card you can never hold", text: "Most digital cards stay on a screen, however much you love them." },
-];
-
 const NOTHING_TO_SET_UP = ["No wallet", "No seed phrase", "No network fees"];
 
 const PRINT_STEPS = [
@@ -60,18 +53,21 @@ const RECORD = [
   { label: "Returned to digital", Icon: CheckIcon },
 ];
 
-function Tile({ icon, title, text, children, className = "" }: {
+function Tile({ worry, icon, title, text, children }: {
+  worry: string;
   icon: React.ReactNode;
   title: string;
   text: string;
   children?: React.ReactNode;
-  className?: string;
 }) {
   return (
-    <article className={`panel panel-link p-6 overflow-hidden relative flex flex-col ${className}`}>
-      <span className="grid place-items-center size-10 rounded-xl bg-white/[.07] border border-cn-line text-cn-lavender">{icon}</span>
-      <h3 className="mt-4 font-display font-semibold text-lg">{title}</h3>
-      <p className="mt-2 text-sm text-cn-text-2 leading-relaxed max-w-md">{text}</p>
+    <article className="panel p-6 overflow-hidden relative flex flex-col">
+      <div className="flex items-center gap-3">
+        <span className="grid place-items-center size-9 rounded-xl bg-white/[.07] border border-cn-line text-cn-lavender shrink-0">{icon}</span>
+        <p className="text-sm font-medium text-cn-text-3">{worry}</p>
+      </div>
+      <h3 className="mt-4 font-display font-semibold text-lg sm:text-xl leading-snug">{title}</h3>
+      <p className="mt-2 text-sm text-cn-text-2 leading-relaxed max-w-xl">{text}</p>
       {children}
     </article>
   );
@@ -157,43 +153,29 @@ export default async function Home({ searchParams }: {
         </div>
       </section>
 
-      {/* ---- Empathy: what collecting feels like today ---- */}
+      {/* ---- Empathy and solution: each worry, answered ---- */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 mt-16 sm:mt-20" data-testid="worries">
-        <h2 className="font-display font-bold text-2xl sm:text-4xl max-w-3xl leading-tight">
-          You love them. Collecting them shouldn&apos;t be this hard.
+        <h2 className="font-display font-bold text-2xl sm:text-4xl max-w-3xl leading-tight [text-wrap:balance]">
+          You love them. Collecting them <span className="crystal-text">shouldn&apos;t be this hard.</span>
         </h2>
-        <ul className="mt-8 grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {WORRIES.map((worry) => (
-            <li key={worry.title} className="panel p-5">
-              <h3 className="font-display font-semibold text-base">{worry.title}</h3>
-              <p className="mt-2 text-sm text-cn-text-2 leading-relaxed">{worry.text}</p>
-            </li>
-          ))}
-        </ul>
-      </section>
-
-      {/* ---- Solution: the first three worries, answered ---- */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 mt-16 sm:mt-24">
-        <h2 className="font-display font-bold text-2xl sm:text-4xl leading-tight">
-          Collecting,{" "}
-          <span className="crystal-text">made simple.</span>
-        </h2>
-        <div className="mt-8 grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="mt-8 grid md:grid-cols-2 gap-4">
           <Tile
+            worry="Stuck on one card?"
             icon={<UserIcon />}
-            title="Know the odds, and get the card you want"
-            text="Every pack is five cards at one price, with its odds on show. Missing a card? Dismantle your duplicates for Crystal, and trade it for the one you want."
+            title="Know the odds, then get the card you want"
+            text="Every pack is five cards at one price, with its odds on show. Dismantle your duplicates for Crystal, and trade it for the card you are missing."
           >
-            <div className="mt-6 grid grid-cols-5 gap-2 -mb-14">
+            <div className="mt-6 grid grid-cols-5 gap-2 -mb-14" data-testid="home-crystal">
               {["card-back.webp", "series/mochi-rare.jpg", "series/aika-epic.jpg", "card-back.webp", "card-back.webp"].map((file, i) => (
                 <CardImage key={i} src={`/cards/${file}`} alt="" rarity={file.includes("epic") ? "Epic" : file.includes("rare") ? "Rare" : undefined} />
               ))}
             </div>
           </Tile>
           <Tile
+            worry="Is it even real?"
             icon={<ScanIcon />}
-            title="Know it is the real thing"
-            text="Every card has a public record of who released it, who has held it and each time it was printed. Check it outside this site, in one click."
+            title="Check any card in one click"
+            text="Every card has a public record of who released it, who has held it and each time it was printed. Check it outside this site."
           >
             <ol className="mt-5 flex flex-wrap items-center gap-2 text-xs font-semibold">
               {RECORD.map(({ label, Icon }, i) => (
@@ -207,10 +189,10 @@ export default async function Home({ searchParams }: {
             </ol>
           </Tile>
           <Tile
+            worry="A wallet, just to collect?"
             icon={<CheckIcon />}
             title="Nothing to set up"
             text="Sign in the way you sign in anywhere else. Gachard handles the blockchain and pays its network fees."
-            className="md:col-span-2 lg:col-span-1"
           >
             <ul className="mt-5 flex flex-wrap gap-2 text-xs font-semibold">
               {NOTHING_TO_SET_UP.map((item) => (
@@ -220,15 +202,17 @@ export default async function Home({ searchParams }: {
               ))}
             </ul>
           </Tile>
+          <Tile
+            worry="A card you can never hold?"
+            icon={<PrintIcon />}
+            title="Print any card you own"
+            text="Every digital card can become a physical one, with its own QR code. Send it back whenever you want it digital again."
+          >
+            <a href="#print" className="mt-5 inline-flex items-center gap-1.5 text-sm font-semibold text-cn-lavender hover:underline">
+              See how printing works <ArrowIcon width={15} height={15} />
+            </a>
+          </Tile>
         </div>
-      </section>
-
-      {/* ---- What a duplicate is worth ---- */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 mt-4" data-testid="home-crystal">
-        <p className="panel px-5 py-4 text-sm text-cn-text-2 leading-relaxed">
-          <strong className="font-semibold text-cn-text-1">Duplicates are not wasted.</strong>{" "}
-          Dismantle a digital card for Crystal, and trade it for a card you are missing. Printed cards stay safe until they come back to digital.
-        </p>
       </section>
 
       {/* ---- Solution: the fourth worry, a card you can hold ---- */}

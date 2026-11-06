@@ -66,7 +66,7 @@ Open http://localhost:3000, or the hosted demo, then:
 2. **Open a pack.** Open the Series tab, or search and filter on the home page. Open Thornmaw Wilds. You see its odds and one pack price.
 3. **Buy.** Click Buy a pack. Credits fall by that price, and five cards are minted to your
    account.
-4. **Open.** The cards are face down. Click Open all to turn them over.
+4. **Open.** Open the sealed pack, then click Open all to turn the cards over. The rarest comes last.
 5. **Verify.** Click Print or verify the first card. You see the holder, who released it, and
    whether the artwork file matches the public record. Click check independently: NearBlocks
    shows the same transaction, outside this app.

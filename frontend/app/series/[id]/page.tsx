@@ -3,7 +3,7 @@ import OpenPackButton from "@/components/OpenPackButton";
 import PackArt from "@/components/PackArt";
 import { PrintIcon } from "@/components/icons";
 import CardZoom from "@/components/CardZoom";
-import { Eyebrow, Page, Panel, Rarity, RARITY_COLOR, SeriesName } from "@/components/ui";
+import { Eyebrow, Page, Rarity, RARITY_COLOR, SeriesName } from "@/components/ui";
 import { missingRarities, RARITIES } from "@/lib/catalog";
 import { readDb } from "@/lib/db";
 import { splitSeriesName } from "@/lib/series-name";
@@ -49,7 +49,7 @@ export default async function SeriesPage({ params }: { params: Promise<{ id: str
               <PrintIcon width={16} height={16} className="text-cn-lavender" /> Every card you buy can also be printed.
             </p>
           </div>
-          <div className="panel p-5 sm:col-span-2 lg:col-span-1">
+          <div className="hidden md:block panel p-5 sm:col-span-2 lg:col-span-1">
             {series.hidden ? (
               <p className="text-sm text-cn-text-3">This series has been retired and sells no new packs. Cards already bought stay valid.</p>
             ) : missing.length ? (
@@ -64,39 +64,44 @@ export default async function SeriesPage({ params }: { params: Promise<{ id: str
         </div>
       </section>
 
-      <Page>
-        <div className="grid lg:grid-cols-[320px_1fr] gap-8 items-start">
-          <Panel className="lg:sticky lg:top-24">
-            <h2 className="font-display font-semibold text-base">The odds</h2>
-            <p className="mt-1 text-xs text-cn-text-3 leading-relaxed">Set by the creator, for each of a pack&apos;s {CARDS_PER_PACK} cards.</p>
-            <ul className="mt-4 space-y-4">
-              {RARITIES.map((r, i) => (
-                <li key={r}>
-                  <div className="flex items-baseline justify-between text-sm">
-                    <Rarity value={r} />
-                    <span className="tabular text-cn-text-2">{series.ratesBps[i] / 100}%</span>
-                  </div>
-                  <div className="rate-bar mt-1.5">
-                    <span style={{ width: `${series.ratesBps[i] / 100}%`, background: RARITY_COLOR[r] }} />
-                  </div>
-                </li>
-              ))}
-            </ul>
-          </Panel>
-
-          <div>
-            <h2 className="font-display font-semibold text-lg">In this series</h2>
-            <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-x-4 gap-y-6">
-              {series.templates.map((t) => (
-                <div key={t.id} data-template={t.id} data-rarity-index={t.rarity}>
-                  <CardZoom src={t.media} alt={t.name} rarity={RARITIES[t.rarity]} />
-                  <p className="mt-3 text-sm font-semibold truncate">{t.name}</p>
-                  <Rarity value={RARITIES[t.rarity]} />
-                </div>
-              ))}
-            </div>
-          </div>
+      {!series.hidden && missing.length === 0 ? (
+        <div className="buy-bar md:hidden">
+          <OpenPackButton seriesId={series.id} signedIn={Boolean(user)} price={packPrice(series)} />
         </div>
+      ) : null}
+      <Page>
+        <section aria-labelledby="odds" className="panel p-5 sm:p-6">
+          <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+            <h2 id="odds" className="font-display font-semibold text-base">The odds</h2>
+            <p className="text-xs text-cn-text-3">Set by the creator, for each of a pack&apos;s {CARDS_PER_PACK} cards.</p>
+          </div>
+          <div className="mt-3 flex h-2.5 gap-0.5 rounded-full overflow-hidden" aria-hidden="true">
+            {RARITIES.map((r, i) => (
+              <span key={r} style={{ width: `${series.ratesBps[i] / 100}%`, background: RARITY_COLOR[r] }} />
+            ))}
+          </div>
+          <ul className="mt-3 grid grid-cols-2 sm:flex sm:flex-wrap gap-x-6 gap-y-1.5">
+            {RARITIES.map((r, i) => (
+              <li key={r} className="inline-flex items-center gap-2 text-sm">
+                <Rarity value={r} />
+                <span className="tabular text-cn-text-2">{series.ratesBps[i] / 100}%</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+
+        <section className="mt-8">
+          <h2 className="font-display font-semibold text-lg">In this series <span className="ml-1 text-sm font-medium text-cn-text-3 tabular">{series.templates.length}</span></h2>
+          <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-x-4 gap-y-6">
+            {[...series.templates].sort((a, b) => b.rarity - a.rarity || a.id - b.id).map((t) => (
+              <div key={t.id} data-template={t.id} data-rarity-index={t.rarity}>
+                <CardZoom src={t.media} alt={t.name} rarity={RARITIES[t.rarity]} />
+                <p className="mt-2.5 text-sm font-semibold truncate">{t.name}</p>
+                <Rarity value={RARITIES[t.rarity]} />
+              </div>
+            ))}
+          </div>
+        </section>
       </Page>
     </>
   );
