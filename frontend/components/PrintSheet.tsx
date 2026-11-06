@@ -24,7 +24,9 @@ export default function PrintSheet({ src, qr, side = "front", label, marks = tru
         ) : null}
         {side === "back" ? (
           <div className="print-card-plate">
+            <span className="print-card-notice">HACKATHON DEMO PRINT</span>
             <strong>GCH-245-P1</strong>
+            <span className="print-card-serial">800b992a6911086e12225abb9ff9ff41</span>
           </div>
         ) : null}
         <span className="print-card-gloss" aria-hidden="true" />
