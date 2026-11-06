@@ -24,7 +24,7 @@ export default function PrintSheet({ src, qr, side = "front", label, marks = tru
         ) : null}
         {side === "back" ? (
           <div className="print-card-plate">
-            <strong>Token 15 · Print 1</strong>
+            <strong>GCH-245-P1</strong>
           </div>
         ) : null}
         <span className="print-card-gloss" aria-hidden="true" />

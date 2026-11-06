@@ -18,7 +18,7 @@ export interface QrLayer {
 
 const n = (value: number) => Number(value.toFixed(3));
 
-function rounded(x: number, y: number, w: number, h: number, r: number) {
+export function rounded(x: number, y: number, w: number, h: number, r: number) {
   return `M${n(x + r)} ${n(y)}h${n(w - 2 * r)}a${r} ${r} 0 0 1 ${r} ${r}v${n(h - 2 * r)}a${r} ${r} 0 0 1 ${-r} ${r}h${n(2 * r - w)}a${r} ${r} 0 0 1 ${-r} ${-r}v${n(2 * r - h)}a${r} ${r} 0 0 1 ${r} ${-r}z`;
 }
 
@@ -41,6 +41,9 @@ export function printUrl(origin: string, tokenId: string, serial: string) {
   const [scheme, host] = origin.split("://");
   return `${scheme}://${host.toUpperCase()}/S/${tokenId}/${serial.toUpperCase()}`;
 }
+
+/** How a print is named on paper: the card's number, then which print of it this is. */
+export const printCode = (tokenId: string, cycle: number) => `GCH-${tokenId}-P${cycle}`;
 
 // The scheme stays lowercase, because some scanners only recognise it that way.
 function segmentsOf(text: string) {

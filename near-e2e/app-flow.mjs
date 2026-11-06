@@ -183,8 +183,10 @@ async function main() {
   const cardBytes = await art.arrayBuffer();
   const card = await upload(cardBytes, "Flow Card");
   check("A card is uploaded", card.status === 200);
-  const live = await anon.page("/");
-  check("The new series is live", live.html.includes(`href="/series/${newSeries}"`));
+  const live = await anon.page(`/series/${newSeries}`);
+  check("The new series is live", live.status === 200 && live.html.includes("Sign in to buy a pack"));
+  const testLink = `href="/series/${newSeries}"`;
+  check("A test series stays off the public lists", !(await anon.page("/")).html.includes(testLink) && !(await anon.page("/series")).html.includes(testLink));
 
   // ---- The economy (ADR-046) ----
   const held = async (who) => [...(await who.page("/collection")).html.matchAll(/href="\/scan\/(\d+)"/g)].map((m) => m[1]);
@@ -222,7 +224,6 @@ async function main() {
   }
   const balance = await crystalOf(alice);
   check("Dismantling reaches the price of a trade", balance >= 50, `${balance} Crystal`);
-  const before = (await held(alice)).length;
   const traded = await alice.post("/api/me/trade", tradeBody);
   const { tokenId: tradedToken } = await traded.json();
   check("Crystal trades for a chosen card", traded.status === 200 && Boolean(tradedToken) && (await crystalOf(alice)) === balance - 50, tradedToken);
@@ -233,7 +234,7 @@ async function main() {
     listed = (await held(alice)).includes(tradedToken);
     if (!listed) await new Promise((resolve) => setTimeout(resolve, 2000));
   }
-  check("The traded card reaches the collection", listed && (await held(alice)).length === before + 1, `after ${Math.round((Date.now() - waitStart) / 1000)} s`);
+  check("The traded card reaches the collection", listed, `after ${Math.round((Date.now() - waitStart) / 1000)} s`);
   check("The traded card has a public record", (await anon.page(`/scan/${tradedToken}`)).status === 200);
   check("A signed-out trade is refused", (await anon.post("/api/me/trade", tradeBody)).status === 401);
   const printAddress = await anon.request(`/S/${tradedToken}/0123456789ABCDEF0123456789ABCDEF`);

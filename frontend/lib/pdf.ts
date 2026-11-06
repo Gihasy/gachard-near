@@ -7,7 +7,7 @@
  * stays clean. The notice that cannot be cropped off is the Scan status.
  */
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
-import { brandedQr, printUrl } from "./qr-style.ts";
+import { brandedQr, printCode, printUrl, rounded } from "./qr-style.ts";
 import { readArt } from "./art.ts";
 
 export const SIMULATION_NOTICE = "SIMULATION: NEAR Hackathon demo. Not an official printed card.";
@@ -31,6 +31,7 @@ export async function printPdf(card: {
   doc.setTitle(`${card.cardName} - hackathon demo print`);
   const font = await doc.embedFont(StandardFonts.Helvetica);
   const bold = await doc.embedFont(StandardFonts.HelveticaBold);
+  const mono = await doc.embedFont(StandardFonts.Courier);
   const ink = rgb(0.1, 0.1, 0.14);
 
   const art = await readArt(card.media);
@@ -76,7 +77,7 @@ export async function printPdf(card: {
 
   // Front: bleed-sized art, clean apart from the QR zone.
   {
-    const { page, x, y } = drawPage(`Front: ${card.seriesName} / ${card.cardName}, token ${card.tokenId}, print cycle ${card.printCycle}`);
+    const { page, x, y } = drawPage(`Front: ${card.seriesName} / ${card.cardName}, ${printCode(card.tokenId, card.printCycle)}`);
     page.drawImage(front, {
       x: x - mm(BLEED), y: y - mm(BLEED),
       width: mm(TRIM.width + BLEED * 2), height: mm(TRIM.height + BLEED * 2),
@@ -99,12 +100,21 @@ export async function printPdf(card: {
       x: x - mm(BLEED), y: y - mm(BLEED),
       width: mm(TRIM.width + BLEED * 2), height: mm(TRIM.height + BLEED * 2),
     });
-    const panelY = y + mm(10);
-    page.drawRectangle({ x: x + mm(5), y: panelY, width: mm(TRIM.width - 10), height: mm(24), color: rgb(1, 1, 1) });
-    page.drawText("Hackathon demo print", { x: x + mm(8), y: panelY + mm(18), size: 8, font: bold, color: rgb(0.75, 0.1, 0.2) });
-    page.drawText(`Token ${card.tokenId}, print ${card.printCycle}`, { x: x + mm(8), y: panelY + mm(12.5), size: 9.5, font: bold, color: ink });
-    page.drawText("Serial", { x: x + mm(8), y: panelY + mm(7.5), size: 7, font, color: ink });
-    page.drawText(card.serial, { x: x + mm(8), y: panelY + mm(3.5), size: 6, font, color: ink });
+    // A plate in the card's own colors, which names this print. The front names the card.
+    const plate = { x: x + mm(11), y: y + mm(13.5), width: mm(TRIM.width - 22), height: mm(11.5) };
+    const left = plate.x + mm(3);
+    page.drawSvgPath(rounded(0, 0, plate.width, plate.height, mm(1.6)), {
+      x: plate.x,
+      y: plate.y + plate.height,
+      color: rgb(0.039, 0.043, 0.078),
+      opacity: 0.94,
+      borderColor: rgb(0.79, 0.7, 0.98),
+      borderWidth: 0.6,
+      borderOpacity: 0.7,
+    });
+    page.drawText("HACKATHON DEMO PRINT", { x: left, y: plate.y + mm(8.5), size: 4.4, font: bold, color: rgb(0.97, 0.79, 0.42) });
+    page.drawText(printCode(card.tokenId, card.printCycle), { x: left, y: plate.y + mm(4.8), size: 8, font: bold, color: rgb(0.96, 0.95, 1) });
+    page.drawText(card.serial, { x: left, y: plate.y + mm(2), size: 5, font: mono, color: rgb(0.79, 0.7, 0.98) });
     cropMarks(page, x, y);
   }
 

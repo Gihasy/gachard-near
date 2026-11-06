@@ -24,9 +24,15 @@ const DUST = [
 const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" font-family="Segoe UI, Arial, sans-serif">
 <defs>
   <linearGradient id="crystal" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#F4D9FF"/><stop offset=".5" stop-color="#B9A2FF"/><stop offset="1" stop-color="#FFB8E6"/></linearGradient>
+  <pattern id="lattice" width="46" height="46" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><path d="M0 0H46M0 0V46" fill="none" stroke="#C9B3FB" stroke-width="1"/></pattern>
+  <radialGradient id="fade" cx=".5" cy="${MARK.cy / H}" r=".7"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".35" stop-color="#fff" stop-opacity=".1"/><stop offset="1" stop-color="#fff" stop-opacity=".26"/></radialGradient>
+  <mask id="latticeFade"><rect width="${W}" height="${H}" fill="url(#fade)"/></mask>
+  <radialGradient id="halo" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#FF9EF1" stop-opacity=".42"/><stop offset=".55" stop-color="#8F6BFF" stop-opacity=".16"/><stop offset="1" stop-color="#8F6BFF" stop-opacity="0"/></radialGradient>
   <radialGradient id="glow" cx=".5" cy="${MARK.cy / H}" r=".62"><stop offset="0" stop-color="#4A2C86"/><stop offset=".55" stop-color="#1A1436"/><stop offset="1" stop-color="#0C0D18"/></radialGradient>
 </defs>
 <rect width="${W}" height="${H}" fill="url(#glow)"/>
+<rect width="${W}" height="${H}" fill="url(#lattice)" mask="url(#latticeFade)"/>
+<circle cx="${CX}" cy="${MARK.cy}" r="230" fill="url(#halo)"/>
 <rect x="54" y="56" width="${W - 108}" height="${H - 112}" rx="24" fill="none" stroke="url(#crystal)" stroke-width="8"/>
 <rect x="70" y="72" width="${W - 140}" height="${H - 144}" rx="14" fill="none" stroke="url(#crystal)" stroke-width="1.5" opacity=".45"/>
 <g fill="none" stroke="url(#crystal)">

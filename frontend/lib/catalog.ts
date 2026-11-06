@@ -92,6 +92,13 @@ export async function addCard(
   return template;
 }
 
+/**
+ * Whether a series appears in the public lists. The series near-e2e/app-flow.mjs publishes
+ * to test the app can be opened by its address, but nobody should come across them.
+ */
+export const isListed = (series: SeriesRow) =>
+  !series.hidden && missingRarities(series).length === 0 && !/^Flow \d+$/.test(series.name);
+
 /** A pack can only honour the published rates if every rarity with a rate has a card. */
 export function missingRarities(series: SeriesRow): string[] {
   return RARITIES.filter(

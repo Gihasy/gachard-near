@@ -15,7 +15,7 @@ import {
 } from "@/components/icons";
 import { CardImage, Eyebrow, inputClass, primaryBtn } from "@/components/ui";
 import { CATEGORIES, DEFAULT_CATEGORY } from "@/lib/categories";
-import { missingRarities, RARITIES } from "@/lib/catalog";
+import { isListed, RARITIES } from "@/lib/catalog";
 import { readDb } from "@/lib/db";
 import { qrDataUrl, siteOrigin } from "@/lib/qr";
 import { nameOf } from "@/lib/users";
@@ -84,7 +84,7 @@ export default async function Home({ searchParams }: {
   const sampleQr = await qrDataUrl(`${origin}/scan`);
 
   const items: SeriesItem[] = series
-    .filter((s) => !s.hidden && missingRarities(s).length === 0)
+    .filter(isListed)
     .map((s) => ({
       id: s.id,
       name: s.name,

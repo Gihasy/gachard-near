@@ -10,7 +10,7 @@ import { CRYSTAL_BY_RARITY } from "@/lib/economy";
 import { RARITIES } from "@/lib/catalog";
 import { collectorLabel, contractId, explorer } from "@/lib/near";
 import { qrDataUrl, siteOrigin } from "@/lib/qr";
-import { printUrl } from "@/lib/qr-style";
+import { printCode, printUrl } from "@/lib/qr-style";
 import { currentUser, nameOf } from "@/lib/users";
 
 export const dynamic = "force-dynamic";
@@ -138,7 +138,10 @@ export default async function CardRecord({ params, searchParams }: {
                 {collectorLabel(card.creator)} <ExternalIcon width={12} height={12} />
               </a>
             </Fact>
-            <Fact label="Times printed"><span className="tabular">{card.print_cycle}</span></Fact>
+            <Fact label="Times printed">
+              <span className="tabular">{card.print_cycle}</span>
+              {card.print_cycle > 0 ? <span className="mt-0.5 block text-xs font-medium text-cn-text-2 tabular">Latest: {printCode(id, card.print_cycle)}</span> : null}
+            </Fact>
             <Fact label="Artwork file" testid="art-check"><ArtCheck value={card.artMatches} /></Fact>
           </dl>
           <p className="text-xs text-cn-text-3 leading-relaxed">

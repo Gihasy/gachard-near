@@ -2,7 +2,7 @@ import Link from "next/link";
 import { ArrowIcon } from "@/components/icons";
 import { CardImage, Page, primaryBtn, SeriesName, Title } from "@/components/ui";
 import { DEFAULT_CATEGORY } from "@/lib/categories";
-import { missingRarities, RARITIES } from "@/lib/catalog";
+import { isListed, RARITIES } from "@/lib/catalog";
 import { readDb, type SeriesRow } from "@/lib/db";
 import { nameOf } from "@/lib/users";
 
@@ -15,7 +15,7 @@ const previewOf = (series: SeriesRow) => [...series.templates].sort((a, b) => b.
 
 export default async function AllSeries() {
   const { series, users } = await readDb();
-  const live = series.filter((s) => !s.hidden && missingRarities(s).length === 0).reverse();
+  const live = series.filter(isListed).reverse();
 
   return (
     <Page wide>
