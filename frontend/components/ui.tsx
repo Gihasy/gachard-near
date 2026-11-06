@@ -53,13 +53,13 @@ export function CardImage({ src, alt, rarity, eager = false, full = false }: { s
   );
 }
 
-/** A series' name, with "Fictional IP" as a label when the name says so. */
+/** A series' name, with "Fictional" as a label when the name says so. */
 export function SeriesName({ name }: { name: string }) {
   const { title, fictional } = splitSeriesName(name);
   return (
     <>
       {title}
-      {fictional ? <span className="fictional-tag" data-testid="fictional-tag">Fictional IP</span> : null}
+      {fictional ? <span className="fictional-tag" data-testid="fictional-tag">Fictional</span> : null}
     </>
   );
 }

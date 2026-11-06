@@ -19,8 +19,8 @@ export default async function AllSeries() {
 
   return (
     <Page wide>
-      <Title eyebrow="Series" sub="Every IP released on Gachard, with its logo and some of its cards. Open one to see its odds and buy a pack.">
-        Find the IP you love
+      <Title eyebrow="Series" sub="That character you can't stop thinking about. The idol you'd stay up all night for. They deserve a place in your collection, and maybe even on your desk.">
+        Find the cards you love
       </Title>
 
       {live.length === 0 ? (
