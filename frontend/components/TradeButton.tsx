@@ -22,7 +22,9 @@ export default function TradeButton({ seriesId, templateId, price, crystal }: { 
           setBusy(true);
           setError("");
           try {
-            await post("/api/me/trade", { seriesId, templateId });
+            // The chain lists a new card a moment later, but its own record is there at once.
+            const { tokenId } = await post<{ tokenId: string }>("/api/me/trade", { seriesId, templateId });
+            router.push(`/scan/${tokenId}`);
             router.refresh();
           } catch (e) {
             setError((e as Error).message);

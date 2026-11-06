@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { PrintIcon, SearchIcon } from "@/components/icons";
-import { CardImage, inputClass } from "@/components/ui";
+import { CardImage, inputClass, SeriesName } from "@/components/ui";
 
 export interface SeriesItem {
   id: number;
@@ -99,7 +99,7 @@ export default function SeriesBrowser({ items, categories, initialQuery, initial
                 </div>
               </div>
               <p className="mt-4 text-xs font-semibold text-cn-lavender">{item.category}</p>
-              <h3 className="mt-1 font-display font-semibold text-base leading-snug">{item.name}</h3>
+              <h3 className="mt-1 font-display font-semibold text-base leading-snug"><SeriesName name={item.name} /></h3>
               <p className="mt-1 text-sm text-cn-text-2 truncate">by {item.creator}</p>
               <p className="mt-1 inline-flex items-center gap-1.5 text-sm text-cn-text-3">
                 {item.cardCount} {item.cardCount === 1 ? "card" : "cards"}, all printable <PrintIcon width={14} height={14} />

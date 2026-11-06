@@ -11,7 +11,7 @@ export default async function Nav() {
   return (
     <>
       <header className="nav-glass sticky top-0 z-40 border-b border-cn-line">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center gap-6">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center gap-3 lg:gap-6">
           <Link href="/" aria-label="Gachard home" className="shrink-0">
             <Logo size={30} showWordmark />
           </Link>
@@ -22,7 +22,7 @@ export default async function Nav() {
                 <span className="inline-flex items-center gap-1.5 rounded-full border border-cn-line-strong bg-white/5 px-3 py-1.5 text-cn-credits font-semibold tabular" data-testid="credits">
                   <CrystalStar size={12} />
                   {user.credits.toLocaleString("en-US")}
-                  <span className="sr-only sm:not-sr-only"> Credits</span>
+                  <span className="sr-only sm:not-sr-only md:sr-only lg:not-sr-only"> Credits</span>
                 </span>
                 <LogoutButton />
               </>

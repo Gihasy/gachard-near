@@ -56,7 +56,7 @@ export default async function Collection() {
           </div>
           <p className="font-display font-semibold text-lg">No cards yet.</p>
           <p className="mt-2 text-cn-text-2">Buy a pack and see what you find.</p>
-          <Link className={`${primaryBtn} mt-5`} href="/#series">Browse series <ArrowIcon width={16} height={16} /></Link>
+          <Link className={`${primaryBtn} mt-5`} href="/series">Browse series <ArrowIcon width={16} height={16} /></Link>
         </div>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-x-4 gap-y-7">

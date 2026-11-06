@@ -1,6 +1,7 @@
 import { isFramedArt } from "@/lib/framed-art";
 import type { ReactNode } from "react";
 import { CrystalStar } from "@/components/icons";
+import { splitSeriesName } from "@/lib/series-name";
 
 export const RARITY_COLOR: Record<string, string> = {
   Common: "var(--cn-rarity-common)",
@@ -49,6 +50,17 @@ export function CardImage({ src, alt, rarity, eager = false }: { src: string; al
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src={src} alt={alt} loading={eager ? "eager" : "lazy"} decoding="async" data-framed={isFramedArt(src) || undefined} />
     </span>
+  );
+}
+
+/** A series' name, with "Fictional IP" as a label when the name says so. */
+export function SeriesName({ name }: { name: string }) {
+  const { title, fictional } = splitSeriesName(name);
+  return (
+    <>
+      {title}
+      {fictional ? <span className="fictional-tag" data-testid="fictional-tag">Fictional IP</span> : null}
+    </>
   );
 }
 

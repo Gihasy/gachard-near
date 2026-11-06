@@ -109,7 +109,7 @@ export default async function Home({ searchParams }: {
             <span className="crystal-text whitespace-nowrap">Collect them!</span>
           </h1>
           <p className="mt-5 max-w-xl text-cn-text-2 text-base sm:text-lg leading-relaxed">
-            Characters, VTubers, actors and whole worlds release their own trading cards here.
+            Anyone with fans can release trading cards here: characters, VTubers, entertainers, athletes and more.
             Open a pack, keep what you love, and print any card you own.
           </p>
           <form action="/#series" method="get" className="mt-7 flex gap-2 max-w-xl">

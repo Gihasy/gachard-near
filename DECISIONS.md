@@ -1601,6 +1601,8 @@ their community collects it without meeting a wallet, a gas fee or a chain word.
 - **Open packs survive.** A pack opened before a series was retired can still be bought.
 - **Released twice.** The first release put each logo on a white chip inside the card image. The image is immutable on chain, so removing the chip took a second release under the same names. The first four series, 21 to 24, are retired, and only their ids tell them apart on chain.
 
+**On screen, a series' name loses its note.** "(fictional ...)" stays in the name on chain, and moves into a Fictional IP label beside the name on screen. The card's face and the home page still say so in words.
+
 **On screen, a framed card shows from its border out.** The dark margin exists for the print trim. `lib/framed-art.ts` recognises Gachard's own framed cards and crops the display only, which stretches them about 4%. A creator's upload has no such margin and is shown whole. The image and its hash do not change.
 
 **A Gachard QR with a short address.** A printed QR is drawn in the brand's colors with the crystal star in the middle (`lib/qr-style.ts`). It points to `/S/<token>/<SERIAL>`, in capitals, which a QR stores in fewer bits. That takes a long print address from 37 modules across to 33, and each one prints larger. `/S/` redirects to the card's record, and QRs already printed keep working. Its limit: this has only been tested with a software reader on rendered images, not yet a phone camera on paper.

@@ -3,9 +3,10 @@ import OpenPackButton from "@/components/OpenPackButton";
 import PackArt from "@/components/PackArt";
 import { PrintIcon } from "@/components/icons";
 import CardZoom from "@/components/CardZoom";
-import { Eyebrow, Page, Panel, Rarity, RARITY_COLOR } from "@/components/ui";
+import { Eyebrow, Page, Panel, Rarity, RARITY_COLOR, SeriesName } from "@/components/ui";
 import { missingRarities, RARITIES } from "@/lib/catalog";
 import { readDb } from "@/lib/db";
+import { splitSeriesName } from "@/lib/series-name";
 import { CARDS_PER_PACK, packPrice } from "@/lib/packs";
 import { currentUser, nameOf } from "@/lib/users";
 
@@ -28,18 +29,18 @@ export default async function SeriesPage({ params }: { params: Promise<{ id: str
           <img src={cover.media} alt="" aria-hidden="true" className="absolute inset-0 size-full object-cover opacity-25 blur-3xl scale-125" />
         ) : null}
         <div className="absolute inset-0 bg-gradient-to-b from-transparent to-cn-bg" />
-        <div className="relative max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-14 grid sm:grid-cols-[auto_1fr] md:grid-cols-[auto_1fr_minmax(280px,340px)] gap-6 md:gap-10 items-center">
+        <div className="relative max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-14 grid sm:grid-cols-[auto_1fr] lg:grid-cols-[auto_1fr_minmax(280px,340px)] gap-6 md:gap-10 items-center">
           <div className="w-36 sm:w-44 mx-auto sm:mx-0 -rotate-3 pack-idle">
             {series.name.startsWith("Crystal Night") ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img src="/packs/crystal-night.webp" alt="" aria-hidden="true" className="w-full rounded-xl shadow-2xl" />
             ) : (
-              <PackArt name={series.name} cards={CARDS_PER_PACK} logo={series.logo} />
+              <PackArt name={splitSeriesName(series.name).title} cards={CARDS_PER_PACK} logo={series.logo} />
             )}
           </div>
           <div className="min-w-0">
             <Eyebrow>Released by {nameOf(series.creatorAccount, db.users)}</Eyebrow>
-            <h1 className="mt-4 font-display font-bold text-2xl sm:text-4xl leading-tight break-words">{series.name}</h1>
+            <h1 className="mt-4 font-display font-bold text-2xl sm:text-4xl leading-tight break-words"><SeriesName name={series.name} /></h1>
             <p className="mt-3 text-cn-text-2 leading-relaxed max-w-lg">
               Every pack holds {CARDS_PER_PACK} cards at one price. They are drawn at random, at the rates shown here, when you buy.
             </p>
@@ -47,7 +48,7 @@ export default async function SeriesPage({ params }: { params: Promise<{ id: str
               <PrintIcon width={16} height={16} className="text-cn-lavender" /> Every card you buy can also be printed.
             </p>
           </div>
-          <div className="panel p-5 sm:col-span-2 md:col-span-1">
+          <div className="panel p-5 sm:col-span-2 lg:col-span-1">
             {series.hidden ? (
               <p className="text-sm text-cn-text-3">This series has been retired and sells no new packs. Cards already bought stay valid.</p>
             ) : missing.length ? (

@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import CardActions from "@/components/CardActions";
 import CardZoom from "@/components/CardZoom";
 import { CheckIcon, ExternalIcon, PrintIcon, SendIcon, SparkIcon } from "@/components/icons";
-import { Panel, Rarity } from "@/components/ui";
+import { Panel, Rarity, SeriesName } from "@/components/ui";
 import { cardsOf, printState, readCard, serialForHolder, type PrintState } from "@/lib/cards";
 import { readDb } from "@/lib/db";
 import { CRYSTAL_BY_RARITY } from "@/lib/economy";
@@ -113,7 +113,7 @@ export default async function CardRecord({ params, searchParams }: {
           ) : null}
 
           <div>
-            <p className="text-sm text-cn-text-2">{card.seriesName}</p>
+            <p className="text-sm text-cn-text-2"><SeriesName name={card.seriesName} /></p>
             <h1 className="mt-1 font-display font-bold text-2xl sm:text-4xl break-words">
               {card.cardName} <span className="text-cn-text-3 font-medium">#{id}</span>
             </h1>
@@ -198,7 +198,7 @@ export default async function CardRecord({ params, searchParams }: {
 
           {!user ? (
             <p className="text-sm text-cn-text-2">
-              Want your own? <Link href="/#series" className="text-cn-lavender font-semibold hover:underline">Browse series</Link>
+              Want your own? <Link href="/series" className="text-cn-lavender font-semibold hover:underline">Browse series</Link>
             </p>
           ) : null}
         </div>

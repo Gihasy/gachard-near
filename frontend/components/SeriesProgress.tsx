@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { CheckIcon } from "@/components/icons";
 import TradeButton from "@/components/TradeButton";
-import { CardImage, Rarity } from "@/components/ui";
+import { CardImage, Rarity, SeriesName } from "@/components/ui";
 import { RARITIES } from "@/lib/catalog";
 import type { OwnedCard } from "@/lib/cards";
 import type { SeriesRow } from "@/lib/db";
@@ -35,7 +35,7 @@ export default function SeriesProgress({ series, cards, crystal }: { series: Ser
           return (
             <article key={s.id} className="panel p-5" data-testid="series-progress-row" data-series={s.id} data-owned={owned} data-total={slots.length}>
               <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
-                <Link href={`/series/${s.id}`} className="font-display font-semibold text-base min-w-0 break-words hover:text-cn-lavender transition">{s.name}</Link>
+                <Link href={`/series/${s.id}`} className="font-display font-semibold text-base min-w-0 break-words hover:text-cn-lavender transition"><SeriesName name={s.name} /></Link>
                 <p className={`inline-flex items-center gap-1.5 text-sm font-semibold tabular ${complete ? "text-cn-success" : "text-cn-text-2"}`}>
                   {complete ? <CheckIcon width={15} height={15} /> : null}
                   {complete ? `Complete: all ${slots.length} cards` : `${owned} of ${slots.length} cards`}

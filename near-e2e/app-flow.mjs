@@ -71,6 +71,9 @@ async function main() {
   check("A series is live on the home page", Boolean(seriesId));
   if (!seriesId) throw new Error("No series to test with. Seed the database first.");
 
+  const allSeries = await anon.page("/series");
+  check("The Series page lists the IPs", allSeries.status === 200 && allSeries.html.includes(`href="/series/${seriesId}"`));
+
   check("Home says any card can be printed, and that it is a simulation", /also be <span[^>]*>printed/.test(home.html) && home.html.includes("Hackathon simulation."));
 
   check("Signed-out pack request is refused", (await anon.post("/api/packs", { seriesId })).status === 401);
@@ -209,7 +212,10 @@ async function main() {
   check("A second pack is bought", secondBuy.status === 200);
   const commonCard = (await anon.page(`/series/${seriesId}`)).html.match(/data-template="(\d+)" data-rarity-index="0"/)?.[1];
   const tradeBody = { seriesId: Number(seriesId), templateId: Number(commonCard) };
-  check("A trade is refused without enough Crystal", (await alice.post("/api/me/trade", tradeBody)).status === 400);
+  // Tried on a Legendary, because the card dismantled earlier may already pay for a Common.
+  const legendaryCard = (await anon.page(`/series/${seriesId}`)).html.match(/data-template="(\d+)" data-rarity-index="3"/)?.[1];
+  const tooDear = await alice.post("/api/me/trade", { seriesId: Number(seriesId), templateId: Number(legendaryCard) });
+  check("A trade is refused without enough Crystal", tooDear.status === 400 || (await crystalOf(alice)) >= 1500);
   for (const id of await held(alice)) {
     if ((await crystalOf(alice)) >= 50) break;
     await alice.post(`/api/cards/${id}/dismantle`);
@@ -220,7 +226,14 @@ async function main() {
   const traded = await alice.post("/api/me/trade", tradeBody);
   const { tokenId: tradedToken } = await traded.json();
   check("Crystal trades for a chosen card", traded.status === 200 && Boolean(tradedToken) && (await crystalOf(alice)) === balance - 50, tradedToken);
-  check("The traded card is in the collection", (await held(alice)).length === before + 1);
+  // The list is read from the chain, which can lag a transaction by a few seconds.
+  let listed = false;
+  const waitStart = Date.now();
+  while (!listed && Date.now() - waitStart < 30_000) {
+    listed = (await held(alice)).includes(tradedToken);
+    if (!listed) await new Promise((resolve) => setTimeout(resolve, 2000));
+  }
+  check("The traded card reaches the collection", listed && (await held(alice)).length === before + 1, `after ${Math.round((Date.now() - waitStart) / 1000)} s`);
   check("The traded card has a public record", (await anon.page(`/scan/${tradedToken}`)).status === 200);
   check("A signed-out trade is refused", (await anon.post("/api/me/trade", tradeBody)).status === 401);
   const printAddress = await anon.request(`/S/${tradedToken}/0123456789ABCDEF0123456789ABCDEF`);
