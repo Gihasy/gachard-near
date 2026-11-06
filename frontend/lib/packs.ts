@@ -33,6 +33,7 @@ export async function openPack(userId: string, seriesId: number): Promise<PackOf
   return withDb((d) => {
     const series = d.series.find((s) => s.id === seriesId);
     if (!series) throw new ContractRefused("Series not found.");
+    if (series.hidden) throw new ContractRefused("This series has been retired. Cards already bought stay valid.");
     const missing = missingRarities(series);
     if (missing.length) throw new ContractRefused(`This series still needs a ${missing[0]} card.`);
 

@@ -130,7 +130,7 @@ async function main() {
   const notHolder = await bob.page(`/scan/${token}?print=${serial}`);
   check("Scanning as someone else shows no actions", notHolder.html.includes('data-testid="not-holder"') && !notHolder.html.includes('data-testid="send-to"'));
   check("Scanning as the holder shows them", (await alice.page(`/scan/${token}?print=${serial}`)).html.includes('data-testid="send-to"'));
-  check("Someone with the QR cannot transfer it", (await bob.post(`/api/cards/${token}/send`, { to: "crystal_night" })).status === 400);
+  check("Someone with the QR cannot transfer it", (await bob.post(`/api/cards/${token}/send`, { to: "mochi_puffs_demo" })).status === 400);
   check("Someone with the QR cannot return it", (await bob.post(`/api/cards/${token}/return`)).status === 400);
 
   check("A username must be valid", (await bob.post("/api/me/username", { username: "x" })).status === 400);
@@ -148,7 +148,7 @@ async function main() {
   check("The holder requests a return", (await bob.post(`/api/cards/${token}/return`)).status === 200);
   check("Scan says the return is simulated", (await anon.page(`/scan/${token}`)).html.includes("Return pending (hackathon simulation)"));
   check("Its QR reads as being returned", (await stateOf(anon, serial)) === "ReturnPending");
-  check("It cannot be transferred on its way back", (await bob.post(`/api/cards/${token}/send`, { to: "crystal_night" })).status === 400);
+  check("It cannot be transferred on its way back", (await bob.post(`/api/cards/${token}/send`, { to: "mochi_puffs_demo" })).status === 400);
   check("Someone else cannot press the simulation", (await alice.post(`/api/cards/${token}/return/simulate`, { accepted: true })).status === 400);
 
   check("A fake card is refused", (await bob.post(`/api/cards/${token}/return/simulate`, { accepted: false })).status === 200);

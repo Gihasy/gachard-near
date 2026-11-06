@@ -23,14 +23,14 @@ import { nameOf } from "@/lib/users";
 export const dynamic = "force-dynamic";
 
 const FAVORITES = [
-  { src: "/cards/demo/aika-legendary.jpg", rarity: "Legendary", r: "-11deg", x: "-58%", y: "16px" },
-  { src: "/cards/demo/noa-epic.jpg", rarity: "Epic", r: "11deg", x: "58%", y: "16px" },
-  { src: "/cards/demo/mochi-legendary.jpg", rarity: "Legendary", r: "0deg", x: "0%", y: "-10px" },
+  { src: "/cards/series/aika-legendary.jpg", rarity: "Legendary", r: "-11deg", x: "-58%", y: "16px" },
+  { src: "/cards/series/thornmaw-epic.jpg", rarity: "Epic", r: "11deg", x: "58%", y: "16px" },
+  { src: "/cards/series/mochi-legendary.jpg", rarity: "Legendary", r: "0deg", x: "0%", y: "-10px" },
 ];
 
 const RAIL = [
-  "demo/mochi-epic.jpg", "rare-2.webp", "demo/aika-epic.jpg", "legendary-1.webp", "demo/noa-rare.jpg", "epic-1.webp",
-  "demo/mochi-rare.jpg", "demo/aika-rare.jpg", "legendary-2.webp", "demo/noa-legendary.jpg", "demo/aika-common.jpg", "demo/mochi-common.jpg",
+  "series/mochi-epic.jpg", "series/thornmaw-rare-2.jpg", "series/aika-epic.jpg", "series/luma-legendary.jpg", "series/thornmaw-legendary.jpg", "series/mochi-common-3.jpg",
+  "series/luma-rare.jpg", "series/aika-rare-2.jpg", "series/thornmaw-common-2.jpg", "series/mochi-rare-2.jpg", "series/luma-epic.jpg", "series/aika-legendary.jpg",
 ];
 
 const PROMISES = ["No wallet to set up", "No network fees", "Pay only for what you see"];
@@ -84,7 +84,7 @@ export default async function Home({ searchParams }: {
   const sampleQr = await qrDataUrl(`${origin}/scan`);
 
   const items: SeriesItem[] = series
-    .filter((s) => missingRarities(s).length === 0)
+    .filter((s) => !s.hidden && missingRarities(s).length === 0)
     .map((s) => ({
       id: s.id,
       name: s.name,
@@ -185,7 +185,7 @@ export default async function Home({ searchParams }: {
             text="Open a pack for free and turn over all five cards. Then buy the pack or skip it. Skipping costs nothing."
           >
             <div className="mt-6 grid grid-cols-5 gap-2 -mb-14">
-              {["card-back.webp", "demo/mochi-rare.jpg", "demo/aika-epic.jpg", "card-back.webp", "card-back.webp"].map((file, i) => (
+              {["card-back.webp", "series/mochi-rare.jpg", "series/aika-epic.jpg", "card-back.webp", "card-back.webp"].map((file, i) => (
                 <CardImage key={i} src={`/cards/${file}`} alt="" rarity={file.includes("epic") ? "Epic" : file.includes("rare") ? "Rare" : undefined} />
               ))}
             </div>
@@ -249,7 +249,7 @@ export default async function Home({ searchParams }: {
                 <div className="duo-panel">
                   <span className="duo-tag">On screen</span>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img className="duo-phone" src="/cards/digital-card.webp" alt="A trading card on a phone" width={500} height={700} loading="lazy" draggable={false} />
+                  <img className="duo-cutout" src="/cards/series/digital-card.webp" alt="A trading card open in the Gachard app on a phone" width={500} height={700} loading="lazy" draggable={false} />
                 </div>
                 <div className="duo-swap" aria-hidden="true">
                   <span>Print</span>
@@ -259,7 +259,7 @@ export default async function Home({ searchParams }: {
                 <div className="duo-panel">
                   <span className="duo-tag">In hand</span>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src="/cards/real-card.webp" alt="The same card, printed and held in a hand" width={500} height={700} loading="lazy" draggable={false} />
+                  <img className="duo-cutout" src="/cards/series/real-card.webp" alt="The same card, printed and held in a hand" width={500} height={700} loading="lazy" draggable={false} />
                 </div>
               </div>
               <figcaption className="mt-2 text-center text-xs text-cn-text-3 leading-relaxed">
@@ -273,7 +273,7 @@ export default async function Home({ searchParams }: {
               <PrintSheet src="/cards/card-back.webp" side="back" marks={false} label="The back of a printed card, naming the print" />
             </div>
             <div className="print-show-front">
-              <PrintSheet src="/cards/legendary-1.webp" qr={sampleQr} label="The front of a printed card, with crop marks and a QR code in the corner" />
+              <PrintSheet src="/cards/series/thornmaw-legendary.jpg" qr={sampleQr} label="The front of a printed card, with crop marks and a QR code in the corner" />
               <span className="print-show-dim" data-axis="w">63 mm</span>
               <span className="print-show-dim" data-axis="h">88 mm</span>
             </div>
@@ -326,7 +326,7 @@ export default async function Home({ searchParams }: {
               initialCategory={typeof category === "string" ? category : ""}
             />
             <p className="mt-4 text-xs text-cn-text-3">
-              Demo series. Mochi Puffs, Aika Nova and Noa Vantor are invented, and are not real people or brands.
+              Demo series. Mochi Puffs, Aika Nova, Luma Four and Thornmaw Wilds are invented, and are not real people or brands. Their art is AI generated.
             </p>
           </>
         )}

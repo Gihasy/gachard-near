@@ -1,6 +1,7 @@
-// Publishes the three fictional demo IPs drawn by make-demo-art.mjs, each from its own
+// Publishes the four fictional demo series drawn by make-series-art.mjs, each from its own
 // creator account, through the same functions a creator's upload uses. Names and art
-// hashes go on chain for good. A series that already exists under its name is kept.
+// hashes go on chain for good. Then it hides the series they replace. Their cards stay
+// valid and can still be scanned. Safe to run again: it adds only what is missing.
 // With MONGODB_URL set it seeds that database. Run from frontend:
 //   node --env-file=.env.local scripts/seed-demo-ips.ts
 import { randomBytes } from "node:crypto";
@@ -9,24 +10,22 @@ import { join } from "node:path";
 import { addCard, createSeries } from "../lib/catalog.ts";
 import { readDb, usesMongo, withDb, type User } from "../lib/db.ts";
 import { createUserAccount } from "../lib/near.ts";
+import { FILES, SERIES } from "./series-data.mjs";
 
-const IPS: { series: string; category: string; username: string; prefix: string; cards: string[] }[] = [
-  { series: "Mochi Puffs (fictional IP)", category: "Characters", username: "mochi_puffs_demo", prefix: "mochi", cards: ["Vanilla Puff", "Berry Puff", "Moonlit Puff", "Crown Puff"] },
-  { series: "Aika Nova (fictional VTuber)", category: "VTubers", username: "aika_nova_demo", prefix: "aika", cards: ["Morning Stream", "Midnight Stream", "Idol Stage", "Galaxy Diva"] },
-  { series: "Noa Vantor (fictional actor)", category: "Actors & musicians", username: "noa_vantor_demo", prefix: "noa", cards: ["First Take", "City of Rain", "Red Carpet", "Golden Night"] },
+const REPLACED = [
+  "Crystal Night: Starter Set",
+  "Mochi Puffs (fictional IP)",
+  "Aika Nova (fictional VTuber)",
+  "Noa Vantor (fictional actor)",
 ];
-const RARITY_FILES = ["common", "rare", "epic", "legendary"];
 
-console.log(`Demo IPs: seeding ${usesMongo() ? "MongoDB" : "the local file"}...`);
-for (const ip of IPS) {
-  if ((await readDb()).series.some((s) => s.name === ip.series)) {
-    console.log(`Demo IPs: ${ip.series} exists, keeping it.`);
-    continue;
-  }
+async function creatorFor(username: string): Promise<User> {
+  const existing = (await readDb()).users.find((u) => u.username === username);
+  if (existing) return existing;
   const id = randomBytes(12).toString("hex");
   const creator: User = {
     id,
-    username: ip.username,
+    username,
     provider: "demo",
     ...(await createUserAccount(id)),
     credits: 0,
@@ -34,13 +33,32 @@ for (const ip of IPS) {
     createdAt: new Date().toISOString(),
   };
   await withDb((d) => d.users.push(creator));
-  const series = await createSeries(creator, ip.series, [7000, 2000, 800, 200], [40, 120, 360, 1200], ip.category);
-  for (const [rarity, name] of ip.cards.entries()) {
-    const art = readFileSync(join(process.cwd(), "public", "cards", "demo", `${ip.prefix}-${RARITY_FILES[rarity]}.jpg`));
-    await addCard(creator, series.id, name, rarity, art);
-    console.log(`Demo IPs: added ${name}`);
-  }
-  console.log(`Demo IPs: series ${series.id} is live: ${ip.series}`);
+  return creator;
 }
+
+console.log(`Demo series: seeding ${usesMongo() ? "MongoDB" : "the local file"}...`);
+for (const ip of SERIES) {
+  const creator = await creatorFor(ip.username);
+  const existing = (await readDb()).series.find((s) => s.name === ip.name);
+  const series = existing ?? (await createSeries(creator, ip.name, [7000, 2000, 800, 200], [40, 120, 360, 1200], ip.category));
+  const logo = `/cards/series/${ip.prefix}-logo.png`;
+  await withDb((d) => {
+    const row = d.series.find((s) => s.id === series.id);
+    if (row) row.logo = logo;
+  });
+  for (const [index, [file, rarity]] of FILES.entries()) {
+    const [name] = ip.cards[index];
+    if (series.templates.some((t) => t.name === name)) continue;
+    const art = readFileSync(join(process.cwd(), "public", "cards", "series", `${ip.prefix}-${file}.jpg`));
+    await addCard((await readDb()).users.find((u) => u.id === creator.id)!, series.id, name, rarity as number, art);
+    console.log(`Demo series: added ${name}`);
+  }
+  console.log(`Demo series: series ${series.id} is live: ${ip.name}`);
+}
+
+await withDb((d) => {
+  for (const row of d.series) if (REPLACED.includes(row.name)) row.hidden = true;
+});
+console.log(`Demo series: hid ${REPLACED.join(", ")}`);
 // A MongoDB connection would otherwise keep the process open.
 process.exit(0);

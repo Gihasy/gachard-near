@@ -274,8 +274,7 @@ input[type="number"] { -moz-appearance: textfield; }
   background: radial-gradient(90% 60% at 50% 55%, #c295fc40, transparent), #0a0b1466;
 }
 .duo-panel img { display: block; width: 100%; height: auto; user-select: none; }
-/* Fades out the app's old tab bar under the card. */
-.duo-phone { mask-image: linear-gradient(#000 76%, transparent 87%); }
+.duo-cutout { filter: drop-shadow(0 14px 26px #00000080); }
 .duo-tag { padding: 0.75rem 0 0.25rem; color: var(--cn-text-2); font-size: 0.75rem; font-weight: 600; }
 .duo-swap {
   display: flex;
@@ -503,6 +502,17 @@ input[type="number"] { -moz-appearance: textfield; }
 .pack-brand img { width: 8cqw; height: 8cqw; object-fit: contain; }
 .pack-star { margin-top: auto; line-height: 0; filter: drop-shadow(0 0 5cqw #ff9ef1b3); }
 .pack-star svg { width: 34cqw; height: 34cqw; }
+.pack-logo {
+  margin-top: auto;
+  display: grid;
+  place-items: center;
+  max-width: 72cqw;
+  padding: 3cqw;
+  border-radius: 6cqw;
+  background: #fff;
+  box-shadow: 0 0 6cqw #ff9ef166;
+}
+.pack-logo img { display: block; max-width: 100%; max-height: 40cqw; object-fit: contain; }
 .pack-name {
   display: -webkit-box;
   max-width: 100%;

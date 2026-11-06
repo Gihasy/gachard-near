@@ -19,7 +19,7 @@ export default function Scan() {
     <Page>
       <div className="max-w-2xl mx-auto text-center py-6 sm:py-12">
         <div className="relative w-36 mx-auto mb-8">
-          <CardImage src="/cards/legendary-2.webp" alt="" rarity="Legendary" />
+          <CardImage src="/cards/series/thornmaw-legendary.jpg" alt="" rarity="Legendary" />
           <span className="absolute -inset-3 rounded-2xl border-2 border-dashed border-cn-lavender/60" aria-hidden="true" />
           <span className="crystal-calm absolute -bottom-5 left-1/2 -translate-x-1/2 grid place-items-center size-11 rounded-full" aria-hidden="true">
             <ScanIcon />

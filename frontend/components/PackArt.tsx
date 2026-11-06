@@ -9,7 +9,7 @@ const OUTLINE = [...zigzag(0, 0.8), ...zigzag(100, -0.8).reverse()]
   .join(",");
 
 /** A sealed pack drawn in code, so any series has one without artwork. */
-export default function PackArt({ name, cards, className = "" }: { name: string; cards: number; className?: string }) {
+export default function PackArt({ name, cards, logo, className = "" }: { name: string; cards: number; logo?: string; className?: string }) {
   return (
     <div className={`pack ${className}`} aria-hidden="true">
       <div className="pack-foil" style={{ clipPath: `polygon(${OUTLINE})` }}>
@@ -22,7 +22,14 @@ export default function PackArt({ name, cards, className = "" }: { name: string;
             <img src="/icons/icon-192.png" alt="" />
             Gachard
           </p>
-          <span className="pack-star"><CrystalStar size={48} /></span>
+          {logo ? (
+            <span className="pack-logo">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={logo} alt="" />
+            </span>
+          ) : (
+            <span className="pack-star"><CrystalStar size={48} /></span>
+          )}
           <p className="pack-name">{name}</p>
           <p className="pack-count">{cards} cards per pack</p>
           <p className="pack-line">Collect. Verify. Print.</p>

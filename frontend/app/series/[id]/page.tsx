@@ -34,7 +34,7 @@ export default async function SeriesPage({ params }: { params: Promise<{ id: str
               // eslint-disable-next-line @next/next/no-img-element
               <img src="/packs/crystal-night.webp" alt="" aria-hidden="true" className="w-full rounded-xl shadow-2xl" />
             ) : (
-              <PackArt name={series.name} cards={CARDS_PER_PACK} />
+              <PackArt name={series.name} cards={CARDS_PER_PACK} logo={series.logo} />
             )}
           </div>
           <div className="min-w-0">
@@ -48,7 +48,9 @@ export default async function SeriesPage({ params }: { params: Promise<{ id: str
             </p>
           </div>
           <div className="panel p-5 sm:col-span-2 md:col-span-1">
-            {missing.length ? (
+            {series.hidden ? (
+              <p className="text-sm text-cn-text-3">This series has been retired and sells no new packs. Cards already bought stay valid.</p>
+            ) : missing.length ? (
               <p className="text-sm text-cn-text-3">This series still needs a {missing[0]} card.</p>
             ) : (
               <>

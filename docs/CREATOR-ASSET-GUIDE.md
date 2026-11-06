@@ -78,8 +78,6 @@ policy. Those go to the reviewer (ADR-039 §8).
 These were found while writing this guide and should be fixed when the app is
 rebuilt to it:
 
-- `public/cards/card-back.webp` is 800 × 1132, not 5:7. A 5/7 box crops about
-  1% of it.
 - `public/packs/*.webp` are 3:4, but `PackCard.tsx` renders them in an
   `aspect-[4/5]` box, which crops the pack art.
 - `public/packs/standard.webp` reads "8 cards per pack". ADR-021 packs held 5,

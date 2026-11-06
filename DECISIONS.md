@@ -1577,3 +1577,25 @@ their community collects it without meeting a wallet, a gas fee or a chain word.
 - The concept comes from the Monad product, and the README discloses that. The burn and the app code are new, for NEAR.
 
 **Amendment, 6 November 2026: series progress instead of an album.** The author asked whether the album of ADR-038 belongs here. It does not: its permanent lock would stop a card being printed, which is this entry's point, and it brings seasons, limited cards and the Wish Card with it. My Cards shows how many of a series' cards a collector holds, and which are missing. It is derived from what they hold, so it needs no contract change and cannot drift. Nothing is locked and nothing is won, which also keeps it clear of collecting a set for a prize. A holder is warned before dismantling their only copy of a card. Whether this makes anyone buy another pack is untested.
+
+---
+
+## ADR-047: Demo Series With Generated Art, and Retiring the Old Ones
+
+**Status**: Accepted, 6 November 2026.
+
+**Context**: the demo series were drawn in code and looked it. The author generated better art with ChatGPT: four series of eight cards, with logos. A card's name and art hash are immutable on chain, so old cards cannot take new art.
+
+**Decision**:
+
+1. **Four new series, released as new.** Mochi Puffs, Aika Nova, Luma Four and Thornmaw Wilds, each with 4 Common, 2 Rare, 1 Epic and 1 Legendary. Luma Four replaces Noa Vantor. Thornmaw Wilds replaces Crystal Night.
+2. **Old series are retired, not deleted.** A `hidden` flag in the app's data takes a series off the listing and stops new packs. Its page stays reachable, because cards already bought stay valid and link to it. Nothing changes on chain.
+3. **A new frame for print.** The border and text sit inside the 63 x 88 mm trim, and the QR zone in `lib/pdf.ts` is empty but for a faint star. Each card carries its series logo on a white chip, because the logos are dark and drawn on white.
+4. **Only optimized images ship.** About 75 MB of originals stay out of the repository. The site gets 800 x 1120 JPEGs of about 120 KB.
+5. **Each card says "AI art made for this demo".** The old line, "Art drawn for this demo", would no longer be true.
+6. **A Gachard card back.** The old back carried the name "Eclipse Prime" from earlier artwork. The new one is drawn in code by `make-card-back.mjs`, and its mark and name stay above the panel the print PDF adds.
+
+**Honest limits**:
+- **Likeness cannot be proven absent.** The monsters are in a familiar genre, and a reverse image search lowers the risk of resembling an existing design without removing it.
+- **Retiring is the app's word.** The contract does not know about `hidden`, so a retired series could still be minted to by the platform.
+- **Open packs survive.** A pack opened before a series was retired can still be bought.

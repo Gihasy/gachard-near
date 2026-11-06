@@ -51,6 +51,10 @@ export interface SeriesRow {
   name: string;
   /** Off chain, for browsing. Series from before it count as Other. */
   category?: string;
+  /** Off chain. A logo drawn on white, from public, for this series' pack. */
+  logo?: string;
+  /** Off chain. Off the listing and sells no new packs. Its cards stay valid. */
+  hidden?: boolean;
   ratesBps: number[];
   prices: number[];
   templates: TemplateRow[];

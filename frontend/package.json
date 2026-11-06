@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "setup": "node scripts/setup.mjs && node --env-file=.env.local scripts/seed.ts",
+    "setup": "node scripts/setup.mjs && node --env-file=.env.local scripts/seed-demo-ips.ts",
     "demo": "npm run setup && next dev",
     "dev": "next dev",
     "build": "next build",
