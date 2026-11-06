@@ -51,7 +51,7 @@ export default function LoginForm({ next, demo, googleClientId }: { next: string
                 callback: (r) => signIn("/api/auth/google", { token: r.credential }),
               });
               if (googleBox.current) {
-                window.google?.accounts.id.renderButton(googleBox.current, { theme: "outline", size: "large", locale: "en", width: Math.min(400, googleBox.current.clientWidth) });
+                window.google?.accounts.id.renderButton(googleBox.current, { theme: "outline", size: "large", shape: "pill", text: "continue_with", logo_alignment: "center", locale: "en", width: Math.min(400, googleBox.current.clientWidth) });
               }
             }}
           />
@@ -62,7 +62,7 @@ export default function LoginForm({ next, demo, googleClientId }: { next: string
         <p className="flex items-center gap-3 text-xs text-cn-text-3 before:h-px before:flex-1 before:bg-cn-line after:h-px after:flex-1 after:bg-cn-line">or try it first</p>
       ) : null}
       {demo ? (
-        <button className={`${googleClientId ? secondaryBtn : primaryBtn} w-full`} disabled={busy} onClick={() => signIn("/api/auth/demo")} data-testid="demo-login">
+        <button className={googleClientId ? `${secondaryBtn} w-full !min-h-10 !py-0` : `${primaryBtn} w-full`} disabled={busy} onClick={() => signIn("/api/auth/demo")} data-testid="demo-login">
           {busy ? "Setting up your account..." : "Continue with a demo account"}
         </button>
       ) : null}
