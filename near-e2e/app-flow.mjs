@@ -200,6 +200,10 @@ async function main() {
   const emptySeries = await bob.post("/api/creator/series", { name: `Flow ${Date.now()}`, ratesPct: [100, 0, 0, 0], prices: [10, 20, 30, 40] });
   const { id: unready } = await emptySeries.json();
   check("A series with no cards cannot be published", (await bob.post(`/api/creator/series/${unready}/publish`)).status === 400);
+  check("Someone else cannot delete a series", (await alice.request(`/api/creator/series/${unready}`, { method: "DELETE" })).status === 400);
+  check("A signed-out delete is refused", (await anon.request(`/api/creator/series/${unready}`, { method: "DELETE" })).status === 401);
+  check("The creator deletes a series with no published cards", (await bob.request(`/api/creator/series/${unready}`, { method: "DELETE" })).status === 200);
+  check("It is gone", !(await anon.page(`/series/${unready}`)).html.includes("The odds"));
   const rename = (who, name) => {
     const form = new FormData();
     form.set("name", name);
@@ -337,6 +341,16 @@ async function main() {
   check("Progress holds until then", (await progressOf()) === "1/4");
   await alice.post(`/api/cards/${copies[4]}/dismantle`);
   check("Dismantling it ends the series' progress", (await progressOf()) === undefined);
+
+  const lastPack = await (await alice.post("/api/packs", { seriesId: newSeries })).json();
+  check("The creator deletes a series with sales", (await bob.request(`/api/creator/series/${newSeries}`, { method: "DELETE" })).status === 200);
+  check("It sells no more packs", (await alice.post("/api/packs", { seriesId: newSeries })).status === 400);
+  check("It leaves the studio", !(await bob.page("/creator")).html.includes(`data-testid="delete-series"`));
+  check("A deleted series cannot be edited", (await bob.post(`/api/creator/series/${newSeries}`, edit)).status === 400);
+  const retired = await anon.page(`/series/${newSeries}`);
+  check("Its page says it is retired", retired.status === 200 && retired.html.includes("has been retired"));
+  const keptCard = await anon.page(`/scan/${lastPack.tokenIds[0]}`);
+  check("A collector's card stays valid", keptCard.status === 200 && keptCard.html.includes("Flow"));
 
   console.log(failures ? `\n${failures} check(s) FAILED` : "\nAll checks passed");
   process.exit(failures ? 1 : 0);

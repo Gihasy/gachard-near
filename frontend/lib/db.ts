@@ -71,6 +71,8 @@ export interface SeriesRow {
   oddsChangedAt?: string;
   /** Off chain. Off the listing and sells no new packs. Its cards stay valid. */
   hidden?: boolean;
+  /** When its creator deleted it. Off their studio and their series count, and it can no longer change. */
+  deletedAt?: string;
   ratesBps: number[];
   prices: number[];
   templates: TemplateRow[];

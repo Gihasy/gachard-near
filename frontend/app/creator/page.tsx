@@ -2,6 +2,7 @@ import Link from "next/link";
 import AddCardForm from "@/components/AddCardForm";
 import AddSeries from "@/components/AddSeries";
 import CreatorGuide from "@/components/CreatorGuide";
+import DeleteSeries from "@/components/DeleteSeries";
 import EditSeries from "@/components/EditSeries";
 import SeriesDrafts from "@/components/SeriesDrafts";
 import { ArrowIcon, CheckIcon } from "@/components/icons";
@@ -50,7 +51,7 @@ export default async function Creator() {
     );
   }
   const { series, offers } = await readDb();
-  const mine = series.filter((s) => s.ownerUserId === user.id);
+  const mine = series.filter((s) => s.ownerUserId === user.id && !s.deletedAt);
   return (
     <Page>
       <Pitch />
@@ -132,6 +133,7 @@ export default async function Creator() {
                 live={missing.length === 0}
               />
               <AddCardForm key={s.templates.length + drafts.length} seriesId={s.id} rates={s.ratesBps} suggested={suggestedRarity(s)} />
+              <DeleteSeries seriesId={s.id} name={s.name} published={s.templates.length} packsSold={revenue.packs} />
             </Panel>
           );
         })}

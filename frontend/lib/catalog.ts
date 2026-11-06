@@ -34,7 +34,7 @@ export async function createSeries(
   description?: string,
 ): Promise<SeriesRow> {
   const { series: all } = await readDb();
-  if (all.filter((s) => s.ownerUserId === user.id).length >= MAX_SERIES_PER_USER) {
+  if (all.filter((s) => s.ownerUserId === user.id && !s.deletedAt).length >= MAX_SERIES_PER_USER) {
     throw new ContractRefused(`An account can release ${MAX_SERIES_PER_USER} series in this demo.`);
   }
   if (all.filter((s) => withinHour(s.createdAt)).length >= MAX_SERIES_PER_HOUR) {
@@ -73,9 +73,7 @@ export async function updateSeries(
   seriesId: number,
   changes: { name: string; ratesBps: number[]; prices: number[]; category: string; description: string },
 ): Promise<void> {
-  const series = (await readDb()).series.find((s) => s.id === seriesId);
-  if (!series) throw new ContractRefused("Series not found.");
-  if (series.ownerUserId !== user.id) throw new ContractRefused("This is not your series.");
+  const series = await ownSeries(user, seriesId);
   const oddsChanged = changes.ratesBps.some((rate, i) => rate !== series.ratesBps[i]);
   const onChainChanged = oddsChanged || changes.name !== series.name || changes.prices.some((price, i) => price !== series.prices[i]);
   if (onChainChanged) {
@@ -97,7 +95,31 @@ async function ownSeries(user: User, seriesId: number): Promise<SeriesRow> {
   const series = (await readDb()).series.find((s) => s.id === seriesId);
   if (!series) throw new ContractRefused("Series not found.");
   if (series.ownerUserId !== user.id) throw new ContractRefused("This is not your series.");
+  if (series.deletedAt) throw new ContractRefused("This series has been deleted.");
   return series;
+}
+
+/**
+ * Deletes a series. With no published card nothing can refer to it, so it goes. With one,
+ * a collector may hold a copy, and trades leave no record here to prove nobody does, so it
+ * is retired: no more packs or trades, and its cards stay valid. The chain keeps its record.
+ */
+export async function deleteSeries(user: User, seriesId: number): Promise<void> {
+  await ownSeries(user, seriesId);
+  const refused = await withDb((d) => {
+    const row = d.series.find((s) => s.id === seriesId);
+    if (!row || row.deletedAt) return "This series has been deleted.";
+    if (row.drafts?.some(isClaimed)) return "This series is being published. Try again in a minute.";
+    if (row.templates.length) {
+      row.hidden = true;
+      row.deletedAt = new Date().toISOString();
+      row.drafts = [];
+    } else {
+      d.series = d.series.filter((s) => s.id !== seriesId);
+    }
+    return null;
+  });
+  if (refused) throw new ContractRefused(refused);
 }
 
 /** The same rules the contract applies, so a draft cannot fail later at publish. */
@@ -195,9 +217,7 @@ async function alreadyOnChain(series: SeriesRow, draft: DraftCard): Promise<numb
 export async function publishSeries(user: User, seriesId: number): Promise<{ published: number; remaining: number }> {
   const started = Date.now();
   const { series: all } = await readDb();
-  const series = all.find((s) => s.id === seriesId);
-  if (!series) throw new ContractRefused("Series not found.");
-  if (series.ownerUserId !== user.id) throw new ContractRefused("This is not your series.");
+  const series = await ownSeries(user, seriesId);
   const drafts = series.drafts ?? [];
   if (!drafts.length) throw new ContractRefused("There are no new cards to publish.");
   const missing = missingToPublish(series);
