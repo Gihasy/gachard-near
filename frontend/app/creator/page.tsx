@@ -2,7 +2,7 @@ import Link from "next/link";
 import AddCardForm from "@/components/AddCardForm";
 import AddSeries from "@/components/AddSeries";
 import CreatorGuide from "@/components/CreatorGuide";
-import { ArrowIcon, CheckIcon, PrintIcon, ScanIcon, SeriesIcon } from "@/components/icons";
+import { ArrowIcon, CheckIcon } from "@/components/icons";
 import { CardImage, Eyebrow, Page, Panel, Rarity, SeriesName, primaryBtn } from "@/components/ui";
 import { missingRarities, RARITIES } from "@/lib/catalog";
 import { readDb, type SeriesRow } from "@/lib/db";
@@ -10,12 +10,6 @@ import { CREATOR_SHARE_PCT, revenueOf } from "@/lib/economy";
 import { currentUser } from "@/lib/users";
 
 export const dynamic = "force-dynamic";
-
-const BENEFITS = [
-  { Icon: SeriesIcon, title: "Just bring your art", text: "Publish a series in minutes, with your own rates and your own prices." },
-  { Icon: ScanIcon, title: "Your name on the record", text: "Your account signs what you release, so anyone can see that it came from you." },
-  { Icon: PrintIcon, title: "Digital and physical", text: "Every card can be printed. Your fans need no wallet and pay no network fees." },
-];
 
 /** The rarity a creator most likely wants next: the first one with odds and no card. */
 function suggestedRarity(series: SeriesRow) {
@@ -33,18 +27,9 @@ function Pitch() {
       <p className="mt-4 max-w-2xl text-cn-text-2 sm:text-lg leading-relaxed">
         Got a world people love? Release it as cards your community can collect, verify and hold, without a crypto tutorial.
       </p>
-      <ul className="mt-7 grid md:grid-cols-3 gap-4">
-        {BENEFITS.map(({ Icon, title, text }) => (
-          <li key={title} className="panel p-5">
-            <span className="grid place-items-center size-10 rounded-xl bg-white/[.07] border border-cn-line text-cn-lavender"><Icon /></span>
-            <h2 className="mt-4 font-display font-semibold text-base">{title}</h2>
-            <p className="mt-2 text-sm text-cn-text-2 leading-relaxed">{text}</p>
-          </li>
-        ))}
-      </ul>
-      <p className="mt-4 rounded-2xl border border-[#f7c96b40] bg-[#f7c96b12] px-4 py-3 text-sm leading-relaxed text-cn-text-2" data-testid="creator-plan">
+      <p className="mt-6 rounded-2xl border border-[#f7c96b40] bg-[#f7c96b12] px-4 py-3 text-sm leading-relaxed text-cn-text-2" data-testid="creator-plan">
         <strong className="font-semibold text-cn-credits">The plan for production, not part of this demo:</strong>{" "}
-        no upfront cost, with Gachard handling printing and shipping, and a revenue share on every pack sold. Here, each sale is split {CREATOR_SHARE_PCT}/{100 - CREATOR_SHARE_PCT} in simulated Credits and shown in your studio, as an example. Nothing is charged or paid.
+        no upfront cost, with Gachard handling printing and shipping, and a revenue share on every pack sold. Here, each sale is split in simulated Credits and shown in your studio, as an example. Nothing is charged or paid.
       </p>
     </section>
   );
