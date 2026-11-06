@@ -9,6 +9,7 @@ import { ArrowIcon, CheckIcon } from "@/components/icons";
 import { CardImage, Eyebrow, Page, Panel, Rarity, SeriesName, primaryBtn } from "@/components/ui";
 import { missingRarities, missingToPublish, RARITIES } from "@/lib/catalog";
 import { readDb, type SeriesRow } from "@/lib/db";
+import { splitSeriesName } from "@/lib/series-name";
 import { CREATOR_SHARE_PCT, revenueOf } from "@/lib/economy";
 import { currentUser } from "@/lib/users";
 
@@ -70,6 +71,7 @@ export default async function Creator() {
           const missing = missingRarities(s);
           const needed = missingToPublish(s);
           const drafts = s.drafts ?? [];
+          const frame = { series: splitSeriesName(s.name).title, logo: s.logo, by: user.username ? `@${user.username}` : undefined };
           const revenue = revenueOf(s.id, offers);
           return (
             <Panel key={s.id}>
@@ -127,12 +129,13 @@ export default async function Creator() {
               ) : null}
               <SeriesDrafts
                 seriesId={s.id}
-                drafts={drafts.map((d) => ({ id: d.id, name: d.name, rarity: d.rarity, media: d.media }))}
+                drafts={drafts.map((d) => ({ id: d.id, name: d.name, rarity: d.rarity, media: d.media, flavor: d.flavor, sourceMedia: d.sourceMedia, frameKey: d.frameKey }))}
+                frame={frame}
                 rates={s.ratesBps}
                 missing={needed}
                 live={missing.length === 0}
               />
-              <AddCardForm key={s.templates.length + drafts.length} seriesId={s.id} rates={s.ratesBps} suggested={suggestedRarity(s)} />
+              <AddCardForm key={s.templates.length + drafts.length} seriesId={s.id} rates={s.ratesBps} suggested={suggestedRarity(s)} frame={frame} />
               <DeleteSeries seriesId={s.id} name={s.name} published={s.templates.length} packsSold={revenue.packs} />
             </Panel>
           );

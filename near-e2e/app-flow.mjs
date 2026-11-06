@@ -188,13 +188,20 @@ async function main() {
     form.set("name", name);
     form.set("rarity", "0");
     form.set("art", new File([bytes], "art.jpg", { type: "image/jpeg" }));
+    form.set("framed", "1");
+    form.set("source", new File([bytes], "source.jpg", { type: "image/jpeg" }));
+    form.set("flavor", "A line on the card.");
+    form.set("frameKey", "flow");
     return bob.request(`/api/creator/series/${newSeries}/cards`, { method: "POST", body: form });
   };
   check("Something that is not an image is refused", (await upload(Buffer.from("not an image"), "Bad")).status === 400);
   const cardBytes = await art.arrayBuffer();
   const card = await upload(cardBytes, "Flow Card");
   check("A card is uploaded", card.status === 200);
-  const { id: draftId } = await card.json();
+  const framedDraft = await card.json();
+  const { id: draftId } = framedDraft;
+  check("A framed card says so and keeps its original", framedDraft.media.endsWith("?framed") && !framedDraft.sourceMedia.endsWith("?framed"));
+  check("A framed card's image is served", (await anon.request(framedDraft.media)).status === 200);
   const notYet = await anon.page(`/series/${newSeries}`);
   check("A draft does not put a series on sale", !notYet.html.includes("Sign in to buy a pack"));
   const emptySeries = await bob.post("/api/creator/series", { name: `Flow ${Date.now()}`, ratesPct: [100, 0, 0, 0], prices: [10, 20, 30, 40] });
@@ -208,6 +215,9 @@ async function main() {
     const form = new FormData();
     form.set("name", name);
     form.set("rarity", "0");
+    form.set("framed", "1");
+    form.set("flavor", "A line on the card.");
+    form.set("frameKey", "flow");
     return who.request(`/api/creator/series/${newSeries}/cards/${draftId}`, { method: "POST", body: form });
   };
   check("Someone else cannot change a draft", (await rename(alice, "Stolen")).status === 400);
@@ -351,6 +361,7 @@ async function main() {
   check("Its page says it is retired", retired.status === 200 && retired.html.includes("has been retired"));
   const keptCard = await anon.page(`/scan/${lastPack.tokenIds[0]}`);
   check("A collector's card stays valid", keptCard.status === 200 && keptCard.html.includes("Flow"));
+  check("A framed card's art still matches the chain", keptCard.html.includes("Matches the public record"));
 
   console.log(failures ? `\n${failures} check(s) FAILED` : "\nAll checks passed");
   process.exit(failures ? 1 : 0);

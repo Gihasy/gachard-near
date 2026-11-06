@@ -4,7 +4,7 @@
  */
 const STEPS = [
   { title: "Add a series", text: "Upload a logo, write a title and a description, and set the odds for each rarity. The odds set the price of a pack." },
-  { title: "Add your cards", text: "For each card, upload an image, name it and choose its rarity. They stay drafts you can change or remove. Every rarity with odds needs a card, up to 20 in all." },
+  { title: "Add your cards", text: "For each card, upload an image, name it and choose its rarity. Gachard frames each one, and they stay drafts you can change or remove. Every rarity with odds needs a card, up to 20 in all." },
   { title: "Publish", text: "Publish when you are happy with the cards. They are then permanent, and the series goes live. You can still edit the series, and your studio shows its sales." },
 ];
 
@@ -13,6 +13,7 @@ const ART = [
   ["File size", "815 × 1110 px or larger. 1630 × 2220 px is best for print"],
   ["Format", "PNG, JPG or WebP, in sRGB colour"],
   ["Keep it readable", "The subject should still be clear at a small size"],
+  ["Your own design", "Switch off the Gachard frame, then follow the print zones below"],
 ];
 
 const ZONES = [

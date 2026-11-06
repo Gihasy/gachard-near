@@ -1,15 +1,17 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import AddCardForm, { type EditableDraft } from "@/components/AddCardForm";
 import { CardImage, ErrorLine, Rarity, primaryBtn, secondaryBtn } from "@/components/ui";
+import { frameKeyOf, renderCard, type CardFrame } from "@/lib/card-frame";
 
 const RARITIES = ["Common", "Rare", "Epic", "Legendary"];
 
 /** A series' unpublished cards, which can still change, and the button that makes them permanent. */
-export default function SeriesDrafts({ seriesId, drafts, rates, missing, live }: {
+export default function SeriesDrafts({ seriesId, drafts, rates, missing, live, frame }: {
   seriesId: number;
+  frame: CardFrame;
   drafts: EditableDraft[];
   rates: number[];
   missing: string[];
@@ -23,6 +25,39 @@ export default function SeriesDrafts({ seriesId, drafts, rates, missing, live }:
   const [error, setError] = useState("");
   const [removeError, setRemoveError] = useState("");
   const [total, setTotal] = useState(0);
+  const [redrawFailed, setRedrawFailed] = useState("");
+
+  // A series' name or logo is on its cards' frames, so changing either redraws its drafts.
+  const key = frameKeyOf(frame);
+  const staleIds = drafts.filter((d) => d.sourceMedia && d.frameKey !== key).map((d) => d.id).join();
+  useEffect(() => {
+    if (!staleIds) return;
+    let stopped = false;
+    (async () => {
+      try {
+        for (const draft of drafts) {
+          if (stopped) return;
+          if (!draft.sourceMedia || draft.frameKey === key) continue;
+          const source = await (await fetch(draft.sourceMedia)).blob();
+          const body = new FormData();
+          body.set("name", draft.name);
+          body.set("rarity", String(draft.rarity));
+          body.set("framed", "1");
+          body.set("frameKey", key);
+          body.set("flavor", draft.flavor ?? "");
+          body.set("art", await renderCard({ ...frame, source, name: draft.name, rarity: RARITIES[draft.rarity], flavor: draft.flavor }), "art.jpg");
+          const response = await fetch(`/api/creator/series/${seriesId}/cards/${draft.id}`, { method: "POST", body });
+          if (!response.ok) throw new Error((await response.json()).error);
+        }
+        if (!stopped) router.refresh();
+      } catch (err) {
+        if (!stopped) setRedrawFailed((err as Error).message);
+      }
+    })();
+    return () => { stopped = true; };
+    // Runs again only when another set of drafts falls out of date.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [staleIds, key]);
 
   if (!drafts.length) return null;
   const count = `${drafts.length} ${drafts.length === 1 ? "card" : "cards"}`;
@@ -71,7 +106,7 @@ export default function SeriesDrafts({ seriesId, drafts, rates, missing, live }:
         <button
           type="button"
           className={primaryBtn}
-          disabled={missing.length > 0}
+          disabled={missing.length > 0 || Boolean(staleIds)}
           data-testid="publish-series"
           onClick={() => {
             setError("");
@@ -82,6 +117,8 @@ export default function SeriesDrafts({ seriesId, drafts, rates, missing, live }:
         </button>
       </div>
       {missing.length ? <p className="mt-2 text-xs text-cn-credits sm:text-right" data-testid="publish-needs">Still needs a card for: {missing.join(", ")}</p> : null}
+      {staleIds && !redrawFailed ? <p className="mt-2 text-xs text-cn-text-3 sm:text-right" data-testid="redrawing">Updating the card frames...</p> : null}
+      <ErrorLine>{redrawFailed}</ErrorLine>
       <div className="mt-4 grid grid-cols-3 sm:grid-cols-5 md:grid-cols-6 gap-3">
         {drafts.map((draft) => (
           <div key={draft.id} className="pop" data-testid="draft-card">
@@ -96,7 +133,7 @@ export default function SeriesDrafts({ seriesId, drafts, rates, missing, live }:
         ))}
       </div>
       {current ? (
-        <AddCardForm key={current.id} seriesId={seriesId} rates={rates} suggested={current.rarity} draft={current} onDone={() => setEditing(null)} />
+        <AddCardForm key={current.id} seriesId={seriesId} rates={rates} suggested={current.rarity} frame={frame} draft={current} onDone={() => setEditing(null)} />
       ) : null}
       <ErrorLine>{removeError}</ErrorLine>
 

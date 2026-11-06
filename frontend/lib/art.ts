@@ -16,7 +16,8 @@ import { ContractRefused } from "./near.ts";
 // Vercel refuses request bodies over 4.5 MB, so anything larger would never arrive.
 export const MAX_ART_BYTES = 4 * 1024 * 1024;
 const ART_DIR = join(DATA_DIR, "art");
-const MEDIA = /^\/api\/art\/([0-9a-f]{64})\.(jpg|png)$/;
+// "?framed" marks a card with a print margin. The same bytes are served and hashed.
+const MEDIA = /^\/api\/art\/([0-9a-f]{64})\.(jpg|png)(?:\?framed)?$/;
 
 interface ArtDoc {
   _id: string;

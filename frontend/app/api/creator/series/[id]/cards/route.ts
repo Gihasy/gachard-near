@@ -1,4 +1,4 @@
-import { addDraft } from "@/lib/catalog";
+import { addDraft, frameFrom } from "@/lib/catalog";
 import { readDb } from "@/lib/db";
 import { currentUser, failure } from "@/lib/users";
 
@@ -19,6 +19,7 @@ export async function POST(request: Request, ctx: { params: Promise<{ id: string
       String(form.get("name") ?? "").trim(),
       Number(form.get("rarity")),
       Buffer.from(await file.arrayBuffer()),
+      await frameFrom(form),
     );
     return Response.json(draft);
   } catch (error) {

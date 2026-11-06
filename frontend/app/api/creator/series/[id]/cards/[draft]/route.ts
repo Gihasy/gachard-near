@@ -1,4 +1,4 @@
-import { removeDraft, updateDraft } from "@/lib/catalog";
+import { frameFrom, removeDraft, updateDraft } from "@/lib/catalog";
 import { currentUser, failure } from "@/lib/users";
 
 type Context = { params: Promise<{ id: string; draft: string }> };
@@ -14,6 +14,7 @@ export async function POST(request: Request, ctx: Context) {
       name: String(form.get("name") ?? "").trim(),
       rarity: Number(form.get("rarity")),
       ...(file instanceof File && file.size ? { art: Buffer.from(await file.arrayBuffer()) } : {}),
+      frame: await frameFrom(form),
     });
     return Response.json({ ok: true });
   } catch (error) {

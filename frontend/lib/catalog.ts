@@ -16,7 +16,7 @@ const MAX_SERIES_PER_USER = 3;
 const MAX_SERIES_PER_HOUR = 10;
 const MAX_CARDS_PER_SERIES = 20;
 const MAX_CARDS_PER_HOUR = 60;
-const MAX_UPLOADS_PER_HOUR = 120;
+const MAX_UPLOADS_PER_HOUR = 300;
 // A request stops starting new cards after this, and the browser sends the next one (Vercel limits a function to 30 s).
 const PUBLISH_BUDGET_MS = 18_000;
 // Longer than a function can live, so an older claim means the publish that made it has ended.
@@ -143,14 +143,29 @@ async function storeUpload(art: Buffer) {
   return storeArt(art);
 }
 
+/** How a draft is framed: `null` for a creator's own design. */
+export type DraftFrame = { source?: Buffer; flavor: string; frameKey: string } | null;
+
+async function storeFramed(art: Buffer, source: Buffer) {
+  const stored = await storeUpload(art);
+  return { ...stored, media: `${stored.media}?framed`, sourceMedia: (await storeUpload(source)).media };
+}
+
 /** Adds a card to a series as a draft. Nothing reaches the chain until the series is published. */
-export async function addDraft(user: User, seriesId: number, name: string, rarity: number, art: Buffer): Promise<DraftCard> {
+export async function addDraft(user: User, seriesId: number, name: string, rarity: number, art: Buffer, frame: DraftFrame = null): Promise<DraftCard> {
   const series = await ownSeries(user, seriesId);
   checkCard(name, rarity);
   if (series.templates.length + (series.drafts?.length ?? 0) >= MAX_CARDS_PER_SERIES) {
     throw new ContractRefused(`A series can hold ${MAX_CARDS_PER_SERIES} cards in this demo.`);
   }
-  const draft: DraftCard = { id: randomUUID(), name, rarity, ...(await storeUpload(art)), createdAt: new Date().toISOString() };
+  if (frame && !frame.source) throw new ContractRefused("Choose an image.");
+  const draft: DraftCard = {
+    id: randomUUID(),
+    name,
+    rarity,
+    ...(frame ? { ...(await storeFramed(art, frame.source!)), flavor: frame.flavor, frameKey: frame.frameKey } : await storeUpload(art)),
+    createdAt: new Date().toISOString(),
+  };
   await withDb((d) => {
     const row = d.series.find((s) => s.id === seriesId);
     if (row) row.drafts = [...(row.drafts ?? []), draft];
@@ -170,17 +185,29 @@ export async function updateDraft(
   user: User,
   seriesId: number,
   draftId: string,
-  changes: { name: string; rarity: number; art?: Buffer },
+  changes: { name: string; rarity: number; art?: Buffer; frame?: DraftFrame },
 ): Promise<void> {
-  changeableDraft(await ownSeries(user, seriesId), draftId);
+  const before = changeableDraft(await ownSeries(user, seriesId), draftId);
   checkCard(changes.name, changes.rarity);
+  const { frame } = changes;
   const stored = changes.art ? await storeUpload(changes.art) : null;
+  const source = frame?.source ? (await storeUpload(frame.source)).media : before.sourceMedia ?? before.media;
   const changed = await withDb((d) => {
     const draft = d.series.find((s) => s.id === seriesId)?.drafts?.find((c) => c.id === draftId);
     if (!draft || draft.claimedAt) return false;
     draft.name = changes.name;
     draft.rarity = changes.rarity;
     if (stored) Object.assign(draft, stored);
+    if (frame) {
+      if (stored) draft.media = `${stored.media}?framed`;
+      draft.sourceMedia = source;
+      draft.flavor = frame.flavor;
+      draft.frameKey = frame.frameKey;
+    } else if (frame === null) {
+      delete draft.sourceMedia;
+      delete draft.flavor;
+      delete draft.frameKey;
+    }
     return true;
   });
   if (!changed) throw new ContractRefused("That card has been published or is being published.");
@@ -336,4 +363,15 @@ export function missingRarities(series: SeriesRow): string[] {
   return RARITIES.filter(
     (_, rarity) => series.ratesBps[rarity] > 0 && !series.templates.some((t) => t.rarity === rarity),
   );
+}
+
+/** Reads how a form asks for a card to be framed. */
+export async function frameFrom(form: FormData) {
+  if (form.get("framed") !== "1") return null;
+  const source = form.get("source");
+  return {
+    ...(source instanceof File && source.size ? { source: Buffer.from(await source.arrayBuffer()) } : {}),
+    flavor: String(form.get("flavor") ?? "").trim().slice(0, 90),
+    frameKey: String(form.get("frameKey") ?? "").slice(0, 600),
+  };
 }

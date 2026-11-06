@@ -52,6 +52,12 @@ export interface DraftCard {
   media: string;
   mediaHash: string;
   createdAt: string;
+  /** The line of text in its frame, if it has one. */
+  flavor?: string;
+  /** The art before framing. Set only on a framed card, so its frame can be redrawn. */
+  sourceMedia?: string;
+  /** What the frame was drawn from: see frameKeyOf in lib/card-frame.ts. */
+  frameKey?: string;
   /** Set while a publish is writing it to the chain, so two publishes cannot both write it. */
   claimedAt?: string;
 }
