@@ -200,7 +200,7 @@ export default function CardActions({ tokenId, status, media, cardName, qr, isHo
             </div>
           ) : (
             <>
-              <p className="mt-1 text-sm text-cn-text-2 leading-relaxed">Got a duplicate? Turn it into {crystalYield} Crystal, and spend that on extra pack slots.</p>
+              <p className="mt-1 text-sm text-cn-text-2 leading-relaxed">Got a duplicate? Turn it into {crystalYield} Crystal, and trade that for a card you are missing.</p>
               <button className={`${secondaryBtn} mt-4`} onClick={() => setConfirming("dismantle")} data-testid="dismantle" data-last-copy={lastCopy}>Dismantle</button>
             </>
           )}

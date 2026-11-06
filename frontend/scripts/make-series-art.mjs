@@ -9,7 +9,7 @@
 import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import QRCode from "qrcode";
+import { brandedQrSvg } from "../lib/qr-style.ts";
 import sharp from "sharp";
 import { FILES, SERIES } from "./series-data.mjs";
 
@@ -185,7 +185,7 @@ const showcase = made.get("thornmaw-legendary.jpg");
 // The phone is made by make-phone-mockup.mjs, from a capture of the app's own screen.
 // The card in the hand runs to its border, with no dark margin around it.
 // Its QR sits where the print PDF puts one, and opens the live Verify page.
-const qr = await QRCode.toBuffer("https://gachard-near.vercel.app/scan", { margin: 1, width: 139, errorCorrectionLevel: "M" });
+const qr = await sharp(Buffer.from(brandedQrSvg("https://gachard-near.vercel.app/scan")), { density: 300 }).resize(139, 139).png().toBuffer();
 const printed = await sharp(showcase).composite([{ input: qr, left: 591, top: 908 }]).toBuffer();
 const toBorder = await sharp(printed).extract({ left: 50, top: 52, width: 700, height: 1016 }).toBuffer();
 const webp = await composite("mockup-hand.png", toBorder);

@@ -10,6 +10,7 @@ import { CRYSTAL_BY_RARITY } from "@/lib/economy";
 import { RARITIES } from "@/lib/catalog";
 import { collectorLabel, contractId, explorer } from "@/lib/near";
 import { qrDataUrl, siteOrigin } from "@/lib/qr";
+import { printUrl } from "@/lib/qr-style";
 import { currentUser, nameOf } from "@/lib/users";
 
 export const dynamic = "force-dynamic";
@@ -94,7 +95,7 @@ export default async function CardRecord({ params, searchParams }: {
     ? (await cardsOf(user.accountId)).filter((c) => c.design === design).length === 1
     : false;
   const origin = await siteOrigin();
-  const qr = await qrDataUrl(serial ? `${origin}/scan/${id}?print=${serial}` : `${origin}/scan/${id}`);
+  const qr = await qrDataUrl(serial ? printUrl(origin, id, serial) : `${origin}/scan/${id}`);
 
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-12">

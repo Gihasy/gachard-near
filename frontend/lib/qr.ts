@@ -1,5 +1,5 @@
 import { headers } from "next/headers";
-import QRCode from "qrcode";
+import { brandedQrSvg } from "./qr-style.ts";
 
 /** This site's address as the visitor reached it, so a QR works on any deployment. */
 export async function siteOrigin() {
@@ -9,6 +9,6 @@ export async function siteOrigin() {
   return `${proto}://${host}`;
 }
 
-export function qrDataUrl(text: string) {
-  return QRCode.toDataURL(text, { margin: 1, width: 240, errorCorrectionLevel: "M" });
+export async function qrDataUrl(text: string) {
+  return `data:image/svg+xml;base64,${Buffer.from(brandedQrSvg(text)).toString("base64")}`;
 }

@@ -7,7 +7,7 @@
  * stays clean. The notice that cannot be cropped off is the Scan status.
  */
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
-import QRCode from "qrcode";
+import { brandedQr, printUrl } from "./qr-style.ts";
 import { readArt } from "./art.ts";
 
 export const SIMULATION_NOTICE = "SIMULATION: NEAR Hackathon demo. Not an official printed card.";
@@ -26,7 +26,7 @@ export async function printPdf(card: {
   printCycle: number;
   origin: string;
 }) {
-  const scanUrl = `${card.origin}/scan/${card.tokenId}?print=${card.serial}`;
+  const scanUrl = printUrl(card.origin, card.tokenId, card.serial);
   const doc = await PDFDocument.create();
   doc.setTitle(`${card.cardName} - hackathon demo print`);
   const font = await doc.embedFont(StandardFonts.Helvetica);
@@ -42,9 +42,7 @@ export async function printPdf(card: {
   if (!backResponse.ok) throw new Error("Card back not found");
   const back = await doc.embedJpg(await backResponse.arrayBuffer());
 
-  const qr = await doc.embedPng(
-    await QRCode.toBuffer(scanUrl, { margin: 1, width: 400, errorCorrectionLevel: "M" }),
-  );
+  const qr = brandedQr(scanUrl);
 
   const drawPage = (title: string) => {
     const page = doc.addPage([A4.width, A4.height]);
@@ -86,8 +84,11 @@ export async function printPdf(card: {
     const zone = 12;
     const qx = x + mm(TRIM.width - 3 - zone);
     const qy = y + mm(3);
-    page.drawRectangle({ x: qx, y: qy, width: mm(zone), height: mm(zone), color: rgb(1, 1, 1) });
-    page.drawImage(qr, { x: qx + mm(0.5), y: qy + mm(0.5), width: mm(zone - 1), height: mm(zone - 1) });
+    // An SVG path is drawn down from its anchor, so the anchor is the zone's top left.
+    for (const layer of [qr.plate, ...qr.layers]) {
+      const [r, g, b] = [1, 3, 5].map((at) => parseInt(layer.color.slice(at, at + 2), 16) / 255);
+      page.drawSvgPath(layer.path, { x: qx, y: qy + mm(zone), scale: mm(zone) / qr.size, color: rgb(r, g, b) });
+    }
     cropMarks(page, x, y);
   }
 

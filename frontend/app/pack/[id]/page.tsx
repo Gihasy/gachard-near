@@ -17,7 +17,7 @@ export default async function PackPage({ params }: { params: Promise<{ id: strin
   if (!offer || !series) notFound();
   return (
     <Page>
-      <Title eyebrow={series.name} sub="Opening is free. You pay only if you buy, and only for what you see.">
+      <Title eyebrow={series.name} sub="These cards are already yours. Turn them over one by one, or all at once.">
         Open your pack
       </Title>
       <PackReveal initial={packView(offer, series)} />

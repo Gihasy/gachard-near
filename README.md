@@ -39,11 +39,11 @@ takes the physical card, so one that is lost or stolen stays lost.
 
 Pack sales are the revenue. Each pack sold is split between the creator and Gachard, and the creator studio shows the figures.
 
-Duplicates give a reason to buy the next pack. The holder dismantles a digital card, and the burn gives Crystal. Crystal buys an extra pack slot, and the buyer still sees every card before paying.
+A pack has one price, and the buyer pays before the cards are drawn, as in most card games. Its odds are on the series page. Duplicates are not wasted: the holder dismantles a digital card, the burn gives Crystal, and Crystal trades for a card they are missing.
 
 My Cards also shows how much of each series a collector holds, and which cards are missing. Nothing is locked or won for finishing one.
 
-Crystal is created only by a burn, and it cannot be bought, sent or cashed out. The 90/10 split, the yields and the slot's price are examples for this demo. Whether this loop works is untested, because there are no real collectors. See [ADR-046](DECISIONS.md).
+Crystal is created only by a burn, and it cannot be bought, sent or cashed out. The 90/10 split, the pack price, the yields and the trade prices are examples for this demo. A paid random pack with a prize of money's worth is what some regulators treat as gambling, so this needs legal review before it takes real money (ADR-048). Whether this loop works is untested, because there are no real collectors. See [ADR-046](DECISIONS.md).
 
 ## Try it
 
@@ -63,12 +63,10 @@ Open http://localhost:3000, or the hosted demo, then:
 
 1. **Sign in.** Click Sign in, then Continue with a demo account. You see 5,000 Credits and
    no wallet prompt.
-2. **Open a pack.** On the home page, search or filter for a series. Open Thornmaw Wilds, then Open a pack for free. You see five
-   face-down cards and no price.
-3. **See before paying.** Click Open all. You see each card and the pack's price, which is
-   the sum of its cards' prices. Skip, pay nothing, charges nothing.
-4. **Buy.** Click Buy this pack. Credits fall by exactly that price and five cards are
-   minted to your account.
+2. **Open a pack.** On the home page, search or filter for a series. Open Thornmaw Wilds. You see its odds and one pack price.
+3. **Buy.** Click Buy a pack. Credits fall by that price, and five cards are minted to your
+   account.
+4. **Open.** The cards are face down. Click Open all to turn them over.
 5. **Verify.** Click Print or verify the first card. You see the holder, who released it, and
    whether the artwork file matches the public record. Click check independently: NearBlocks
    shows the same transaction, outside this app.
@@ -82,7 +80,7 @@ Open http://localhost:3000, or the hosted demo, then:
    Request return. A button stands in for posting the card: click Simulate: card received
    and destroyed. The same token id is digital again. Open the QR's address once more: it
    now reads VOID.
-9. **Dismantle a duplicate.** Open a digital card and click Dismantle, then Destroy. Its record stays and says it was destroyed, and My Cards shows your Crystal. Crystal buys an extra pack slot there.
+9. **Dismantle a duplicate.** Open a digital card and click Dismantle, then Destroy. Its record stays and says it was destroyed, and My Cards shows your Crystal. Under Your series, trade Crystal for a card you are missing.
 10. **Release your own.** Open For Creators, publish a series, and add a card for each rarity that
    has a rate. It goes live on the home page. On any of its cards, Released by links to your account on
    NearBlocks. After a sale, the series shows the 90/10 split in simulated Credits.
@@ -165,9 +163,8 @@ cargo near build non-reproducible-wasm --no-abi
   Nova and Noa Vantor series, and a first release of the current four are off the listing and
   sell no new packs. Their records stay on
   chain, and their cards can still be held, scanned and printed.
-- **Rates are published, not proven.** The draw is a server-side random choice. A buyer sees
-  what they pay for, so the purchase does not depend on it, but the rates are not provably
-  fair.
+- **Rates are published, not proven.** The draw is a server-side random choice, and a buyer
+  depends on it, because they pay first. Nothing here lets them check the draw was honest.
 - **Provenance is not proof of rights.** The chain shows which account released a card, not
   that the account owns the IP. Nothing is reviewed in this demo. The platform also mints on
   a creator's behalf and can mint any amount from their templates.
@@ -208,7 +205,7 @@ This is disclosed as the hackathon rules ask (Q-002, Q-003).
 - Much of the code was written with AI coding agents under the author's direction: Claude Code
   here, and MiMoCode for the earlier Monad version (ADR-015).
 
-Why each decision was made is in [`DECISIONS.md`](DECISIONS.md). ADR-041 to ADR-047 cover this
+Why each decision was made is in [`DECISIONS.md`](DECISIONS.md). ADR-041 to ADR-048 cover this
 version. Older ADRs describe the Monad product.
 
 ## License

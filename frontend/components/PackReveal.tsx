@@ -1,20 +1,18 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { post } from "@/lib/client";
 import { ArrowIcon, CheckIcon, CrystalStar, PrintIcon } from "@/components/icons";
 import { CardImage, ErrorLine, Rarity, RARITY_COLOR, primaryBtn, secondaryBtn } from "@/components/ui";
 
-interface Card { name: string; rarity: string; media: string; price: number }
+interface Card { name: string; rarity: string; media: string }
 interface View {
   id: string;
   seriesId: number;
   status: string;
   cards: (Card | null)[];
   allOpen: boolean;
-  price: number | null;
   tokenIds: string[];
 }
 
@@ -34,13 +32,12 @@ function preload(src: string) {
   });
 }
 
-function PackCard({ card, index, justOpened, onOpen, disabled, showPrice }: {
+function PackCard({ card, index, justOpened, onOpen, disabled }: {
   card: Card | null;
   index: number;
   justOpened: boolean;
   onOpen: () => void;
   disabled: boolean;
-  showPrice: boolean;
 }) {
   const faces = (
     <span className="flip-inner">
@@ -85,10 +82,7 @@ function PackCard({ card, index, justOpened, onOpen, disabled, showPrice }: {
         {card ? (
           <div className={justOpened ? "pop" : ""}>
             <p className="text-sm font-semibold truncate">{card.name}</p>
-            <div className="flex justify-between items-center gap-2">
-              <Rarity value={card.rarity} />
-              {showPrice ? <span className="pop text-xs text-cn-credits tabular">{card.price.toLocaleString("en-US")}</span> : null}
-            </div>
+            <Rarity value={card.rarity} />
           </div>
         ) : (
           <p className="text-sm text-cn-text-3">Tap to open</p>
@@ -99,11 +93,9 @@ function PackCard({ card, index, justOpened, onOpen, disabled, showPrice }: {
 }
 
 export default function PackReveal({ initial }: { initial: View }) {
-  const router = useRouter();
   const [view, setView] = useState(initial);
   const [opened, setOpened] = useState<Set<number>>(new Set());
   const [opening, setOpening] = useState(false);
-  const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
   const openedCount = view.cards.filter(Boolean).length;
@@ -146,30 +138,6 @@ export default function PackReveal({ initial }: { initial: View }) {
     setOpening(false);
   };
 
-  const act = async (fn: () => Promise<void>) => {
-    setBusy(true);
-    setError("");
-    try {
-      await fn();
-    } catch (e) {
-      setError((e as Error).message);
-    }
-    setBusy(false);
-  };
-
-  const buy = () =>
-    act(async () => {
-      const { tokenIds } = await post<{ tokenIds: string[] }>(`/api/packs/${view.id}/buy`);
-      setView((v) => ({ ...v, status: "bought", tokenIds }));
-      router.refresh();
-    });
-
-  const skip = () =>
-    act(async () => {
-      await post(`/api/packs/${view.id}/skip`);
-      setView((v) => ({ ...v, status: "skipped" }));
-    });
-
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4 sm:gap-5">
@@ -180,51 +148,38 @@ export default function PackReveal({ initial }: { initial: View }) {
             index={i}
             justOpened={opened.has(i)}
             disabled={opening}
-            showPrice={view.allOpen}
             onOpen={() => revealOne(i)}
           />
         ))}
       </div>
 
       <section className="panel p-5 sm:p-6" aria-live="polite">
-        {view.status === "bought" ? (
+        {view.status === "bought" && view.allOpen ? (
           <div data-testid="bought" className="pop flex flex-wrap items-center justify-between gap-5">
             <div className="flex items-start gap-4">
               <span className="crystal-calm grid place-items-center size-11 rounded-full shrink-0"><CheckIcon /></span>
               <div>
                 <h2 className="font-display font-semibold text-lg">These cards are yours.</h2>
+                <ul className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs">
+                  {tally.map(([rarity, n]) => (
+                    <li key={rarity} style={{ color: RARITY_COLOR[rarity] }} className="font-semibold">{n} {rarity}</li>
+                  ))}
+                </ul>
                 <p className="mt-1 text-sm text-cn-text-2">They are digital now, and any of them can be printed. Each has its own public record.</p>
               </div>
             </div>
             <div className="flex flex-wrap gap-3">
               <Link className={secondaryBtn} href={`/scan/${view.tokenIds[0]}#print`}><PrintIcon width={16} height={16} /> Print or verify the first card</Link>
+              <Link className={secondaryBtn} href={`/series/${view.seriesId}`}>Buy another pack</Link>
               <Link className={primaryBtn} href="/collection">Go to my cards <ArrowIcon width={16} height={16} /></Link>
             </div>
           </div>
-        ) : view.status === "skipped" ? (
-          <div className="pop flex flex-wrap items-center justify-between gap-4">
-            <h2 className="font-display font-semibold text-lg">Pack skipped. Nothing was charged.</h2>
-            <Link className={secondaryBtn} href={`/series/${view.seriesId}`}>Back to the series</Link>
-          </div>
         ) : view.status === "unresolved" || view.status === "minting" ? (
           <p className="text-sm text-cn-text-2">We could not confirm this purchase yet, so your Credits are held. Check your collection shortly.</p>
-        ) : view.allOpen ? (
-          <div className="pop flex flex-wrap items-center justify-between gap-5">
-            <div>
-              <p className="text-sm text-cn-text-3">This pack, in simulated Credits</p>
-              <p className="font-display font-bold text-3xl text-cn-credits tabular mt-1" data-testid="pack-price">
-                {view.price?.toLocaleString("en-US")} <span className="text-base font-semibold">Credits</span>
-              </p>
-              <ul className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs">
-                {tally.map(([rarity, n]) => (
-                  <li key={rarity} style={{ color: RARITY_COLOR[rarity] }} className="font-semibold">{n} {rarity}</li>
-                ))}
-              </ul>
-            </div>
-            <div className="flex flex-wrap gap-3">
-              <button className={secondaryBtn} disabled={busy} onClick={skip} data-testid="skip">Skip, pay nothing</button>
-              <button className={primaryBtn} disabled={busy} onClick={buy} data-testid="buy">{busy ? "Buying..." : "Buy this pack"}</button>
-            </div>
+        ) : view.status !== "bought" ? (
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <p className="text-sm text-cn-text-2">This pack was not bought, and nothing was charged.</p>
+            <Link className={secondaryBtn} href={`/series/${view.seriesId}`}>Back to the series</Link>
           </div>
         ) : (
           <div className="flex flex-wrap items-center justify-between gap-4">
@@ -235,7 +190,7 @@ export default function PackReveal({ initial }: { initial: View }) {
                 ))}
               </span>
               <p className="text-sm text-cn-text-2">
-                {openedCount} of {view.cards.length} open. The price appears with the last card.
+                {openedCount} of {view.cards.length} open.
               </p>
             </div>
             <button className={secondaryBtn} data-testid="open-all" disabled={opening} onClick={revealAll}>

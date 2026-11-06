@@ -1602,3 +1602,27 @@ their community collects it without meeting a wallet, a gas fee or a chain word.
 - **Released twice.** The first release put each logo on a white chip inside the card image. The image is immutable on chain, so removing the chip took a second release under the same names. The first four series, 21 to 24, are retired, and only their ids tell them apart on chain.
 
 **On screen, a framed card shows from its border out.** The dark margin exists for the print trim. `lib/framed-art.ts` recognises Gachard's own framed cards and crops the display only, which stretches them about 4%. A creator's upload has no such margin and is shown whole. The image and its hash do not change.
+
+**A Gachard QR with a short address.** A printed QR is drawn in the brand's colors with the crystal star in the middle (`lib/qr-style.ts`). It points to `/S/<token>/<SERIAL>`, in capitals, which a QR stores in fewer bits. That takes a long print address from 37 modules across to 33, and each one prints larger. `/S/` redirects to the card's record, and QRs already printed keep working. Its limit: this has only been tested with a software reader on rendered images, not yet a phone camera on paper.
+
+---
+
+## ADR-048: Back to a Paid Pack, and Crystal Trades for a Card
+
+**Status**: Accepted, 6 November 2026. Supersedes ADR-043 decision 2 and the free reveal of ADR-038 in this repository. Replaces the extra pack slot of ADR-046.
+
+**Context**: the author asked to return to the card pack people already know. Opening for free and buying afterwards is harder to explain, has nothing at stake in the opening, and lets a buyer pick only the good packs. The author also asked what Crystal would then be for.
+
+**Decision**:
+
+1. **Pay, then open.** A pack has one price. The buyer pays, five cards are drawn at the series' published rates and minted, and turning them over is only a reveal.
+2. **The price is derived.** It is what five cards are worth on average at the series' rates and card values, rounded down. A series at the demo's figures comes to 500 Credits. The chain and the creator's form do not change.
+3. **Crystal trades for a chosen card.** A trade costs five times what a card of that rarity yields: 50, 150, 450 and 1,500 Crystal. It mints a new card, so it needs no contract change. Trades are not sales and do not count as revenue.
+4. **The skip, the daily limit and the extra pack slot are gone.** A slot only made sense while a limit did. Packs already opened and never bought stay uncharged.
+
+**Honest limits**:
+- **This is the shape ADR-038 was written to avoid.** Pay, random, and a prize of money's worth is what some regulators treat as gambling. Here Credits are simulated, on testnet, and nothing can be cashed out. Before real money, this needs legal review in each target market. It is not legal advice.
+- **A buyer now depends on the draw, and cannot check it.** It is a server-side random choice. The rates are published, not proven.
+- **"Pay only for what you see" is gone**, and it was a real differentiator.
+- **No limit protects the platform's gas.** Credits limit one account, but demo accounts are free. The daily limit was per account and did not close this either.
+

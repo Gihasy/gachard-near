@@ -82,29 +82,27 @@ async function main() {
   const logins = await Promise.all([alice.post("/api/auth/demo"), bob.post("/api/auth/demo")]);
   check("Two people sign in at once", logins.every((r) => r.status === 200), logins.map((r) => r.status).join(","));
 
-  const opened = await alice.post("/api/packs", { seriesId: Number(seriesId) });
-  const { id: packId } = await opened.json();
-  check("A pack opens", Boolean(packId));
+  const unbought = await alice.page(`/series/${seriesId}`);
+  const packCost = Number(unbought.html.match(/Buy a pack: ([\d,]+) Credits/)?.[1].replace(/,/g, ""));
+  check("A series shows its odds and one pack price", unbought.html.includes("The odds") && packCost > 0, `${packCost} Credits`);
+
+  const bought = await alice.post("/api/packs", { seriesId: Number(seriesId) });
+  const { id: packId, tokenIds } = await bought.json();
+  check("The pack is bought and minted first", bought.status === 200 && tokenIds?.length === 5, tokenIds?.join(","));
   const unopened = await alice.page(`/pack/${packId}`);
-  check("Unopened pack hides its cards and price", !/\/api\/art\//.test(unopened.html) && !/"price":\d/.test(unopened.html));
+  check("Unopened cards stay hidden", !/\/api\/art\//.test(unopened.html));
 
   let view;
   for (let index = 0; index < 5; index += 1) {
     view = await (await alice.post(`/api/packs/${packId}/reveal`, { index })).json();
-    if (index === 3) check("Price is still hidden at card four", view.price === null);
   }
-  check("Price appears with the last card", view.price > 0, `${view.price} Credits`);
+  check("Every card turns over", view.allOpen === true && view.cards.every(Boolean));
   const art = await alice.request(view.cards[0].media);
   check("Artwork is served", art.status === 200 && (art.headers.get("content-type") ?? "").startsWith("image/"), art.headers.get("content-type") ?? "");
-
-  const bought = await alice.post(`/api/packs/${packId}/buy`);
-  const { tokenIds } = await bought.json();
-  check("The pack is bought and minted", bought.status === 200 && tokenIds?.length === 5, tokenIds?.join(","));
-  const token = tokenIds[0];
-  const again = await alice.post(`/api/packs/${packId}/buy`);
-  check("It cannot be bought twice", again.status === 400);
+  check("Someone else cannot open it", (await bob.post(`/api/packs/${packId}/reveal`, { index: 0 })).status === 400);
   const collection = await alice.page("/collection");
-  check("Credits fell by the price", collection.html.replace(/<[^>]*>/g, "").includes(`${(5000 - view.price).toLocaleString("en-US")} Credits`));
+  check("Credits fell by the pack's price", collection.html.replace(/<[^>]*>/g, "").includes(`${(5000 - packCost).toLocaleString("en-US")} Credits`));
+  const token = tokenIds[0];
 
   const record = await anon.page(`/scan/${token}`);
   check("Anyone can read the card's record", record.status === 200 && record.html.includes("Digital"));
@@ -189,7 +187,6 @@ async function main() {
   const held = async (who) => [...(await who.page("/collection")).html.matchAll(/href="\/scan\/(\d+)"/g)].map((m) => m[1]);
   const crystalOf = async (who) => Number((await who.page("/collection")).html.match(/data-testid="crystal-balance"[^>]*>([\d,]+)/)?.[1].replace(/,/g, ""));
   check("A collector starts with no Crystal", (await crystalOf(alice)) === 0);
-  check("A slot cannot be bought without Crystal", (await alice.post("/api/me/extra-pack")).status === 400);
 
   check("Someone else cannot dismantle a card", (await bob.post(`/api/cards/${tokenIds[1]}/dismantle`)).status === 400);
   check("A printed card cannot be dismantled", (await bob.post(`/api/cards/${token}/dismantle`)).status === 400);
@@ -207,35 +204,27 @@ async function main() {
   check("A burned card cannot be transferred", (await alice.post(`/api/cards/${burnt}/send`, { to: bobName })).status === 400);
   check("A burned card cannot be printed", (await alice.post(`/api/cards/${burnt}/print`)).status === 400);
 
-  // Enough Crystal for a slot: at most two packs of commons at 10 each.
-  const nextPack = async () => {
-    const { id } = await (await alice.post("/api/packs", { seriesId: Number(seriesId) })).json();
-    for (let index = 0; index < 5; index += 1) await alice.post(`/api/packs/${id}/reveal`, { index });
-    return id;
-  };
-  const secondPack = await nextPack();
-  const secondBuy = await alice.post(`/api/packs/${secondPack}/buy`);
+  // Enough Crystal to trade: at most five commons at 10 each.
+  const secondBuy = await alice.post("/api/packs", { seriesId: Number(seriesId) });
   check("A second pack is bought", secondBuy.status === 200);
+  const commonCard = (await anon.page(`/series/${seriesId}`)).html.match(/data-template="(\d+)" data-rarity-index="0"/)?.[1];
+  const tradeBody = { seriesId: Number(seriesId), templateId: Number(commonCard) };
+  check("A trade is refused without enough Crystal", (await alice.post("/api/me/trade", tradeBody)).status === 400);
   for (const id of await held(alice)) {
     if ((await crystalOf(alice)) >= 50) break;
     await alice.post(`/api/cards/${id}/dismantle`);
   }
   const balance = await crystalOf(alice);
-  check("Dismantling reaches the price of a slot", balance >= 50, `${balance} Crystal`);
-
-  const thirdPack = await nextPack();
-  check("The third pack of the day opens and is skipped", (await alice.post(`/api/packs/${thirdPack}/skip`)).status === 200);
-  const blocked = await alice.post("/api/packs", { seriesId: Number(seriesId) });
-  check("The fourth is refused at the day's limit", blocked.status === 400);
-  const slot = await alice.post("/api/me/extra-pack");
-  const afterSlot = await slot.json();
-  check("Crystal buys a slot", slot.status === 200 && afterSlot.extraPacks === 1 && afterSlot.crystal === balance - 50);
-  const fourth = await alice.post("/api/packs", { seriesId: Number(seriesId) });
-  const { id: fourthId } = await fourth.json();
-  check("The slot opens one more pack", fourth.status === 200 && Boolean(fourthId));
-  check("Asking again returns the same pack and spends no slot", (await (await alice.post("/api/packs", { seriesId: Number(seriesId) })).json()).id === fourthId);
-  await alice.post(`/api/packs/${fourthId}/skip`);
-  check("With the slot used, the next is refused", (await alice.post("/api/packs", { seriesId: Number(seriesId) })).status === 400);
+  check("Dismantling reaches the price of a trade", balance >= 50, `${balance} Crystal`);
+  const before = (await held(alice)).length;
+  const traded = await alice.post("/api/me/trade", tradeBody);
+  const { tokenId: tradedToken } = await traded.json();
+  check("Crystal trades for a chosen card", traded.status === 200 && Boolean(tradedToken) && (await crystalOf(alice)) === balance - 50, tradedToken);
+  check("The traded card is in the collection", (await held(alice)).length === before + 1);
+  check("The traded card has a public record", (await anon.page(`/scan/${tradedToken}`)).status === 200);
+  check("A signed-out trade is refused", (await anon.post("/api/me/trade", tradeBody)).status === 401);
+  const printAddress = await anon.request(`/S/${tradedToken}/0123456789ABCDEF0123456789ABCDEF`);
+  check("A printed QR's short address leads to the card", printAddress.status === 307 && (printAddress.headers.get("location") ?? "").endsWith(`/scan/${tradedToken}?print=0123456789abcdef0123456789abcdef`));
 
   // A sale is split. Every rarity is needed before a series goes live.
   for (const rarity of [1, 2, 3]) {
@@ -249,9 +238,7 @@ async function main() {
   check("A live series starts with no sales", revenueBefore?.[1] === "0" && revenueBefore?.[2] === "0");
   const progressOf = async () => (await alice.page("/collection")).html.match(new RegExp(`data-series="${newSeries}" data-owned="(\\d+)" data-total="(\\d+)"`))?.slice(1).join("/");
   check("A series nobody holds shows no progress", (await progressOf()) === undefined);
-  const flow = await (await alice.post("/api/packs", { seriesId: newSeries })).json();
-  for (let index = 0; index < 5; index += 1) await alice.post(`/api/packs/${flow.id}/reveal`, { index });
-  const flowBought = await alice.post(`/api/packs/${flow.id}/buy`);
+  const flowBought = await alice.post("/api/packs", { seriesId: newSeries });
   const flowBuy = await flowBought.json();
   check("A collector buys from that series", flowBought.status === 200);
   const revenue = (await bob.page("/creator")).html.match(/data-creator="(\d+)" data-gachard="(\d+)"/);

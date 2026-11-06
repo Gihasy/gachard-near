@@ -30,7 +30,6 @@ export interface User {
   /** Made only by burning a card (ADR-046). Accounts from before it have none. */
   crystal?: number;
   /** Bought with Crystal, and used once the day's pack limit is reached. */
-  extraPacks?: number;
   approvedCreator: boolean;
   createdAt: string;
 }
@@ -68,7 +67,8 @@ export interface PackOffer {
   templateIds: number[];
   revealed: boolean[];
   /** `unresolved`: the mint's outcome is unknown, so Credits stay held. */
-  status: "open" | "minting" | "bought" | "skipped" | "unresolved";
+  /** "open" and "skipped" are packs from before ADR-048, which were never charged. */
+  status: "open" | "minting" | "bought" | "skipped" | "refunded" | "unresolved";
   tokenIds: string[];
   price: number;
   createdAt: string;

@@ -7,14 +7,14 @@ import { post } from "@/lib/client";
 import { ErrorLine, primaryBtn } from "@/components/ui";
 import { ArrowIcon } from "@/components/icons";
 
-export default function OpenPackButton({ seriesId, signedIn }: { seriesId: number; signedIn: boolean }) {
+export default function OpenPackButton({ seriesId, signedIn, price }: { seriesId: number; signedIn: boolean; price: number }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   if (!signedIn) {
     return (
       <Link className={`${primaryBtn} w-full`} href={`/login?next=/series/${seriesId}`}>
-        Sign in to open a pack <ArrowIcon width={16} height={16} />
+        Sign in to buy a pack <ArrowIcon width={16} height={16} />
       </Link>
     );
   }
@@ -23,20 +23,22 @@ export default function OpenPackButton({ seriesId, signedIn }: { seriesId: numbe
       <button
         className={`${primaryBtn} w-full`}
         disabled={busy}
-        data-testid="open-pack"
+        data-testid="buy-pack"
         onClick={async () => {
           setBusy(true);
           setError("");
           try {
             const { id } = await post<{ id: string }>("/api/packs", { seriesId });
             router.push(`/pack/${id}`);
+            // The header shows the balance, and a navigation alone keeps the old one.
+            router.refresh();
           } catch (e) {
             setError((e as Error).message);
             setBusy(false);
           }
         }}
       >
-        {busy ? "Opening..." : "Open a pack for free"}
+        {busy ? "Buying..." : `Buy a pack: ${price.toLocaleString("en-US")} Credits`}
       </button>
       <ErrorLine>{error}</ErrorLine>
     </>

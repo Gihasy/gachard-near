@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import CrystalShop from "@/components/CrystalShop";
+import CrystalBalance from "@/components/CrystalBalance";
 import SeriesProgress from "@/components/SeriesProgress";
 import UsernameForm from "@/components/UsernameForm";
 import TiltCard from "@/components/TiltCard";
@@ -8,7 +8,7 @@ import { ArrowIcon, PrintIcon } from "@/components/icons";
 import { CardImage, Eyebrow, Page, Rarity, primaryBtn } from "@/components/ui";
 import { cardsOf } from "@/lib/cards";
 import { readDb } from "@/lib/db";
-import { CRYSTAL_BY_RARITY, EXTRA_PACK_PRICE } from "@/lib/economy";
+import { CRYSTAL_BY_RARITY, TRADE_PRICE } from "@/lib/economy";
 import { defaultUsername } from "@/lib/near";
 import { currentUser } from "@/lib/users";
 
@@ -36,15 +36,14 @@ export default async function Collection() {
         <UsernameForm username={username} />
       </div>
 
-      <CrystalShop
+      <CrystalBalance
         crystal={user.crystal ?? 0}
-        extraPacks={user.extraPacks ?? 0}
-        price={EXTRA_PACK_PRICE}
         yields={CRYSTAL_BY_RARITY.join(", ")}
+        tradeFrom={TRADE_PRICE[0]}
         duplicates={duplicates}
       />
 
-      <SeriesProgress series={series} cards={cards} />
+      <SeriesProgress series={series} cards={cards} crystal={user.crystal ?? 0} />
 
       {cards.length === 0 ? (
         <div className="panel p-8 sm:p-12 text-center">
@@ -56,7 +55,7 @@ export default async function Collection() {
             ))}
           </div>
           <p className="font-display font-semibold text-lg">No cards yet.</p>
-          <p className="mt-2 text-cn-text-2">Open a pack for free and see what you find.</p>
+          <p className="mt-2 text-cn-text-2">Buy a pack and see what you find.</p>
           <Link className={`${primaryBtn} mt-5`} href="/#series">Browse series <ArrowIcon width={16} height={16} /></Link>
         </div>
       ) : (

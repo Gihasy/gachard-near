@@ -6,7 +6,7 @@ import CardZoom from "@/components/CardZoom";
 import { Eyebrow, Page, Panel, Rarity, RARITY_COLOR } from "@/components/ui";
 import { missingRarities, RARITIES } from "@/lib/catalog";
 import { readDb } from "@/lib/db";
-import { CARDS_PER_PACK, PACKS_PER_DAY } from "@/lib/packs";
+import { CARDS_PER_PACK, packPrice } from "@/lib/packs";
 import { currentUser, nameOf } from "@/lib/users";
 
 export const dynamic = "force-dynamic";
@@ -41,7 +41,7 @@ export default async function SeriesPage({ params }: { params: Promise<{ id: str
             <Eyebrow>Released by {nameOf(series.creatorAccount, db.users)}</Eyebrow>
             <h1 className="mt-4 font-display font-bold text-2xl sm:text-4xl leading-tight break-words">{series.name}</h1>
             <p className="mt-3 text-cn-text-2 leading-relaxed max-w-lg">
-              Opening is free. See all {CARDS_PER_PACK} cards, then buy or skip. You only pay for what you have seen.
+              Every pack holds {CARDS_PER_PACK} cards at one price. They are drawn at random, at the rates shown here, when you buy.
             </p>
             <p className="mt-3 inline-flex items-center gap-1.5 text-sm font-semibold">
               <PrintIcon width={16} height={16} className="text-cn-lavender" /> Every card you buy can also be printed.
@@ -54,8 +54,8 @@ export default async function SeriesPage({ params }: { params: Promise<{ id: str
               <p className="text-sm text-cn-text-3">This series still needs a {missing[0]} card.</p>
             ) : (
               <>
-                <OpenPackButton seriesId={series.id} signedIn={Boolean(user)} />
-                <p className="mt-3 text-center text-xs text-cn-text-3">Up to {PACKS_PER_DAY} packs a day</p>
+                <OpenPackButton seriesId={series.id} signedIn={Boolean(user)} price={packPrice(series)} />
+                <p className="mt-3 text-center text-xs text-cn-text-3">Simulated Credits, no real money. Missing a card? Trade Crystal for it in My Cards.</p>
               </>
             )}
           </div>
@@ -65,8 +65,8 @@ export default async function SeriesPage({ params }: { params: Promise<{ id: str
       <Page>
         <div className="grid lg:grid-cols-[320px_1fr] gap-8 items-start">
           <Panel className="lg:sticky lg:top-24">
-            <h2 className="font-display font-semibold text-base">Rates and prices</h2>
-            <p className="mt-1 text-xs text-cn-text-3 leading-relaxed">Set by the creator. A pack costs the sum of its cards.</p>
+            <h2 className="font-display font-semibold text-base">The odds</h2>
+            <p className="mt-1 text-xs text-cn-text-3 leading-relaxed">Set by the creator, for each of a pack&apos;s {CARDS_PER_PACK} cards.</p>
             <ul className="mt-4 space-y-4">
               {RARITIES.map((r, i) => (
                 <li key={r}>
@@ -77,7 +77,6 @@ export default async function SeriesPage({ params }: { params: Promise<{ id: str
                   <div className="rate-bar mt-1.5">
                     <span style={{ width: `${series.ratesBps[i] / 100}%`, background: RARITY_COLOR[r] }} />
                   </div>
-                  <p className="mt-1 text-xs text-cn-credits tabular">{series.prices[i].toLocaleString("en-US")} Credits</p>
                 </li>
               ))}
             </ul>
@@ -87,7 +86,7 @@ export default async function SeriesPage({ params }: { params: Promise<{ id: str
             <h2 className="font-display font-semibold text-lg">In this series</h2>
             <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-x-4 gap-y-6">
               {series.templates.map((t) => (
-                <div key={t.id}>
+                <div key={t.id} data-template={t.id} data-rarity-index={t.rarity}>
                   <CardZoom src={t.media} alt={t.name} rarity={RARITIES[t.rarity]} />
                   <p className="mt-3 text-sm font-semibold truncate">{t.name}</p>
                   <Rarity value={RARITIES[t.rarity]} />

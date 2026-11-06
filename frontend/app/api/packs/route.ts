@@ -1,4 +1,4 @@
-import { openPack } from "@/lib/packs";
+import { buyPack } from "@/lib/packs";
 import { currentUser, failure } from "@/lib/users";
 
 export async function POST(request: Request) {
@@ -6,8 +6,7 @@ export async function POST(request: Request) {
   if (!user) return Response.json({ error: "Please sign in." }, { status: 401 });
   try {
     const { seriesId } = await request.json();
-    const offer = await openPack(user.id, Number(seriesId));
-    return Response.json({ id: offer.id });
+    return Response.json(await buyPack(user.id, Number(seriesId)));
   } catch (error) {
     return failure(error);
   }

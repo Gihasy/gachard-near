@@ -65,7 +65,7 @@ export default function CreateSeriesForm() {
               <input className={`${inputClass} mt-1 !min-h-10 tabular`} type="number" min={0} max={100} step="any" aria-label={`${r} rate`} value={rates[i]} onChange={(e) => setRates(rates.map((v, j) => (j === i ? Number(e.target.value) : v)))} />
             </label>
             <label className="mt-2 block text-xs text-cn-text-3">
-              Price in Credits
+              Card value in Credits
               <input className={`${inputClass} mt-1 !min-h-10 tabular`} type="number" min={1} step={1} aria-label={`${r} price`} value={prices[i]} onChange={(e) => setPrices(prices.map((v, j) => (j === i ? Number(e.target.value) : v)))} />
             </label>
           </fieldset>

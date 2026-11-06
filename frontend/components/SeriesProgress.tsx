@@ -1,15 +1,18 @@
 import Link from "next/link";
 import { CheckIcon } from "@/components/icons";
+import TradeButton from "@/components/TradeButton";
 import { CardImage, Rarity } from "@/components/ui";
 import { RARITIES } from "@/lib/catalog";
 import type { OwnedCard } from "@/lib/cards";
 import type { SeriesRow } from "@/lib/db";
+import { TRADE_PRICE } from "@/lib/economy";
 
 /**
- * How much of each series a collector holds (ADR-046). It only counts: nothing is
- * locked and nothing is won, so a card here can still be printed, moved or dismantled.
+ * How much of each series a collector holds (ADR-046), and a way to the cards still
+ * missing (ADR-048). Nothing is locked or won, so a card here can still be printed,
+ * moved or dismantled.
  */
-export default function SeriesProgress({ series, cards }: { series: SeriesRow[]; cards: OwnedCard[] }) {
+export default function SeriesProgress({ series, cards, crystal }: { series: SeriesRow[]; cards: OwnedCard[]; crystal: number }) {
   const held = new Map<string, string>();
   for (const card of cards) if (!held.has(card.design)) held.set(card.design, card.tokenId);
 
@@ -62,6 +65,7 @@ export default function SeriesProgress({ series, cards }: { series: SeriesRow[];
                     )}
                     <p className={`mt-1.5 text-xs font-medium truncate ${tokenId ? "" : "text-cn-text-3"}`}>{t.name}</p>
                     <Rarity value={RARITIES[t.rarity]} />
+                    {!tokenId && !s.hidden ? <TradeButton seriesId={s.id} templateId={t.id} price={TRADE_PRICE[t.rarity]} crystal={crystal} /> : null}
                   </li>
                 ))}
               </ul>
