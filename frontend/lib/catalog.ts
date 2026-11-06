@@ -25,6 +25,7 @@ export async function createSeries(
   ratesBps: number[],
   prices: number[],
   category: string = DEFAULT_CATEGORY,
+  description?: string,
 ): Promise<SeriesRow> {
   const { series: all } = await readDb();
   if (all.filter((s) => s.ownerUserId === user.id).length >= MAX_SERIES_PER_USER) {
@@ -47,6 +48,7 @@ export async function createSeries(
     creatorAccount: user.accountId,
     name,
     category,
+    ...(description ? { description } : {}),
     ratesBps,
     prices,
     templates: [],

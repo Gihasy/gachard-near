@@ -1,11 +1,11 @@
 import Link from "next/link";
 import AddCardForm from "@/components/AddCardForm";
-import CreateSeriesForm from "@/components/CreateSeriesForm";
+import AddSeries from "@/components/AddSeries";
 import CreatorGuide from "@/components/CreatorGuide";
 import { ArrowIcon, CheckIcon, PrintIcon, ScanIcon, SeriesIcon } from "@/components/icons";
-import { CardImage, Eyebrow, Page, Panel, Rarity, primaryBtn } from "@/components/ui";
+import { CardImage, Eyebrow, Page, Panel, Rarity, SeriesName, primaryBtn } from "@/components/ui";
 import { missingRarities, RARITIES } from "@/lib/catalog";
-import { readDb } from "@/lib/db";
+import { readDb, type SeriesRow } from "@/lib/db";
 import { CREATOR_SHARE_PCT, revenueOf } from "@/lib/economy";
 import { currentUser } from "@/lib/users";
 
@@ -16,6 +16,12 @@ const BENEFITS = [
   { Icon: ScanIcon, title: "Your name on the record", text: "Your account signs what you release, so anyone can see that it came from you." },
   { Icon: PrintIcon, title: "Digital and physical", text: "Every card can be printed. Your fans need no wallet and pay no network fees." },
 ];
+
+/** The rarity a creator most likely wants next: the first one with odds and no card. */
+function suggestedRarity(series: SeriesRow) {
+  const missing = series.ratesBps.findIndex((rate, rarity) => rate > 0 && !series.templates.some((t) => t.rarity === rarity));
+  return missing >= 0 ? missing : series.ratesBps.findIndex((rate) => rate > 0);
+}
 
 function Pitch() {
   return (
@@ -66,13 +72,27 @@ export default async function Creator() {
         released it, not that the account owns the rights to the art.
       </p>
       <div className="space-y-6">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2 className="font-display font-semibold text-lg sm:text-xl">Your series</h2>
+          {mine.length ? <AddSeries first={false} /> : null}
+        </div>
+        {mine.length ? null : <AddSeries first />}
         {mine.map((s) => {
           const missing = missingRarities(s);
           const revenue = revenueOf(s.id, offers);
           return (
             <Panel key={s.id}>
               <div className="flex flex-wrap justify-between gap-3 items-center">
-                <h2 className="font-display font-semibold text-lg break-words min-w-0">{s.name}</h2>
+                <div className="flex items-center gap-3 min-w-0">
+                  {s.logo ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={s.logo} alt="" className="size-12 object-contain shrink-0" />
+                  ) : null}
+                  <div className="min-w-0">
+                    <h3 className="font-display font-semibold text-lg break-words"><SeriesName name={s.name} /></h3>
+                    {s.description ? <p className="mt-0.5 text-sm text-cn-text-2 leading-relaxed">{s.description}</p> : null}
+                  </div>
+                </div>
                 {missing.length ? (
                   <span className="rounded-full bg-[#f7c96b1f] px-3 py-1 text-xs font-semibold text-cn-credits" data-testid="series-state">
                     Needs: {missing.join(", ")}
@@ -110,14 +130,10 @@ export default async function Creator() {
                   ))}
                 </div>
               ) : null}
-              <AddCardForm seriesId={s.id} />
+              <AddCardForm key={s.templates.length} seriesId={s.id} rates={s.ratesBps} suggested={suggestedRarity(s)} />
             </Panel>
           );
         })}
-        <Panel>
-          <h2 className="font-display font-semibold text-lg mb-4">{mine.length ? "Another series" : "Your first series"}</h2>
-          <CreateSeriesForm />
-        </Panel>
       </div>
     </Page>
   );

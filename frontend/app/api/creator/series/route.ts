@@ -6,9 +6,10 @@ export async function POST(request: Request) {
   const user = await currentUser();
   if (!user) return Response.json({ error: "Please sign in." }, { status: 401 });
   try {
-    const { name, ratesPct, prices, category } = await request.json();
+    const { name, ratesPct, prices, category, description } = await request.json();
+    const about = typeof description === "string" ? description.trim().slice(0, 200) : "";
     const ratesBps = (ratesPct as number[]).map((r) => Math.round(Number(r) * 100));
-    const series = await createSeries(user, String(name).trim(), ratesBps, (prices as number[]).map(Number), cleanCategory(category));
+    const series = await createSeries(user, String(name).trim(), ratesBps, (prices as number[]).map(Number), cleanCategory(category), about);
     return Response.json({ id: series.id });
   } catch (error) {
     return failure(error);

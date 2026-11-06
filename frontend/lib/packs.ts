@@ -10,8 +10,9 @@ import { randomBytes, randomInt } from "node:crypto";
 import { withDb, type PackOffer, type SeriesRow } from "./db.ts";
 import { missingRarities, RARITIES } from "./catalog.ts";
 import { ContractRefused, platformCall } from "./near.ts";
+import { CARDS_PER_PACK, packPrice } from "./pack-price.ts";
 
-export const CARDS_PER_PACK = 5;
+export { CARDS_PER_PACK, packPrice };
 
 function drawTemplate(series: SeriesRow): number {
   let roll = randomInt(10_000);
@@ -22,17 +23,6 @@ function drawTemplate(series: SeriesRow): number {
   }
   const pool = series.templates.filter((t) => t.rarity === rarity);
   return pool[randomInt(pool.length)].id;
-}
-
-/**
- * A pack's one price: what five cards are worth on average at the series' rates and
- * card prices, rounded down so it reads as a price. Derived, so a creator sets it
- * with the same two tables the chain already records.
- */
-export function packPrice(series: Pick<SeriesRow, "ratesBps" | "prices">) {
-  const average = series.prices.reduce((sum, price, rarity) => sum + (price * series.ratesBps[rarity]) / 10_000, 0) * CARDS_PER_PACK;
-  const step = average >= 50 ? 50 : 10;
-  return Math.max(1, Math.floor(average / step) * step);
 }
 
 const STILL_MINTING_MS = 120_000;

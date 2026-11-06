@@ -3,8 +3,8 @@
  * docs/CREATOR-ASSET-GUIDE.md, and the limits from lib/catalog.ts and lib/art.ts.
  */
 const STEPS = [
-  { title: "Create the series", text: "Give it a name and a category, then set the odds and a value for each rarity. These set the price of a pack." },
-  { title: "Add your cards", text: "Upload at least one card for every rarity that has odds. You can add up to 20 cards." },
+  { title: "Add a series", text: "Upload a logo, write a title and a description, and set the odds for each rarity. The odds set the price of a pack." },
+  { title: "Add your cards", text: "For each card, upload an image, name it and choose its rarity. Every rarity with odds needs a card. You can add up to 20." },
   { title: "Go live", text: "The series appears on Gachard as soon as its last rarity has a card. Your studio then shows its sales." },
 ];
 

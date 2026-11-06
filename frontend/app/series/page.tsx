@@ -45,6 +45,7 @@ export default async function AllSeries() {
                   <p className="text-xs font-semibold text-cn-lavender">{s.category ?? DEFAULT_CATEGORY}</p>
                   <h2 className="mt-1 font-display font-semibold text-base sm:text-lg leading-snug break-words"><SeriesName name={s.name} /></h2>
                   <p className="mt-1 text-sm text-cn-text-2 truncate">by {nameOf(s.creatorAccount, users)}</p>
+                  {s.description ? <p className="mt-1.5 text-sm text-cn-text-3 leading-relaxed line-clamp-2">{s.description}</p> : null}
                 </div>
                 <ArrowIcon width={18} height={18} className="shrink-0 text-cn-text-3 transition group-hover:text-cn-text-1 group-hover:translate-x-0.5" />
               </div>

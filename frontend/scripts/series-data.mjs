@@ -12,6 +12,7 @@ export const SERIES = [
   {
     prefix: "mochi", folder: "Mochi Puffs", sub: "Mochi Puffs", logo: "mochi-logo.png",
     name: "Mochi Puffs (fictional characters)", category: "Characters", username: "mochi_puffs_demo",
+    description: "Soft, round and very sure of themselves.",
     cards: [
       ["Vanilla Puff", "Soft, round, and very sure", "it was your idea to hug it."],
       ["Sprout Puff", "Waters the garden daily.", "Mostly waters itself."],
@@ -26,6 +27,7 @@ export const SERIES = [
   {
     prefix: "aika", folder: "Aika Nova", sub: "Aika Nova", logo: "aika-logo.png",
     name: "Aika Nova (fictional virtual streamer)", category: "VTubers", username: "aika_nova_demo",
+    description: "A virtual streamer's days, from morning coffee to the galaxy stage.",
     cards: [
       ["Morning Stream", "Three viewers and a cold", "coffee. A perfect start."],
       ["Snack Break", "Chat asked about the game.", "She answered with noodles."],
@@ -40,6 +42,7 @@ export const SERIES = [
   {
     prefix: "luma", folder: "Luma Four", sub: "Luma Four", logo: "luma-logo.png",
     name: "Luma Four (fictional boy band)", category: "Entertainers", username: "luma_four_demo",
+    description: "Four friends and one stage: Kai, Theo, Arlo and Sami.",
     cards: [
       ["Kai: Soundcheck", "Kai hears the flat note", "before anyone plays it."],
       ["Theo: Dance Practice", "The mirror gave up trying", "to keep pace with Theo."],
@@ -54,6 +57,7 @@ export const SERIES = [
   {
     prefix: "thornmaw", folder: "Thornmaw Wilds", sub: "Thornmaw Wilds", logo: "Thornmaw-logo.png",
     name: "Thornmaw Wilds (fictional monsters)", category: "Games & stories", username: "thornmaw_wilds_demo",
+    description: "Wild cartoon creatures, from a sleepy moss slug to a walking volcano.",
     cards: [
       ["Mosslug", "Has been crossing this log", "since before the forest."],
       ["Cinder Imp", "Says the fire was already", "like that when it got here."],

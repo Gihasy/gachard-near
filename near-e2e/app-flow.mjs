@@ -172,6 +172,10 @@ async function main() {
   });
   const { id: newSeries } = await series.json();
   check("A creator publishes a series", series.status === 200, `series ${newSeries}`);
+  const logoForm = new FormData();
+  logoForm.set("logo", new File([Buffer.from("not an image")], "logo.png", { type: "image/png" }));
+  check("A logo that is not an image is refused", (await bob.request(`/api/creator/series/${newSeries}/logo`, { method: "POST", body: logoForm })).status === 400);
+  check("Someone else cannot set the logo", (await alice.request(`/api/creator/series/${newSeries}/logo`, { method: "POST", body: logoForm })).status === 403);
   const upload = (bytes, name) => {
     const form = new FormData();
     form.set("name", name);

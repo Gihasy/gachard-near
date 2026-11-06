@@ -41,6 +41,7 @@ export default async function SeriesPage({ params }: { params: Promise<{ id: str
           <div className="min-w-0">
             <Eyebrow>Released by {nameOf(series.creatorAccount, db.users)}</Eyebrow>
             <h1 className="mt-4 font-display font-bold text-2xl sm:text-4xl leading-tight break-words"><SeriesName name={series.name} /></h1>
+            {series.description ? <p className="mt-3 text-cn-text-1 leading-relaxed max-w-lg">{series.description}</p> : null}
             <p className="mt-3 text-cn-text-2 leading-relaxed max-w-lg">
               Every pack holds {CARDS_PER_PACK} cards at one price. They are drawn at random, at the rates shown here, when you buy.
             </p>

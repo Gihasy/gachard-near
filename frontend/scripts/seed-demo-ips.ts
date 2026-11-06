@@ -57,7 +57,7 @@ for (const ip of SERIES) {
   const logo = `/cards/series/${ip.prefix}-logo.png`;
   await withDb((d) => {
     const row = d.series.find((s) => s.id === series.id);
-    if (row) row.logo = logo;
+    if (row) Object.assign(row, { logo, description: ip.description });
   });
   for (const [index, [file, rarity]] of FILES.entries()) {
     const [name] = ip.cards[index];
