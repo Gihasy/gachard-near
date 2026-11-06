@@ -51,7 +51,7 @@ export default function LoginForm({ next, demo, googleClientId }: { next: string
                 callback: (r) => signIn("/api/auth/google", { token: r.credential }),
               });
               if (googleBox.current) {
-                window.google?.accounts.id.renderButton(googleBox.current, { theme: "outline", size: "large", width: 320 });
+                window.google?.accounts.id.renderButton(googleBox.current, { theme: "outline", size: "large", locale: "en", width: Math.min(400, googleBox.current.clientWidth) });
               }
             }}
           />
