@@ -80,6 +80,7 @@ async function main() {
   const pitch = await anon.page("/creator");
   check("Signed-out creators see the pitch, and the plan is labelled", pitch.status === 200 && pitch.html.includes("not part of this demo"));
   check("Signed-out collection redirects to sign-in", (await anon.request("/collection")).status === 307);
+  check("Signed-out Crystal Shop redirects to sign-in", (await anon.request("/crystal")).status === 307);
 
   const [alice, bob] = [new Visitor(), new Visitor()];
   const logins = await Promise.all([alice.post("/api/auth/demo"), bob.post("/api/auth/demo")]);
@@ -254,6 +255,13 @@ async function main() {
   check("The traded card reaches the collection", listed, `after ${Math.round((Date.now() - waitStart) / 1000)} s`);
   check("The traded card has a public record", (await anon.page(`/scan/${tradedToken}`)).status === 200);
   check("A signed-out trade is refused", (await anon.post("/api/me/trade", tradeBody)).status === 401);
+  const shop = await alice.page("/crystal");
+  check("The Crystal Shop shows the balance and packs", shop.status === 200 && shop.html.includes('data-testid="shop-balance"') && shop.html.includes('data-testid="crystal-pack"'));
+  const crystalBefore = await crystalOf(alice);
+  if (crystalBefore < 300) {
+    const tooPoor = await alice.post("/api/packs", { seriesId: Number(seriesId), pay: "crystal" });
+    check("A Crystal Pack is refused without enough Crystal", tooPoor.status === 400 && (await crystalOf(alice)) === crystalBefore);
+  }
   const printAddress = await anon.request(`/S/${tradedToken}/0123456789ABCDEF0123456789ABCDEF`);
   check("A printed QR's short address leads to the card", printAddress.status === 307 && (printAddress.headers.get("location") ?? "").endsWith(`/scan/${tradedToken}?print=0123456789abcdef0123456789abcdef`));
 

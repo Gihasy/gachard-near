@@ -23,6 +23,7 @@ export function proxy(request: NextRequest) {
 export const config = {
   matcher: [
     "/collection/:path*",
+    "/crystal/:path*",
     "/pack/:path*",
     "/api/creator/:path*",
     "/api/packs/:path*",

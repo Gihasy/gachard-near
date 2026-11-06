@@ -74,6 +74,8 @@ export interface PackOffer {
   status: "open" | "minting" | "bought" | "skipped" | "refunded" | "unresolved";
   tokenIds: string[];
   price: number;
+  /** Set when the pack was paid for in Crystal, which is not a sale (ADR-048). */
+  crystalPrice?: number;
   createdAt: string;
 }
 

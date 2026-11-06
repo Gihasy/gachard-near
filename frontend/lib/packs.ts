@@ -9,6 +9,7 @@
 import { randomBytes, randomInt } from "node:crypto";
 import { withDb, type PackOffer, type SeriesRow } from "./db.ts";
 import { missingRarities, RARITIES } from "./catalog.ts";
+import { CRYSTAL_PACK_PRICE } from "./economy.ts";
 import { ContractRefused, platformCall } from "./near.ts";
 import { CARDS_PER_PACK, packPrice } from "./pack-price.ts";
 
@@ -58,7 +59,7 @@ export async function revealCard(userId: string, offerId: string, index: number)
   });
 }
 
-export async function buyPack(userId: string, seriesId: number) {
+export async function buyPack(userId: string, seriesId: number, pay: "credits" | "crystal" = "credits") {
   // Credits leave and the pack is claimed in one step. A second click while it mints
   // is refused, so a double click buys once.
   const claim = await withDb((d) => {
@@ -71,9 +72,15 @@ export async function buyPack(userId: string, seriesId: number) {
       && Date.now() - Date.parse(o.createdAt) < STILL_MINTING_MS);
     if (busy) throw new ContractRefused("Your last pack is still on its way. Try again in a moment.");
     const user = d.users.find((u) => u.id === userId)!;
-    const price = packPrice(series);
-    if (user.credits < price) throw new ContractRefused("Not enough Credits for this pack.");
-    user.credits -= price;
+    const inCrystal = pay === "crystal";
+    const price = inCrystal ? 0 : packPrice(series);
+    if (inCrystal) {
+      if ((user.crystal ?? 0) < CRYSTAL_PACK_PRICE) throw new ContractRefused(`A Crystal Pack takes ${CRYSTAL_PACK_PRICE} Crystal.`);
+      user.crystal = (user.crystal ?? 0) - CRYSTAL_PACK_PRICE;
+    } else {
+      if (user.credits < price) throw new ContractRefused("Not enough Credits for this pack.");
+      user.credits -= price;
+    }
     const offer: PackOffer = {
       id: randomBytes(12).toString("hex"),
       userId,
@@ -85,6 +92,7 @@ export async function buyPack(userId: string, seriesId: number) {
       status: "minting",
       tokenIds: [],
       price,
+      ...(inCrystal ? { crystalPrice: CRYSTAL_PACK_PRICE } : {}),
       createdAt: new Date().toISOString(),
     };
     d.offers.push(offer);
@@ -112,7 +120,11 @@ export async function buyPack(userId: string, seriesId: number) {
     await withDb((d) => {
       const offer = d.offers.find((o) => o.id === claim.offer.id)!;
       offer.status = refused ? "refunded" : "unresolved";
-      if (refused) d.users.find((u) => u.id === userId)!.credits += claim.offer.price;
+      if (refused) {
+        const user = d.users.find((u) => u.id === userId)!;
+        user.credits += claim.offer.price;
+        if (claim.offer.crystalPrice) user.crystal = (user.crystal ?? 0) + claim.offer.crystalPrice;
+      }
     });
     throw error;
   }

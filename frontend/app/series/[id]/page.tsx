@@ -57,7 +57,7 @@ export default async function SeriesPage({ params }: { params: Promise<{ id: str
             ) : (
               <>
                 <OpenPackButton seriesId={series.id} signedIn={Boolean(user)} price={packPrice(series)} />
-                <p className="mt-3 text-center text-xs text-cn-text-3">Simulated Credits, no real money. Missing a card? Trade Crystal for it in My Cards.</p>
+                <p className="mt-3 text-center text-xs text-cn-text-3">Simulated Credits, no real money. Missing a card? Trade Crystal for it in the Crystal Shop.</p>
               </>
             )}
           </div>

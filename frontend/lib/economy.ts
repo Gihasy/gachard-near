@@ -11,10 +11,13 @@ export const CREATOR_SHARE_PCT = 90;
 export const CRYSTAL_BY_RARITY = [10, 30, 90, 300];
 /** Five cards of a rarity trade for one of your choice, so a duplicate leads somewhere. */
 export const TRADE_PRICE = CRYSTAL_BY_RARITY.map((crystal) => crystal * 5);
+/** More than a pack gives back on average when dismantled (about 131), so it cannot be farmed. */
+export const CRYSTAL_PACK_PRICE = 300;
 
 /** Derived from what was bought, so it cannot drift from what was sold. */
 export function revenueOf(seriesId: number, offers: Data["offers"]) {
-  const sold = offers.filter((o) => o.seriesId === seriesId && o.status === "bought");
+  // A pack paid for in Crystal brings in no money, so it is not a sale.
+  const sold = offers.filter((o) => o.seriesId === seriesId && o.status === "bought" && !o.crystalPrice);
   const gross = sold.reduce((sum, o) => sum + o.price, 0);
   const creator = Math.floor((gross * CREATOR_SHARE_PCT) / 100);
   return { packs: sold.length, gross, creator, gachard: gross - creator };

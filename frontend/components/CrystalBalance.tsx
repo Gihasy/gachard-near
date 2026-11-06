@@ -1,4 +1,6 @@
+import Link from "next/link";
 import { CrystalGem } from "@/components/icons";
+import { secondaryBtn } from "@/components/ui";
 
 /** Crystal in one line. Each card's page and each trade button show the actual amounts. */
 export default function CrystalBalance({ crystal, duplicates }: { crystal: number; duplicates: number }) {
@@ -12,6 +14,7 @@ export default function CrystalBalance({ crystal, duplicates }: { crystal: numbe
         Dismantle duplicates for Crystal, and trade it for cards you are missing.
         {duplicates ? ` You have ${duplicates} to spare.` : ""}
       </p>
+      <Link className={`${secondaryBtn} !min-h-10 shrink-0`} href="/crystal" data-testid="crystal-shop">Crystal Shop</Link>
     </section>
   );
 }
