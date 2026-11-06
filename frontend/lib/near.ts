@@ -27,32 +27,52 @@ export const explorer = {
   account: (id: string) => `https://testnet.nearblocks.io/address/${id}`,
 };
 
+// A public RPC refuses bursts with a 429, and a page should not fail for that. While the
+// main one is refusing, this process uses another provider's for a minute.
+const FALLBACK_MS = 60_000;
+const shared = globalThis as unknown as { gachardTxQueue?: Promise<unknown>; gachardRpcFallbackUntil?: number };
+
 const provider = () =>
-  new JsonRpcProvider({ url: process.env.NEAR_RPC_URL ?? "https://test.rpc.fastnear.com" });
+  new JsonRpcProvider({
+    url: Date.now() < (shared.gachardRpcFallbackUntil ?? 0)
+      ? process.env.NEAR_RPC_FALLBACK_URL ?? "https://near-testnet.drpc.org"
+      : process.env.NEAR_RPC_URL ?? "https://test.rpc.fastnear.com",
+  });
+
+/** Whether an RPC refused the request for its rate. If so, it did not process it. */
+function rateLimited(error: unknown) {
+  const { message, cause } = (error ?? {}) as { message?: unknown; cause?: unknown };
+  const limited = cause === 429 || /rate limit|\b429\b/i.test(String(message ?? error));
+  if (limited) shared.gachardRpcFallbackUntil = Date.now() + FALLBACK_MS;
+  return limited;
+}
+
+const pause = (attempt: number) => new Promise((resolve) => setTimeout(resolve, 400 + Math.random() * 500 * (attempt + 1)));
 
 const platform = () => new Account(platformId(), provider(), env("NEAR_PLATFORM_KEY") as `ed25519:${string}`);
 
 // One platform key means one nonce sequence, so its transactions go in turn.
-const shared = globalThis as unknown as { gachardTxQueue?: Promise<unknown> };
 function inTurn<T>(send: () => Promise<T>): Promise<T> {
   const run = (shared.gachardTxQueue ?? Promise.resolve()).then(() => retryOnNonce(send));
   shared.gachardTxQueue = run.catch(() => undefined);
   return run;
 }
 
-// Two failures that are safe to resend, because nothing reached the chain:
+// Three failures that are safe to resend, because nothing reached the chain:
 // - InvalidNonce: the queue covers one process. Serverless runs several, and they
 //   can pick the same nonce, so the chain rejects the transaction outright.
 // - AccessKeyDoesNotExist: a new account's key has not reached this RPC node yet,
 //   so signing failed before anything was sent.
+// - A 429: the RPC refused the request without processing it.
 async function retryOnNonce<T>(send: () => Promise<T>): Promise<T> {
   for (let attempt = 0; ; attempt += 1) {
     try {
       return await send();
     } catch (error) {
       const message = `${(error as Error)?.name ?? ""} ${(error as Error)?.message ?? error}`;
-      if (attempt >= 5 || !/InvalidNonce|AccessKeyDoesNotExist|Access key .* does not exist/i.test(message)) throw error;
-      await new Promise((resolve) => setTimeout(resolve, 400 + Math.random() * 500 * (attempt + 1)));
+      const resend = rateLimited(error) || /InvalidNonce|AccessKeyDoesNotExist|Access key .* does not exist/i.test(message);
+      if (attempt >= 5 || !resend) throw error;
+      await pause(attempt);
     }
   }
 }
@@ -89,8 +109,15 @@ function settle(outcome: Outcome): { hash: string; value: unknown } {
   };
 }
 
-export function view<T>(method: string, args: Record<string, unknown> = {}): Promise<T> {
-  return provider().callFunction({ contractId: contractId(), method, args }) as Promise<T>;
+export async function view<T>(method: string, args: Record<string, unknown> = {}): Promise<T> {
+  for (let attempt = 0; ; attempt += 1) {
+    try {
+      return await (provider().callFunction({ contractId: contractId(), method, args }) as Promise<T>);
+    } catch (error) {
+      if (attempt >= 3 || !rateLimited(error)) throw error;
+      await pause(attempt);
+    }
+  }
 }
 
 /** A call signed and paid for by the platform: approving a creator, or minting. */
@@ -112,12 +139,9 @@ export async function userCall(
   args: Record<string, unknown>,
   deposit = 0n,
 ) {
-  const signer = new Account(
-    user.accountId,
-    provider(),
-    decrypt(user.keyEncrypted) as `ed25519:${string}`,
-  );
+  const key = decrypt(user.keyEncrypted) as `ed25519:${string}`;
   const outcome = await inTurn(async () => {
+    const signer = new Account(user.accountId, provider(), key);
     const { signedDelegate } = await signer.createSignedMetaTransaction({
       receiverId: contractId(),
       actions: [actions.functionCall(method, args, teraToGas(60), deposit)],
