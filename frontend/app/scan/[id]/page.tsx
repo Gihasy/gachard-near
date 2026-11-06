@@ -1,3 +1,5 @@
+import CardHandoff from "@/components/CardHandoff";
+import { handoffView } from "@/lib/handoff";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import CardActions from "@/components/CardActions";
@@ -78,7 +80,8 @@ export default async function CardRecord({ params, searchParams }: {
   if (!/^[0-9]+$/.test(id)) notFound();
   const card = await readCard(id);
   if (!card) notFound();
-  const [user, { users }, { print }] = await Promise.all([currentUser(), readDb(), searchParams]);
+  const [user, db, { print }] = await Promise.all([currentUser(), readDb(), searchParams]);
+  const { users } = db;
   const isHolder = user?.accountId === card.owner_id;
   const digital = card.status === "Digital" || card.status === "Burned";
   const burned = card.status === "Burned";
@@ -147,8 +150,18 @@ export default async function CardRecord({ params, searchParams }: {
           <p className="text-xs text-cn-text-3 leading-relaxed">
             {digital
               ? "This record is read live from a public ledger, and the links let you check it there. Usernames are this app's own."
-              : "Buying this card? Have the physical card in front of you, and pay only after your username shows as Holder here. The paper alone proves nothing."}
+              : "Getting this card from someone? Have it in front of you, and pay only after your username shows as Holder here. The paper alone proves nothing."}
           </p>
+
+          {card.status === "Printed" ? (
+            <CardHandoff
+              tokenId={id}
+              initial={user ? handoffView(db, user.id, id) : { asBuyer: null, asHolder: [] }}
+              isHolder={isHolder}
+              signedIn={Boolean(user)}
+              loginNext={`/scan/${id}${typeof print === "string" && print ? `?print=${print}` : ""}`}
+            />
+          ) : null}
 
           <CardActions
             tokenId={id}

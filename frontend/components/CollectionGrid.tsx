@@ -249,7 +249,7 @@ export default function CollectionGrid({ cards, seriesNames, crystalByRarity, lo
                   className={`card-lock ${isLocked ? "card-lock-on" : ""}`}
                   aria-pressed={isLocked}
                   aria-label={`${isLocked ? "Unlock" : "Lock"} ${first.name}`}
-                  title={isLocked ? "Locked: cannot be dismantled" : "Lock so it cannot be dismantled"}
+                  title={isLocked ? "Locked: cannot be dismantled or transferred" : "Lock so it cannot be dismantled or transferred"}
                   data-testid="lock-card"
                   onClick={() => toggleLock(first.design)}
                 >

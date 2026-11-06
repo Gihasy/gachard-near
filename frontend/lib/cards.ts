@@ -7,6 +7,7 @@ import { artMatches } from "./art.ts";
 import { RARITIES } from "./catalog.ts";
 import { readDb, withDb, type User } from "./db.ts";
 import { creditDismantle, CRYSTAL_BY_RARITY } from "./economy.ts";
+import { clearHandoffs } from "./handoff.ts";
 import { ContractRefused, platformCall, userCall, view } from "./near.ts";
 import { cleanUsername } from "./users.ts";
 
@@ -76,7 +77,7 @@ export async function cardsOf(accountId: string): Promise<OwnedCard[]> {
   });
 }
 
-const logTx = (tokenId: string, hash: string) =>
+export const logTx = (tokenId: string, hash: string) =>
   withDb((d) => {
     (d.txs[tokenId] ??= []).push(hash);
   });
@@ -117,6 +118,7 @@ export async function serialForHolder(user: User, card: { owner_id: string; toke
 export async function requestReturn(user: User, tokenId: string) {
   const { hash } = await userCall(user, "request_return", { token_id: tokenId }, 1n);
   await logTx(tokenId, hash);
+  await clearHandoffs(tokenId);
 }
 
 /**
@@ -155,6 +157,14 @@ export async function sendCard(user: User, tokenId: string, to: string) {
   const username = cleanUsername(to);
   const receiver = (await readDb()).users.find((u) => u.username === username);
   if (!receiver) throw new ContractRefused("No collector has that username.");
+  // The contract allows it. The app does not, so a printed card moves only when both people agree.
+  const card = await view<{ status: string; series_id: number; template_id: number } | null>("get_card", { token_id: tokenId });
+  if (card?.status === "Printed") {
+    throw new ContractRefused("A printed card is traded in person: the new owner scans its QR and you approve.");
+  }
+  if (card && user.lockedDesigns?.includes(`${card.series_id}:${card.template_id}`)) {
+    throw new ContractRefused("This card is locked. Unlock it in My Cards to transfer it.");
+  }
   const { hash } = await userCall(
     user,
     "mt_transfer",

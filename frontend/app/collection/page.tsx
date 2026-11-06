@@ -10,6 +10,7 @@ import { CardImage, Eyebrow, Page, primaryBtn } from "@/components/ui";
 import { cardsOf } from "@/lib/cards";
 import { RARITIES } from "@/lib/catalog";
 import { readDb } from "@/lib/db";
+import { handoffsWaiting } from "@/lib/handoff";
 import { CRYSTAL_BY_RARITY } from "@/lib/economy";
 import { defaultUsername } from "@/lib/near";
 import { splitSeriesName } from "@/lib/series-name";
@@ -20,7 +21,9 @@ export const dynamic = "force-dynamic";
 export default async function Collection() {
   const user = await currentUser();
   if (!user) redirect("/login?next=/collection");
-  const [cards, { series }] = await Promise.all([cardsOf(user.accountId), readDb()]);
+  const [cards, db] = await Promise.all([cardsOf(user.accountId), readDb()]);
+  const { series } = db;
+  const waiting = handoffsWaiting(db, user.id);
   const username = user.username ?? defaultUsername(user.accountId);
   // Only a digital card can be dismantled, so only those count as spare copies.
   const copies = new Map<string, number>();
@@ -40,6 +43,18 @@ export default async function Collection() {
         </div>
         <UsernameForm username={username} />
       </div>
+
+      {waiting.length ? (
+        <ul className="mb-4 space-y-2" data-testid="handoffs-waiting">
+          {waiting.map((row) => (
+            <li key={row.id}>
+              <Link href={`/scan/${row.tokenId}`} className="block rounded-2xl border border-[#f7c96b40] bg-[#f7c96b12] px-4 py-3 text-sm font-semibold text-cn-credits hover:underline">
+                Someone is asking for your printed card #{row.tokenId}. Review the request
+              </Link>
+            </li>
+          ))}
+        </ul>
+      ) : null}
 
       <CrystalBalance
         crystal={user.crystal ?? 0}

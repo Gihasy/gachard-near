@@ -13,6 +13,7 @@
 import { mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { MongoClient, type Collection, type Document } from "mongodb";
+import type { HandoffRow } from "./handoff.ts";
 
 export const DATA_DIR = process.env.GACHARD_DATA_DIR ?? join(process.cwd(), ".data");
 const DB_FILE = join(DATA_DIR, "db.json");
@@ -125,6 +126,8 @@ export interface Data {
   txs: Record<string, string[]>;
   /** token id -> the Crystal it gave. Makes crediting a burn safe to repeat. */
   dismantled: Record<string, DismantleRow>;
+  /** Requests to take a printed card from its holder, while they wait. See lib/handoff.ts. */
+  handoffs?: HandoffRow[];
   /** Recent use of each hourly limit, as [unix seconds, amount]. See lib/limits.ts. */
   limits?: Record<string, [number, number][]>;
 }

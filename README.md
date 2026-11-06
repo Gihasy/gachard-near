@@ -75,12 +75,11 @@ Open http://localhost:3000, or the hosted demo, then:
 7. **Scan as someone else.** In a private window, sign in with a new demo account and open
    that address. You see the card and its holder, and nothing to press. Your username is under
    My Cards, and you can change it there.
-8. **Transfer, then return.** Back as the holder, enter that username, then click Continue and Transfer. It
-   stays printed, and its history updates. As the new holder, open the card and click Return to digital, then
+8. **Trade, then return.** In that private window, click Request this card. You see a four-digit code. Back as the holder, the same page shows the request: enter the code and click Approve. The card moves to the new account, stays printed, and its history updates. As the new holder, click Return to digital, then
    Request return. A button stands in for posting the card: click Simulate: card received
    and destroyed. The same token id is digital again. Open the QR's address once more: it
    now reads VOID.
-9. **Dismantle a duplicate.** Open a digital card and click Dismantle, then Destroy. Its record stays and says it was destroyed, and My Cards shows your Crystal. The Crystal Shop, linked from My Cards, trades Crystal for a card you are missing or for a whole pack. On the All cards tab, Dismantle cards selects several at once, and the lock on a card keeps it from being dismantled.
+9. **Dismantle a duplicate.** Open a digital card and click Dismantle, then Destroy. Its record stays and says it was destroyed, and My Cards shows your Crystal. The Crystal Shop, linked from My Cards, trades Crystal for a card you are missing or for a whole pack. On the All cards tab, Dismantle cards selects several at once, and the lock on a card keeps it from being dismantled or transferred.
 10. **Release your own.** Open For Creators and add a series. Add a card for each rarity that
    has a rate: Gachard frames your image in the browser, and the card stays a draft you can edit or remove. Click Publish series: each card is written to the chain and can no longer change, and the series goes live on the home page. You can still edit the series, or delete it. On any of its cards, Released by links to your account on
    NearBlocks. After a sale, the series shows the 90/10 split in simulated Credits.
@@ -91,6 +90,7 @@ Open http://localhost:3000, or the hosted demo, then:
 |---|---|---|
 | Users pay nothing and need no wallet | `e2e.mjs`, below | `paid nothing` for each account, from its exact balance |
 | No method lets the platform move a card | `cargo test platform_cannot_move` | The test passes |
+| A printed card moves only when both people agree | `app-flow.mjs` | `A printed card cannot move by username alone`, `A wrong code does not move the card` and `The right code moves the card` |
 | Having the paper gives no power | `cargo test finder_of_a_printed_card` and `e2e.mjs` | Tests pass. `e2e.mjs` prints `Someone with the paper but not the account cannot move it` and `cannot return it` |
 | The platform cannot return a card nobody asked to return | `cargo test platform_cannot_return` | The test passes |
 | A returned card's old QR reads VOID | `cargo test print_state_follows_the_card` and `app-flow.mjs` | The test passes, and `app-flow.mjs` prints `The old QR reads VOID` |
@@ -151,6 +151,7 @@ cargo near build non-reproducible-wasm --no-abi
 - **A QR does not prove paper is genuine.** A copy of a current print scans the same as the
   original. What it cannot do is move the card: only the holder's account can. Production
   needs platform printing with physical security features. A self-printed PDF cannot have them.
+- **Trading a printed card is agreed in the app, and only the transfer is on chain.** The contract still lets a holder's account transfer alone. The buyer's request and the code are this app's own rule. Payment happens outside Gachard, with no escrow, so a buyer should pay after they show as Holder. A photo of a QR is enough to ask for a card, which is why the holder has to approve with the code.
 - **Usernames are not on chain.** The link from a username to an account is this app's word.
   The Verify page shows both, so they can be compared with the record.
 - **The hosted demo's Mochi Puffs, Aika Nova, Luma Four and Thornmaw Wilds series are invented.**

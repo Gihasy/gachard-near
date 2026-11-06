@@ -135,7 +135,7 @@ async function main() {
 
   const notHolder = await bob.page(`/scan/${token}?print=${serial}`);
   check("Scanning as someone else shows no actions", notHolder.html.includes('data-testid="not-holder"') && !notHolder.html.includes('data-testid="send-to"'));
-  check("Scanning as the holder shows them", (await alice.page(`/scan/${token}?print=${serial}`)).html.includes('data-testid="send-to"'));
+  check("Scanning as the holder shows them", (await alice.page(`/scan/${token}?print=${serial}`)).html.includes('data-testid="handoff-holder"'));
   check("Someone with the QR cannot transfer it", (await bob.post(`/api/cards/${token}/send`, { to: "mochi_puffs_demo" })).status === 400);
   check("Someone with the QR cannot return it", (await bob.post(`/api/cards/${token}/return`)).status === 400);
 
@@ -144,7 +144,23 @@ async function main() {
   check("A collector picks a username", (await bob.post("/api/me/username", { username: bobName })).status === 200);
   check("A username cannot be taken twice", (await alice.post("/api/me/username", { username: bobName })).status === 400);
   check("A transfer to nobody is refused", (await alice.post(`/api/cards/${token}/send`, { to: "no_such_user" })).status === 400);
-  check("The holder transfers the printed card by username", (await alice.post(`/api/cards/${token}/send`, { to: `@${bobName}` })).status === 200);
+  check("A printed card cannot move by username alone", (await alice.post(`/api/cards/${token}/send`, { to: `@${bobName}` })).status === 400);
+  const handoff = `/api/cards/${token}/handoff`;
+  check("A signed-out request is refused", (await anon.post(handoff, { action: "request" })).status === 401);
+  check("The holder cannot request their own card", (await alice.post(handoff, { action: "request" })).status === 400);
+  const asked = await bob.post(handoff, { action: "request" });
+  const { id: handoffId, code: handoffCode } = await asked.json();
+  check("The new owner asks and gets a code", asked.status === 200 && /^\d{4}$/.test(handoffCode));
+  const seen = await (await alice.request(handoff)).json();
+  check("The holder sees the request, not the code", seen.asHolder?.[0]?.username === bobName && !JSON.stringify(seen).includes(handoffCode));
+  check("The asker cannot approve it themselves", (await bob.post(handoff, { action: "approve", id: handoffId, code: handoffCode })).status === 400);
+  const wrong = handoffCode === "1000" ? "1001" : "1000";
+  check("A wrong code does not move the card", (await alice.post(handoff, { action: "approve", id: handoffId, code: wrong })).status === 400);
+  check("It is still the holder's", (await alice.page(`/scan/${token}`)).html.includes("(you)"));
+  check("The holder can decline", (await alice.post(handoff, { action: "decline", id: handoffId })).status === 200 && (await (await bob.request(handoff)).json()).asBuyer === null);
+  const again = await (await bob.post(handoff, { action: "request" })).json();
+  check("The right code moves the card", (await alice.post(handoff, { action: "approve", id: again.id, code: again.code })).status === 200);
+  check("A request cannot be approved twice", (await alice.post(handoff, { action: "approve", id: again.id, code: again.code })).status === 400);
   const moved = await bob.page(`/scan/${token}`);
   check("It is now Bob's, under his username, still printed",
     moved.html.includes(`@${bobName}`) && moved.html.includes("(you)") && moved.html.includes("Printed (hackathon demo PDF)"));
@@ -269,6 +285,7 @@ async function main() {
   const designOf = (await alice.page("/collection")).html.split('data-design="').find((part) => part.includes(`href="/scan/${lockedToken}"`))?.split('"')[0];
   check("A collection shows a lockable card", Boolean(designOf), designOf);
   await alice.post("/api/me/lock", { design: designOf, locked: true });
+  check("A locked card cannot be transferred", (await alice.post(`/api/cards/${lockedToken}/send`, { to: `@${bobName}` })).status === 400);
   const refused = await alice.post(`/api/cards/${lockedToken}/dismantle`);
   check("A locked card cannot be dismantled", refused.status === 400 && (await refused.json()).error.includes("locked"));
   check("Its page says it is locked", (await alice.page(`/scan/${lockedToken}`)).html.includes('data-testid="card-locked"'));
@@ -370,6 +387,8 @@ async function main() {
   check("A deleted series cannot be edited", (await bob.post(`/api/creator/series/${newSeries}`, edit)).status === 400);
   const retired = await anon.page(`/series/${newSeries}`);
   check("Its page says it is retired", retired.status === 200 && retired.html.includes("has been retired"));
+  check("A digital card still moves by username", (await alice.post(`/api/cards/${lastPack.tokenIds[1]}/send`, { to: `@${bobName}` })).status === 200);
+  check("Only a printed card is traded by request", (await bob.post(`/api/cards/${lastPack.tokenIds[0]}/handoff`, { action: "request" })).status === 400);
   const keptCard = await anon.page(`/scan/${lastPack.tokenIds[0]}`);
   check("A collector's card stays valid", keptCard.status === 200 && keptCard.html.includes("Flow"));
   check("A framed card's art still matches the chain", keptCard.html.includes("Matches the public record"));

@@ -56,7 +56,7 @@ export default function CardActions({ tokenId, status, media, cardName, qr, isHo
         <PrintIcon width={17} height={17} className="text-cn-lavender shrink-0" />
         {status === "Digital"
           ? "This digital card can be printed by its holder."
-          : "Only the holder's account can transfer this card or return it to digital. Having the paper does not change that."}
+          : "Having the paper does not make you the holder. Only the holder's approval moves this card."}
       </p>
     );
   }
@@ -141,15 +141,17 @@ export default function CardActions({ tokenId, status, media, cardName, qr, isHo
         </div>
       </section>
 
-      <Panel>
+      {printed ? null : <Panel>
         <h2 className="font-display font-semibold text-base inline-flex items-center gap-2">
           <SendIcon width={18} height={18} className="text-cn-lavender" /> Transfer to a collector
         </h2>
-        {confirming === "transfer" ? (
+        {locked ? (
+          <p className="mt-2 text-sm text-cn-text-2 leading-relaxed" data-testid="transfer-locked">You locked this card, so it cannot be transferred. Unlock it in <a href="/collection" className="font-semibold text-cn-lavender hover:underline">My Cards</a>.</p>
+        ) : confirming === "transfer" ? (
           <div className="mt-3 pop" data-testid="transfer-notice">
             <p className="text-sm text-cn-text-2 leading-relaxed">
               Transfer this card to <strong className="text-cn-text-1">@{to.trim().replace(/^@/, "").toLowerCase()}</strong>?
-              {" "}Only they can transfer it back.{printed ? " Hand them the physical card as well." : ""}
+              {" "}Only they can transfer it back.
             </p>
             <div className="mt-4 flex flex-wrap gap-3">
               <button className={primaryBtn} disabled={busy} onClick={() => run("send", { to })} data-testid="confirm-transfer">{busy ? "Transferring..." : "Transfer"}</button>
@@ -162,7 +164,7 @@ export default function CardActions({ tokenId, status, media, cardName, qr, isHo
             <button className={secondaryBtn} data-testid="send">Continue</button>
           </form>
         )}
-      </Panel>
+      </Panel>}
 
       {printed ? (
         <Panel>
@@ -202,7 +204,7 @@ export default function CardActions({ tokenId, status, media, cardName, qr, isHo
           ) : (
             <>
               {locked ? (
-                <p className="mt-1 text-sm text-cn-text-2 leading-relaxed" data-testid="card-locked">You locked this card, so it cannot be dismantled. Unlock it in <a href="/collection" className="font-semibold text-cn-lavender hover:underline">My Cards</a>.</p>
+                <p className="mt-1 text-sm text-cn-text-2 leading-relaxed" data-testid="card-locked">You locked this card, so it cannot be dismantled or transferred. Unlock it in <a href="/collection" className="font-semibold text-cn-lavender hover:underline">My Cards</a>.</p>
               ) : (
                 <p className="mt-1 text-sm text-cn-text-2 leading-relaxed">Got a duplicate? Turn it into {crystalYield} Crystal, and trade that for a card you are missing.</p>
               )}
