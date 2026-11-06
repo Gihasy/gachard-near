@@ -1,6 +1,7 @@
 import Link from "next/link";
 import AddCardForm from "@/components/AddCardForm";
 import CreateSeriesForm from "@/components/CreateSeriesForm";
+import CreatorGuide from "@/components/CreatorGuide";
 import { ArrowIcon, CheckIcon, PrintIcon, ScanIcon, SeriesIcon } from "@/components/icons";
 import { CardImage, Eyebrow, Page, Panel, Rarity, primaryBtn } from "@/components/ui";
 import { missingRarities, RARITIES } from "@/lib/catalog";
@@ -49,7 +50,8 @@ export default async function Creator() {
     return (
       <Page>
         <Pitch />
-        <Link className={primaryBtn} href="/login?next=/creator">Sign in to release a series <ArrowIcon width={16} height={16} /></Link>
+        <Link className={`${primaryBtn} mb-8`} href="/login?next=/creator">Sign in to release a series <ArrowIcon width={16} height={16} /></Link>
+        <CreatorGuide open />
       </Page>
     );
   }
@@ -58,6 +60,7 @@ export default async function Creator() {
   return (
     <Page>
       <Pitch />
+      <CreatorGuide open={mine.length === 0} />
       <p className="mb-6 rounded-2xl border border-cn-line bg-white/[.03] px-4 py-3 text-xs text-cn-text-3 leading-relaxed">
         Demo: anyone can upload here and nothing is reviewed. A card&apos;s record shows which account
         released it, not that the account owns the rights to the art.
