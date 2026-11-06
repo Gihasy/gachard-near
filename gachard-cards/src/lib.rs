@@ -659,6 +659,34 @@ impl Contract {
     }
 
     /// Templates cannot be changed once added, so an art change cannot be silent.
+    /// Changes a series' name, rates and prices. Only its creator may, and each change
+    /// leaves an event, so the record shows what the odds were and when. Its cards are
+    /// not touched: a template cannot be changed once added.
+    pub fn update_series(&mut self, series_id: u32, name: String, rates_bps: [u16; 4], prices: [u32; 4]) {
+        let creator = env::predecessor_account_id();
+        let mut series = self
+            .series
+            .get(&series_id)
+            .cloned()
+            .unwrap_or_else(|| env::panic_str("Series not found"));
+        require!(series.creator == creator, "Only the series' creator can change it");
+        require!(
+            !name.is_empty() && name.len() <= MAX_NAME,
+            "Series name must be 1-64 bytes"
+        );
+        let total: u32 = rates_bps.iter().map(|r| *r as u32).sum();
+        require!(total == RATE_TOTAL_BPS, "Rates must add up to 100%");
+        require!(prices.iter().all(|p| *p > 0), "Prices must be above zero");
+        series.name = name.clone();
+        series.rates_bps = rates_bps;
+        series.prices = prices;
+        self.series.insert(series_id, series);
+        emit_gachard(
+            "series_updated",
+            json!({"series_id": series_id, "creator": creator, "name": name, "rates_bps": rates_bps, "prices": prices}),
+        );
+    }
+
     pub fn add_template(
         &mut self,
         series_id: u32,
@@ -1165,6 +1193,55 @@ mod tests {
     }
 
     // ---- Who may do what ----
+
+    #[test]
+    fn a_creator_can_change_their_series_and_its_cards_stay() {
+        let mut c = setup();
+        let token = mint_one(&mut c, "alice");
+        let before = c.get_card(token.clone()).unwrap();
+        as_caller("creator", 0);
+        c.update_series(1, "Dragons II".into(), [5000, 3000, 1500, 500], [50, 150, 450, 1500]);
+        let series = c.series.get(&1).unwrap();
+        assert_eq!(series.name, "Dragons II");
+        assert_eq!(series.rates_bps, [5000, 3000, 1500, 500]);
+        assert_eq!(series.prices, [50, 150, 450, 1500]);
+        assert_eq!(series.template_count, 2);
+        let after = c.get_card(token).unwrap();
+        assert_eq!(before.template_id, after.template_id);
+        assert_eq!(before.owner_id, after.owner_id);
+    }
+
+    #[test]
+    #[should_panic(expected = "Only the series' creator")]
+    fn stranger_cannot_change_a_series() {
+        let mut c = setup();
+        as_caller("mallory", 0);
+        c.update_series(1, "Mine".into(), [10000, 0, 0, 0], [1, 1, 1, 1]);
+    }
+
+    #[test]
+    #[should_panic(expected = "Only the series' creator")]
+    fn the_platform_cannot_change_a_series() {
+        let mut c = setup();
+        as_caller("platform", 0);
+        c.update_series(1, "Mine".into(), [10000, 0, 0, 0], [1, 1, 1, 1]);
+    }
+
+    #[test]
+    #[should_panic(expected = "Rates must add up to 100%")]
+    fn a_change_still_needs_rates_of_100_percent() {
+        let mut c = setup();
+        as_caller("creator", 0);
+        c.update_series(1, "Dragons".into(), [5000, 0, 0, 0], [1, 1, 1, 1]);
+    }
+
+    #[test]
+    #[should_panic(expected = "Series not found")]
+    fn a_missing_series_cannot_be_changed() {
+        let mut c = setup();
+        as_caller("creator", 0);
+        c.update_series(99, "Dragons".into(), [10000, 0, 0, 0], [1, 1, 1, 1]);
+    }
 
     #[test]
     #[should_panic(expected = "Only the platform can approve")]

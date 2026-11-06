@@ -30,7 +30,7 @@ const RECIPE = [
 
 const RULES = [
   { title: "Only art you have the rights to", text: "Your own work, or work you have permission to use. A card's record shows who released it, not who owns the rights." },
-  { title: "Names and art are permanent", text: "They go on a public blockchain and cannot be edited. Check spelling and art before you publish." },
+  { title: "A card is permanent", text: "A card's name, art and rarity go on a public blockchain and cannot be edited. You can still change the series around it." },
   { title: "Leave these to Gachard", text: "Do not draw a price, a QR code, a serial number or the Gachard logo on a card." },
 ];
 

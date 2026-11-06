@@ -11,6 +11,7 @@ Who can do what:
 |---|---|---|
 | Move a card, print it, ask to return it, burn it | The holder only | The platform has no method that moves or burns a card. Only a digital card can burn |
 | Create a series, add a card | An approved creator's own account | Templates cannot be changed once added |
+| Change a series' name, rates or prices | That series' creator | Each change emits `series_updated`. Cards are not touched |
 | Mint | The minter (the platform) | Can mint any amount from any template |
 | Answer a return | The minter (the platform), only after the holder asked | The holder does not change |
 

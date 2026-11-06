@@ -26,7 +26,7 @@ takes the physical card, so one that is lost or stolen stays lost.
 | What | How | Where |
 |---|---|---|
 | Cards | NEP-245 multi tokens, one token id per card, supply 1 | [`gachard-cards/src/lib.rs`](gachard-cards/src/lib.rs) |
-| Who released a card | The creator's own account signs `create_series` and `add_template` | same |
+| Who released a card | The creator's own account signs `create_series`, `update_series` and `add_template` | same |
 | No gas for users | NEP-366 meta transactions: the user signs, the platform pays gas and the 1 yocto deposit | [`frontend/lib/near.ts`](frontend/lib/near.ts) |
 | No wallet | A named sub-account per user, created at sign-in | same |
 | No method lets the platform move a card | Only the holder's own call moves one. See the limit on the contract's key [below](#what-is-simulated-and-what-is-not-claimed) | contract tests |

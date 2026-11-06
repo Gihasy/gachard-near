@@ -107,7 +107,7 @@ export default function AddCardForm({ seriesId, rates, suggested }: { seriesId: 
           </select>
           <button className={secondaryBtn} disabled={busy} data-testid="add-card">{busy ? "Adding..." : "Add card"}</button>
         </div>
-        <p className="mt-2 text-xs text-cn-text-3 leading-relaxed">A card cannot be changed once added. See the art guide above.</p>
+        <p className="mt-2 text-xs text-cn-text-3 leading-relaxed">Once added, a card cannot be changed or removed. The series around it can. See the art guide above.</p>
         <ErrorLine>{error}</ErrorLine>
       </div>
     </form>

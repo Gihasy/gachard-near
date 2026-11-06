@@ -55,6 +55,8 @@ export interface SeriesRow {
   logo?: string;
   /** Off chain. A sentence or two about the series. */
   description?: string;
+  /** When the creator last changed the odds, so a page can say so. */
+  oddsChangedAt?: string;
   /** Off chain. Off the listing and sells no new packs. Its cards stay valid. */
   hidden?: boolean;
   ratesBps: number[];

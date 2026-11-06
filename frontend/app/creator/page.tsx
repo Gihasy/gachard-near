@@ -2,6 +2,7 @@ import Link from "next/link";
 import AddCardForm from "@/components/AddCardForm";
 import AddSeries from "@/components/AddSeries";
 import CreatorGuide from "@/components/CreatorGuide";
+import EditSeries from "@/components/EditSeries";
 import { ArrowIcon, CheckIcon } from "@/components/icons";
 import { CardImage, Eyebrow, Page, Panel, Rarity, SeriesName, primaryBtn } from "@/components/ui";
 import { missingRarities, RARITIES } from "@/lib/catalog";
@@ -88,6 +89,7 @@ export default async function Creator() {
                   </Link>
                 )}
               </div>
+              <EditSeries series={{ id: s.id, name: s.name, description: s.description, category: s.category, logo: s.logo, ratesBps: s.ratesBps, prices: s.prices }} />
               {missing.length ? null : (
                 <dl className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-3" data-testid="series-revenue" data-creator={revenue.creator} data-gachard={revenue.gachard}>
                   {[

@@ -177,6 +177,12 @@ async function main() {
   logoForm.set("logo", new File([Buffer.from("not an image")], "logo.png", { type: "image/png" }));
   check("A logo that is not an image is refused", (await bob.request(`/api/creator/series/${newSeries}/logo`, { method: "POST", body: logoForm })).status === 400);
   check("Someone else cannot set the logo", (await alice.request(`/api/creator/series/${newSeries}/logo`, { method: "POST", body: logoForm })).status === 403);
+  const editedName = `Flow ${Date.now()}`;
+  const edit = { name: editedName, description: "Changed after release.", category: "Athletes", ratesPct: [100, 0, 0, 0], prices: [10, 20, 30, 40] };
+  check("Someone else cannot edit a series", (await alice.post(`/api/creator/series/${newSeries}`, edit)).status === 400);
+  check("A signed-out edit is refused", (await anon.post(`/api/creator/series/${newSeries}`, edit)).status === 401);
+  const edited = await bob.post(`/api/creator/series/${newSeries}`, edit);
+  check("The creator edits their series", edited.status === 200);
   const upload = (bytes, name) => {
     const form = new FormData();
     form.set("name", name);
@@ -189,6 +195,7 @@ async function main() {
   const card = await upload(cardBytes, "Flow Card");
   check("A card is uploaded", card.status === 200);
   const live = await anon.page(`/series/${newSeries}`);
+  check("The edit shows on the series page", live.html.includes(editedName) && live.html.includes("Changed after release."));
   check("The new series is live", live.status === 200 && live.html.includes("Sign in to buy a pack"));
   const testLink = `href="/series/${newSeries}"`;
   check("A test series stays off the public lists", !(await anon.page("/")).html.includes(testLink) && !(await anon.page("/series")).html.includes(testLink));

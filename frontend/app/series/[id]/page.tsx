@@ -73,7 +73,10 @@ export default async function SeriesPage({ params }: { params: Promise<{ id: str
         <section aria-labelledby="odds" className="panel p-5 sm:p-6">
           <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
             <h2 id="odds" className="font-display font-semibold text-base">The odds</h2>
-            <p className="text-xs text-cn-text-3">Set by the creator, for each of a pack&apos;s {CARDS_PER_PACK} cards.</p>
+            <p className="text-xs text-cn-text-3">
+              Set by the creator, for each of a pack&apos;s {CARDS_PER_PACK} cards.
+              {series.oddsChangedAt ? ` Last changed ${new Date(series.oddsChangedAt).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" })}.` : ""}
+            </p>
           </div>
           <div className="mt-3 flex h-2.5 gap-0.5 rounded-full overflow-hidden" aria-hidden="true">
             {RARITIES.map((r, i) => (

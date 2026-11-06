@@ -32,15 +32,26 @@ async function toLogoPng(file: File): Promise<Blob> {
   return blob;
 }
 
-export default function CreateSeriesForm({ onCancel }: { onCancel: () => void }) {
+export interface EditableSeries {
+  id: number;
+  name: string;
+  description?: string;
+  category?: string;
+  logo?: string;
+  ratesBps: number[];
+  prices: number[];
+}
+
+/** Creates a series, or changes one when it is given `series`. */
+export default function CreateSeriesForm({ onCancel, series }: { onCancel: () => void; series?: EditableSeries }) {
   const router = useRouter();
-  const [name, setName] = useState("");
-  const [description, setDescription] = useState("");
-  const [category, setCategory] = useState(DEFAULT_CATEGORY);
+  const [name, setName] = useState(series?.name ?? "");
+  const [description, setDescription] = useState(series?.description ?? "");
+  const [category, setCategory] = useState(series?.category ?? DEFAULT_CATEGORY);
   const [logo, setLogo] = useState<File | null>(null);
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
-  const [rates, setRates] = useState([70, 20, 8, 2]);
-  const [prices, setPrices] = useState([40, 120, 360, 1200]);
+  const [rates, setRates] = useState(series ? series.ratesBps.map((r) => r / 100) : [70, 20, 8, 2]);
+  const [prices, setPrices] = useState(series?.prices ?? [40, 120, 360, 1200]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const total = rates.reduce((a, b) => a + b, 0);
@@ -61,7 +72,10 @@ export default function CreateSeriesForm({ onCancel }: { onCancel: () => void })
         try {
           // Prepared first, so a bad logo stops here and not after the series is on chain.
           const logoPng = logo ? await toLogoPng(logo) : null;
-          const { id } = await post<{ id: number }>("/api/creator/series", { name, description, category, ratesPct: rates, prices });
+          const fields = { name, description, category, ratesPct: rates, prices };
+          const id = series
+            ? (await post(`/api/creator/series/${series.id}`, fields), series.id)
+            : (await post<{ id: number }>("/api/creator/series", fields)).id;
           if (logoPng) {
             const body = new FormData();
             body.set("logo", logoPng, "logo.png");
@@ -69,7 +83,7 @@ export default function CreateSeriesForm({ onCancel }: { onCancel: () => void })
             // The series exists by now, so say so instead of offering to create it again.
             if (!saved.ok) {
               router.refresh();
-              throw new Error("Your series was created, but its logo could not be saved.");
+              throw new Error("Your series was saved, but its logo could not be.");
             }
           }
           onCancel();
@@ -82,9 +96,9 @@ export default function CreateSeriesForm({ onCancel }: { onCancel: () => void })
     >
       <div className="grid sm:grid-cols-[112px_1fr] gap-4">
         <label className="relative grid place-items-center w-28 h-28 rounded-2xl border border-dashed border-cn-line-strong hover:border-cn-lavender bg-white/[.03] cursor-pointer overflow-hidden transition">
-          {logoUrl ? (
+          {logoUrl || series?.logo ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={logoUrl} alt="Chosen logo" className="max-w-full max-h-full object-contain p-2" />
+            <img src={logoUrl ?? series?.logo} alt="Chosen logo" className="max-w-full max-h-full object-contain p-2" />
           ) : (
             <span className="flex flex-col items-center gap-1.5 text-cn-text-3 text-xs text-center px-2">
               <UploadIcon />
@@ -180,10 +194,10 @@ export default function CreateSeriesForm({ onCancel }: { onCancel: () => void })
       </fieldset>
 
       <div className="flex flex-wrap gap-3">
-        <button className={primaryBtn} disabled={busy || total !== 100} data-testid="create-series">{busy ? "Creating..." : "Create series"}</button>
+        <button className={primaryBtn} disabled={busy || total !== 100} data-testid="create-series">{busy ? "Saving..." : series ? "Save changes" : "Create series"}</button>
         <button type="button" className={secondaryBtn} disabled={busy} onClick={onCancel}>Cancel</button>
       </div>
-      <p className="text-xs text-cn-text-3 leading-relaxed">The title, odds and card values go on a public record and cannot be changed later.</p>
+      <p className="text-xs text-cn-text-3 leading-relaxed">You can change all of this later. New odds apply to packs bought after that, and each change stays on the public record.</p>
       <ErrorLine>{error}</ErrorLine>
     </form>
   );

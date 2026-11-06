@@ -58,6 +58,35 @@ export async function createSeries(
   return series;
 }
 
+/**
+ * Changes a series. Its name, rates and prices are on chain, so the creator's account
+ * signs them. Its logo, description and category are the app's own. Cards never change.
+ */
+export async function updateSeries(
+  user: User,
+  seriesId: number,
+  changes: { name: string; ratesBps: number[]; prices: number[]; category: string; description: string },
+): Promise<void> {
+  const series = (await readDb()).series.find((s) => s.id === seriesId);
+  if (!series) throw new ContractRefused("Series not found.");
+  if (series.ownerUserId !== user.id) throw new ContractRefused("This is not your series.");
+  const oddsChanged = changes.ratesBps.some((rate, i) => rate !== series.ratesBps[i]);
+  const onChainChanged = oddsChanged || changes.name !== series.name || changes.prices.some((price, i) => price !== series.prices[i]);
+  if (onChainChanged) {
+    await userCall(user, "update_series", { series_id: seriesId, name: changes.name, rates_bps: changes.ratesBps, prices: changes.prices });
+  }
+  await withDb((d) => {
+    const row = d.series.find((s) => s.id === seriesId);
+    if (!row) return;
+    row.name = changes.name;
+    row.ratesBps = changes.ratesBps;
+    row.prices = changes.prices;
+    row.category = changes.category;
+    row.description = changes.description;
+    if (oddsChanged) row.oddsChangedAt = new Date().toISOString();
+  });
+}
+
 export async function addCard(
   user: User,
   seriesId: number,
