@@ -30,7 +30,7 @@ const RAIL = [
   "series/luma-rare.jpg", "series/aika-rare-2.jpg", "series/thornmaw-common-2.jpg", "series/mochi-rare-2.jpg", "series/luma-epic.jpg", "series/aika-legendary.jpg",
 ];
 
-const PROMISES = ["No wallet to set up", "No network fees", "Odds on every pack"];
+const PROMISES = ["Sign in with Google", "Odds on every pack"];
 
 const PRINT_STEPS = [
   { title: "Own the digital card", text: "It lives in your collection, with its own public record." },
@@ -74,7 +74,7 @@ export default async function Home({ searchParams }: {
             <span className="crystal-text whitespace-nowrap">Collect them!</span>
           </h1>
           <p className="mt-5 max-w-xl text-cn-text-2 text-base sm:text-lg leading-relaxed">
-            Anyone with fans can release trading cards here: characters, VTubers, entertainers, athletes and more.
+            Characters, VTubers, entertainers, athletes and more, all in one place.
             Open a pack, keep what you love, and print any card you own.
           </p>
           <form action="/#series" method="get" className="mt-7 flex gap-2 max-w-xl">
