@@ -7,6 +7,7 @@
 // print PDF puts its QR at x 591-730, y 906-1048. So the border sits inside the trim
 // and nothing but a faint star is in the QR zone. See lib/pdf.ts.
 import { mkdirSync, writeFileSync } from "node:fs";
+import QRCode from "qrcode";
 import sharp from "sharp";
 import { FILES, SERIES } from "./series-data.mjs";
 
@@ -187,7 +188,10 @@ for (const series of SERIES) {
 const showcase = made.get("thornmaw-legendary.jpg");
 // The phone is made by make-phone-mockup.mjs, from a capture of the app's own screen.
 // The card in the hand runs to its border, with no dark margin around it.
-const toBorder = await sharp(showcase).extract({ left: 50, top: 52, width: 700, height: 1016 }).toBuffer();
+// Its QR sits where the print PDF puts one, and opens the live Verify page.
+const qr = await QRCode.toBuffer("https://gachard-near.vercel.app/scan", { margin: 1, width: 139, errorCorrectionLevel: "M" });
+const printed = await sharp(showcase).composite([{ input: qr, left: 591, top: 908 }]).toBuffer();
+const toBorder = await sharp(printed).extract({ left: 50, top: 52, width: 700, height: 1016 }).toBuffer();
 const webp = await composite("mockup-hand.png", toBorder);
 writeFileSync(new URL("real-card.webp", out), webp);
 console.log(`real-card.webp  ${(webp.length / 1024).toFixed(0)} KB`);
