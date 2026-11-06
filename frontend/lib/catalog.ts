@@ -4,8 +4,9 @@
  */
 import { DEFAULT_CATEGORY } from "./categories.ts";
 import { storeArt } from "./art.ts";
-import { readDb, withDb, type SeriesRow, type TemplateRow, type User } from "./db.ts";
-import { ContractRefused, platformCall, userCall } from "./near.ts";
+import { randomUUID } from "node:crypto";
+import { readDb, withDb, type DraftCard, type SeriesRow, type TemplateRow, type User } from "./db.ts";
+import { ContractRefused, platformCall, userCall, view } from "./near.ts";
 
 export const RARITIES = ["Common", "Rare", "Epic", "Legendary"];
 
@@ -15,6 +16,11 @@ const MAX_SERIES_PER_USER = 3;
 const MAX_SERIES_PER_HOUR = 10;
 const MAX_CARDS_PER_SERIES = 20;
 const MAX_CARDS_PER_HOUR = 60;
+const MAX_UPLOADS_PER_HOUR = 120;
+// A request stops starting new cards after this, and the browser sends the next one (Vercel limits a function to 30 s).
+const PUBLISH_BUDGET_MS = 18_000;
+// Longer than a function can live, so an older claim means the publish that made it has ended.
+const CLAIM_MS = 60_000;
 const HOUR = 3_600_000;
 
 const withinHour = (iso: string) => Date.now() - Date.parse(iso) < HOUR;
@@ -87,6 +93,172 @@ export async function updateSeries(
   });
 }
 
+async function ownSeries(user: User, seriesId: number): Promise<SeriesRow> {
+  const series = (await readDb()).series.find((s) => s.id === seriesId);
+  if (!series) throw new ContractRefused("Series not found.");
+  if (series.ownerUserId !== user.id) throw new ContractRefused("This is not your series.");
+  return series;
+}
+
+/** The same rules the contract applies, so a draft cannot fail later at publish. */
+function checkCard(name: string, rarity: number) {
+  const bytes = Buffer.byteLength(name);
+  if (bytes < 1 || bytes > 64) throw new ContractRefused("A card's name must be 1 to 64 characters.");
+  if (!Number.isInteger(rarity) || rarity < 0 || rarity >= RARITIES.length) throw new ContractRefused("Choose a rarity.");
+}
+
+async function storeUpload(art: Buffer) {
+  const allowed = await withDb((d) => {
+    const recent = (d.artUploads ?? []).filter(withinHour);
+    if (recent.length >= MAX_UPLOADS_PER_HOUR) {
+      d.artUploads = recent;
+      return false;
+    }
+    d.artUploads = [...recent, new Date().toISOString()];
+    return true;
+  });
+  if (!allowed) throw new ContractRefused("Too many uploads this hour. Please try again later.");
+  return storeArt(art);
+}
+
+/** Adds a card to a series as a draft. Nothing reaches the chain until the series is published. */
+export async function addDraft(user: User, seriesId: number, name: string, rarity: number, art: Buffer): Promise<DraftCard> {
+  const series = await ownSeries(user, seriesId);
+  checkCard(name, rarity);
+  if (series.templates.length + (series.drafts?.length ?? 0) >= MAX_CARDS_PER_SERIES) {
+    throw new ContractRefused(`A series can hold ${MAX_CARDS_PER_SERIES} cards in this demo.`);
+  }
+  const draft: DraftCard = { id: randomUUID(), name, rarity, ...(await storeUpload(art)), createdAt: new Date().toISOString() };
+  await withDb((d) => {
+    const row = d.series.find((s) => s.id === seriesId);
+    if (row) row.drafts = [...(row.drafts ?? []), draft];
+  });
+  return draft;
+}
+
+const isClaimed = (draft: DraftCard) => Boolean(draft.claimedAt) && Date.now() - Date.parse(draft.claimedAt!) < CLAIM_MS;
+
+function changeableDraft(series: SeriesRow, draftId: string): DraftCard {
+  const draft = series.drafts?.find((c) => c.id === draftId);
+  if (!draft || draft.claimedAt) throw new ContractRefused("That card has been published or is being published.");
+  return draft;
+}
+
+export async function updateDraft(
+  user: User,
+  seriesId: number,
+  draftId: string,
+  changes: { name: string; rarity: number; art?: Buffer },
+): Promise<void> {
+  changeableDraft(await ownSeries(user, seriesId), draftId);
+  checkCard(changes.name, changes.rarity);
+  const stored = changes.art ? await storeUpload(changes.art) : null;
+  const changed = await withDb((d) => {
+    const draft = d.series.find((s) => s.id === seriesId)?.drafts?.find((c) => c.id === draftId);
+    if (!draft || draft.claimedAt) return false;
+    draft.name = changes.name;
+    draft.rarity = changes.rarity;
+    if (stored) Object.assign(draft, stored);
+    return true;
+  });
+  if (!changed) throw new ContractRefused("That card has been published or is being published.");
+}
+
+export async function removeDraft(user: User, seriesId: number, draftId: string): Promise<void> {
+  changeableDraft(await ownSeries(user, seriesId), draftId);
+  const removed = await withDb((d) => {
+    const row = d.series.find((s) => s.id === seriesId);
+    const draft = row?.drafts?.find((c) => c.id === draftId);
+    if (!row || !draft || draft.claimedAt) return false;
+    row.drafts = row.drafts!.filter((c) => c.id !== draftId);
+    return true;
+  });
+  if (!removed) throw new ContractRefused("That card has been published or is being published.");
+}
+
+/** Whether an earlier publish did write this draft before it ended, so it is not written twice. */
+async function alreadyOnChain(series: SeriesRow, draft: DraftCard): Promise<number | null> {
+  const onChain = await view<{ template_count: number } | null>("get_series", { series_id: series.id });
+  for (let id = 1; id <= (onChain?.template_count ?? 0); id += 1) {
+    if (series.templates.some((t) => t.id === id)) continue;
+    const template = await view<{ name: string; rarity: number; media_hash: string } | null>("get_template", { series_id: series.id, template_id: id });
+    if (template?.media_hash === draft.mediaHash && template.name === draft.name && template.rarity === draft.rarity) return id;
+  }
+  return null;
+}
+
+/**
+ * Writes a series' drafts to the chain, where they can no longer change. Each card lands
+ * on its own, so a publish that stops part way can simply be repeated. It does as many as
+ * fit in one request, and `remaining` tells the browser to send another.
+ */
+export async function publishSeries(user: User, seriesId: number): Promise<{ published: number; remaining: number }> {
+  const started = Date.now();
+  const { series: all } = await readDb();
+  const series = all.find((s) => s.id === seriesId);
+  if (!series) throw new ContractRefused("Series not found.");
+  if (series.ownerUserId !== user.id) throw new ContractRefused("This is not your series.");
+  const drafts = series.drafts ?? [];
+  if (!drafts.length) throw new ContractRefused("There are no new cards to publish.");
+  const missing = missingToPublish(series);
+  if (missing.length) throw new ContractRefused(`Add a card for: ${missing.join(", ")}.`);
+  const recent = all.flatMap((s) => s.templates).filter((t) => withinHour(t.createdAt)).length;
+  if (recent + drafts.length > MAX_CARDS_PER_HOUR) {
+    throw new ContractRefused("Too many new cards this hour. Please try again later.");
+  }
+
+  let published = 0;
+  for (const draft of drafts) {
+    if (Date.now() - started > PUBLISH_BUDGET_MS) break;
+    const claim = await withDb((d) => {
+      const row = d.series.find((s) => s.id === seriesId)?.drafts?.find((c) => c.id === draft.id);
+      if (!row || isClaimed(row)) return null;
+      const resumed = Boolean(row.claimedAt);
+      row.claimedAt = new Date().toISOString();
+      return { resumed };
+    });
+    if (!claim) continue;
+    let templateId: number | null;
+    try {
+      templateId = claim.resumed ? await alreadyOnChain(series, draft) : null;
+      templateId ??= (await userCall(user, "add_template", {
+        series_id: seriesId,
+        name: draft.name,
+        rarity: draft.rarity,
+        media: draft.media,
+        media_hash: draft.mediaHash,
+      })).value as number;
+    } catch (error) {
+      // Refused means it was not written. Any other failure leaves the claim, because it may have been.
+      if (error instanceof ContractRefused) {
+        await withDb((d) => {
+          const row = d.series.find((s) => s.id === seriesId)?.drafts?.find((c) => c.id === draft.id);
+          if (row) delete row.claimedAt;
+        });
+      }
+      throw error;
+    }
+    const template: TemplateRow = {
+      id: templateId,
+      name: draft.name,
+      rarity: draft.rarity,
+      media: draft.media,
+      mediaHash: draft.mediaHash,
+      createdAt: new Date().toISOString(),
+    };
+    await withDb((d) => {
+      const row = d.series.find((s) => s.id === seriesId);
+      if (!row) return;
+      row.drafts = row.drafts?.filter((c) => c.id !== draft.id);
+      if (!row.templates.some((t) => t.id === template.id)) row.templates.push(template);
+    });
+    published += 1;
+  }
+  const remaining = (await readDb()).series.find((s) => s.id === seriesId)?.drafts?.length ?? 0;
+  return { published, remaining };
+}
+
+/** Writes a card straight to the chain. Only the seed script does this: it has no drafts to review. */
 export async function addCard(
   user: User,
   seriesId: number,
@@ -129,6 +301,15 @@ export async function addCard(
  */
 export const isListed = (series: SeriesRow) =>
   !series.hidden && missingRarities(series).length === 0 && !/^Flow \d+$/.test(series.name);
+
+/** The rarities with a rate that have no card yet, counting drafts. Publishing needs this empty. */
+export function missingToPublish(series: SeriesRow): string[] {
+  return RARITIES.filter(
+    (_, rarity) => series.ratesBps[rarity] > 0
+      && !series.templates.some((t) => t.rarity === rarity)
+      && !series.drafts?.some((c) => c.rarity === rarity),
+  );
+}
 
 /** A pack can only honour the published rates if every rarity with a rate has a card. */
 export function missingRarities(series: SeriesRow): string[] {

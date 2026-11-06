@@ -1,4 +1,4 @@
-import { addCard } from "@/lib/catalog";
+import { addDraft } from "@/lib/catalog";
 import { readDb } from "@/lib/db";
 import { currentUser, failure } from "@/lib/users";
 
@@ -13,18 +13,15 @@ export async function POST(request: Request, ctx: { params: Promise<{ id: string
     const form = await request.formData();
     const file = form.get("art");
     if (!(file instanceof File)) return Response.json({ error: "Choose an image." }, { status: 400 });
-    const template = await addCard(
+    const draft = await addDraft(
       user,
       seriesId,
       String(form.get("name") ?? "").trim(),
       Number(form.get("rarity")),
       Buffer.from(await file.arrayBuffer()),
     );
-    return Response.json(template);
+    return Response.json(draft);
   } catch (error) {
     return failure(error);
   }
 }
-
-// Waits for a transaction to land.
-export const maxDuration = 30;

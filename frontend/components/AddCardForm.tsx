@@ -38,12 +38,22 @@ const nameFrom = (file: string) => file.replace(/\.[^.]+$/, "").replace(/[-_]+/g
 
 const RARITIES = ["Common", "Rare", "Epic", "Legendary"];
 
-export default function AddCardForm({ seriesId, rates, suggested }: { seriesId: number; rates: number[]; suggested: number }) {
+export type EditableDraft = { id: string; name: string; rarity: number; media: string };
+
+/** Adds a draft card, or changes one when given `draft`. */
+export default function AddCardForm({ seriesId, rates, suggested, draft, onDone }: {
+  seriesId: number;
+  rates: number[];
+  suggested: number;
+  draft?: EditableDraft;
+  onDone?: () => void;
+}) {
   const router = useRouter();
   const form = useRef<HTMLFormElement>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [preview, setPreview] = useState<string | null>(null);
+  const shown = preview ?? draft?.media ?? null;
 
   useEffect(() => () => {
     if (preview) URL.revokeObjectURL(preview);
@@ -59,12 +69,16 @@ export default function AddCardForm({ seriesId, rates, suggested }: { seriesId: 
         setError("");
         try {
           const body = new FormData(e.currentTarget);
-          body.set("art", await toJpeg(body.get("art") as File), "art.jpg");
-          const response = await fetch(`/api/creator/series/${seriesId}/cards`, { method: "POST", body });
+          const file = body.get("art") as File;
+          if (file.size) body.set("art", await toJpeg(file), "art.jpg");
+          else body.delete("art");
+          const address = `/api/creator/series/${seriesId}/cards${draft ? `/${draft.id}` : ""}`;
+          const response = await fetch(address, { method: "POST", body });
           const data = await response.json();
           if (!response.ok) throw new Error(data.error);
           form.current?.reset();
           setPreview(null);
+          onDone?.();
           router.refresh();
         } catch (err) {
           setError((err as Error).message);
@@ -73,9 +87,9 @@ export default function AddCardForm({ seriesId, rates, suggested }: { seriesId: 
       }}
     >
       <label className="relative block w-28 aspect-[63/88] rounded-xl border border-dashed border-cn-line-strong hover:border-cn-lavender bg-white/[.03] cursor-pointer overflow-hidden transition focus-within:ring-4 focus-within:ring-[#c9b3fb26]">
-        {preview ? (
+        {shown ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={preview} alt="Chosen artwork" className="absolute inset-0 size-full object-cover" />
+          <img src={shown} alt="Chosen artwork" className="absolute inset-0 size-full object-cover" />
         ) : (
           <span className="absolute inset-0 flex flex-col items-center justify-center gap-1.5 text-cn-text-3 text-xs text-center px-2">
             <UploadIcon />
@@ -88,7 +102,7 @@ export default function AddCardForm({ seriesId, rates, suggested }: { seriesId: 
           type="file"
           accept="image/png,image/jpeg,image/webp"
           aria-label="Artwork"
-          required
+          required={!draft}
           data-testid="card-art"
           onChange={(e) => {
             const file = e.target.files?.[0];
@@ -99,15 +113,20 @@ export default function AddCardForm({ seriesId, rates, suggested }: { seriesId: 
         />
       </label>
       <div className="min-w-0">
-        <h3 className="text-sm font-semibold">Add a card</h3>
+        <h3 className="text-sm font-semibold">{draft ? "Change this draft" : "Add a card"}</h3>
         <div className="mt-2 grid sm:grid-cols-[1fr_auto_auto] gap-3">
-          <input className={inputClass} name="name" placeholder="Card name" aria-label="Card name" maxLength={64} required data-testid="card-name" />
-          <select className={`${inputClass} [&>option]:bg-cn-surface-1`} name="rarity" aria-label="Rarity" defaultValue={suggested} data-testid="card-rarity">
+          <input className={inputClass} name="name" placeholder="Card name" aria-label="Card name" maxLength={64} required defaultValue={draft?.name} data-testid="card-name" />
+          <select className={`${inputClass} [&>option]:bg-cn-surface-1`} name="rarity" aria-label="Rarity" defaultValue={draft?.rarity ?? suggested} data-testid="card-rarity">
             {RARITIES.map((r, i) => (rates[i] > 0 ? <option key={r} value={i}>{r}</option> : null))}
           </select>
-          <button className={secondaryBtn} disabled={busy} data-testid="add-card">{busy ? "Adding..." : "Add card"}</button>
+          <button className={secondaryBtn} disabled={busy} data-testid="add-card">
+            {draft ? (busy ? "Saving..." : "Save") : (busy ? "Adding..." : "Add card")}
+          </button>
+          {draft ? <button type="button" className={secondaryBtn} disabled={busy} onClick={onDone}>Cancel</button> : null}
         </div>
-        <p className="mt-2 text-xs text-cn-text-3 leading-relaxed">Once added, a card cannot be changed or removed. The series around it can. See the art guide above.</p>
+        <p className="mt-2 text-xs text-cn-text-3 leading-relaxed">
+          {draft ? "Choose a new image only if you want to replace this one." : "Cards stay drafts you can change or remove until you publish them. See the art guide above."}
+        </p>
         <ErrorLine>{error}</ErrorLine>
       </div>
     </form>

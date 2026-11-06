@@ -4,8 +4,8 @@
  */
 const STEPS = [
   { title: "Add a series", text: "Upload a logo, write a title and a description, and set the odds for each rarity. The odds set the price of a pack." },
-  { title: "Add your cards", text: "For each card, upload an image, name it and choose its rarity. Every rarity with odds needs a card. You can add up to 20." },
-  { title: "Go live", text: "The series appears on Gachard as soon as its last rarity has a card. Your studio then shows its sales." },
+  { title: "Add your cards", text: "For each card, upload an image, name it and choose its rarity. They stay drafts you can change or remove. Every rarity with odds needs a card, up to 20 in all." },
+  { title: "Publish", text: "Publish when you are happy with the cards. They are then permanent, and the series goes live. You can still edit the series, and your studio shows its sales." },
 ];
 
 const ART = [

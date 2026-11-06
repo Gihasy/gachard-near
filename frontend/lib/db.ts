@@ -44,6 +44,18 @@ export interface TemplateRow {
   createdAt: string;
 }
 
+/** A card a creator is still working on. Off chain until its series is published. */
+export interface DraftCard {
+  id: string;
+  name: string;
+  rarity: number;
+  media: string;
+  mediaHash: string;
+  createdAt: string;
+  /** Set while a publish is writing it to the chain, so two publishes cannot both write it. */
+  claimedAt?: string;
+}
+
 export interface SeriesRow {
   id: number;
   ownerUserId: string;
@@ -62,6 +74,8 @@ export interface SeriesRow {
   ratesBps: number[];
   prices: number[];
   templates: TemplateRow[];
+  /** Off chain and changeable. Series from before drafts have none. */
+  drafts?: DraftCard[];
   createdAt: string;
 }
 
@@ -103,6 +117,8 @@ export interface Data {
   txs: Record<string, string[]>;
   /** token id -> the Crystal it gave. Makes crediting a burn safe to repeat. */
   dismantled: Record<string, DismantleRow>;
+  /** When recent card images were uploaded. Drafts can be replaced freely, so uploads have their own cap. */
+  artUploads?: string[];
 }
 
 const emptyData = (): Data => ({ users: [], series: [], offers: [], prints: {}, txs: {}, dismantled: {} });

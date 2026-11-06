@@ -3,9 +3,10 @@ import AddCardForm from "@/components/AddCardForm";
 import AddSeries from "@/components/AddSeries";
 import CreatorGuide from "@/components/CreatorGuide";
 import EditSeries from "@/components/EditSeries";
+import SeriesDrafts from "@/components/SeriesDrafts";
 import { ArrowIcon, CheckIcon } from "@/components/icons";
 import { CardImage, Eyebrow, Page, Panel, Rarity, SeriesName, primaryBtn } from "@/components/ui";
-import { missingRarities, RARITIES } from "@/lib/catalog";
+import { missingRarities, missingToPublish, RARITIES } from "@/lib/catalog";
 import { readDb, type SeriesRow } from "@/lib/db";
 import { CREATOR_SHARE_PCT, revenueOf } from "@/lib/economy";
 import { currentUser } from "@/lib/users";
@@ -14,7 +15,8 @@ export const dynamic = "force-dynamic";
 
 /** The rarity a creator most likely wants next: the first one with odds and no card. */
 function suggestedRarity(series: SeriesRow) {
-  const missing = series.ratesBps.findIndex((rate, rarity) => rate > 0 && !series.templates.some((t) => t.rarity === rarity));
+  const has = (rarity: number) => [...series.templates, ...(series.drafts ?? [])].some((c) => c.rarity === rarity);
+  const missing = series.ratesBps.findIndex((rate, rarity) => rate > 0 && !has(rarity));
   return missing >= 0 ? missing : series.ratesBps.findIndex((rate) => rate > 0);
 }
 
@@ -65,6 +67,8 @@ export default async function Creator() {
         {mine.length ? null : <AddSeries first />}
         {mine.map((s) => {
           const missing = missingRarities(s);
+          const needed = missingToPublish(s);
+          const drafts = s.drafts ?? [];
           const revenue = revenueOf(s.id, offers);
           return (
             <Panel key={s.id}>
@@ -81,7 +85,7 @@ export default async function Creator() {
                 </div>
                 {missing.length ? (
                   <span className="rounded-full bg-[#f7c96b1f] px-3 py-1 text-xs font-semibold text-cn-credits" data-testid="series-state">
-                    Needs: {missing.join(", ")}
+                    {needed.length ? `Needs: ${needed.join(", ")}` : "Ready to publish"}
                   </span>
                 ) : (
                   <Link className="inline-flex items-center gap-1.5 rounded-full bg-[#7ee0a61f] px-3 py-1 text-xs font-semibold text-cn-success hover:underline" href={`/series/${s.id}`} data-testid="series-state">
@@ -107,17 +111,27 @@ export default async function Creator() {
                 </dl>
               )}
               {s.templates.length ? (
-                <div className="mt-5 grid grid-cols-3 sm:grid-cols-5 md:grid-cols-6 gap-3">
-                  {s.templates.map((t) => (
-                    <div key={t.id} className="pop">
-                      <CardImage src={t.media} alt={t.name} rarity={RARITIES[t.rarity]} />
-                      <p className="mt-2 text-xs font-medium truncate">{t.name}</p>
-                      <Rarity value={RARITIES[t.rarity]} />
-                    </div>
-                  ))}
-                </div>
+                <section className="mt-5">
+                  <h4 className="text-sm font-semibold">Published <span className="text-cn-text-3 font-normal tabular">{s.templates.length}</span></h4>
+                  <div className="mt-3 grid grid-cols-3 sm:grid-cols-5 md:grid-cols-6 gap-3">
+                    {s.templates.map((t) => (
+                      <div key={t.id} className="pop">
+                        <CardImage src={t.media} alt={t.name} rarity={RARITIES[t.rarity]} />
+                        <p className="mt-2 text-xs font-medium truncate">{t.name}</p>
+                        <Rarity value={RARITIES[t.rarity]} />
+                      </div>
+                    ))}
+                  </div>
+                </section>
               ) : null}
-              <AddCardForm key={s.templates.length} seriesId={s.id} rates={s.ratesBps} suggested={suggestedRarity(s)} />
+              <SeriesDrafts
+                seriesId={s.id}
+                drafts={drafts.map((d) => ({ id: d.id, name: d.name, rarity: d.rarity, media: d.media }))}
+                rates={s.ratesBps}
+                missing={needed}
+                live={missing.length === 0}
+              />
+              <AddCardForm key={s.templates.length + drafts.length} seriesId={s.id} rates={s.ratesBps} suggested={suggestedRarity(s)} />
             </Panel>
           );
         })}

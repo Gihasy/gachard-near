@@ -194,6 +194,35 @@ async function main() {
   const cardBytes = await art.arrayBuffer();
   const card = await upload(cardBytes, "Flow Card");
   check("A card is uploaded", card.status === 200);
+  const { id: draftId } = await card.json();
+  const notYet = await anon.page(`/series/${newSeries}`);
+  check("A draft does not put a series on sale", !notYet.html.includes("Sign in to buy a pack"));
+  const emptySeries = await bob.post("/api/creator/series", { name: `Flow ${Date.now()}`, ratesPct: [100, 0, 0, 0], prices: [10, 20, 30, 40] });
+  const { id: unready } = await emptySeries.json();
+  check("A series with no cards cannot be published", (await bob.post(`/api/creator/series/${unready}/publish`)).status === 400);
+  const rename = (who, name) => {
+    const form = new FormData();
+    form.set("name", name);
+    form.set("rarity", "0");
+    return who.request(`/api/creator/series/${newSeries}/cards/${draftId}`, { method: "POST", body: form });
+  };
+  check("Someone else cannot change a draft", (await rename(alice, "Stolen")).status === 400);
+  check("The creator renames a draft", (await rename(bob, "Flow Renamed")).status === 200 && (await bob.page("/creator")).html.includes("Flow Renamed"));
+  const spare = await (await upload(cardBytes, "Flow Spare")).json();
+  check("Someone else cannot remove a draft", (await alice.request(`/api/creator/series/${newSeries}/cards/${spare.id}`, { method: "DELETE" })).status === 400);
+  check("The creator removes a draft", (await bob.request(`/api/creator/series/${newSeries}/cards/${spare.id}`, { method: "DELETE" })).status === 200 && !(await bob.page("/creator")).html.includes("Flow Spare"));
+  check("Someone else cannot publish a series", (await alice.post(`/api/creator/series/${newSeries}/publish`)).status === 400);
+  check("A signed-out publish is refused", (await anon.post(`/api/creator/series/${newSeries}/publish`)).status === 401);
+  const publishAll = async () => {
+    for (;;) {
+      const response = await bob.post(`/api/creator/series/${newSeries}/publish`);
+      const body = await response.json();
+      if (response.status !== 200 || body.remaining === 0) return response.status;
+    }
+  };
+  check("The creator publishes the series", (await publishAll()) === 200);
+  check("A published card can no longer change", (await rename(bob, "Flow Changed")).status === 400);
+  check("Nothing is left to publish", (await bob.post(`/api/creator/series/${newSeries}/publish`)).status === 400);
   const live = await anon.page(`/series/${newSeries}`);
   check("The edit shows on the series page", live.html.includes(editedName) && live.html.includes("Changed after release."));
   check("The new series is live", live.status === 200 && live.html.includes("Sign in to buy a pack"));
@@ -280,6 +309,7 @@ async function main() {
     form.set("art", new File([cardBytes], "art.jpg", { type: "image/jpeg" }));
     await bob.request(`/api/creator/series/${newSeries}/cards`, { method: "POST", body: form });
   }
+  check("New cards join a live series when published", (await publishAll()) === 200);
   const revenueBefore = (await bob.page("/creator")).html.match(/data-creator="(\d+)" data-gachard="(\d+)"/);
   check("A live series starts with no sales", revenueBefore?.[1] === "0" && revenueBefore?.[2] === "0");
   const progressOf = async () => (await alice.page("/collection")).html.match(new RegExp(`data-series="${newSeries}" data-owned="(\\d+)" data-total="(\\d+)"`))?.slice(1).join("/");
