@@ -7,11 +7,8 @@ import {
   ArrowIcon,
   CheckIcon,
   PrintIcon,
-  ScanIcon,
   SearchIcon,
-  SparkIcon,
   SwapIcon,
-  UserIcon,
 } from "@/components/icons";
 import { CardImage, Eyebrow, inputClass, primaryBtn } from "@/components/ui";
 import { CATEGORIES, DEFAULT_CATEGORY } from "@/lib/categories";
@@ -36,8 +33,6 @@ const RAIL = [
 const PROMISES = ["No wallet to set up", "No network fees", "Odds on every pack"];
 
 // Written as what collecting tends to feel like, not as quotes: no real person said these.
-const NOTHING_TO_SET_UP = ["No wallet", "No seed phrase", "No network fees"];
-
 const PRINT_STEPS = [
   { title: "Own the digital card", text: "It lives in your collection, with its own public record." },
   { title: "Get the print file", text: "Choose Print. You get a PDF with crop marks and a QR code unique to that print." },
@@ -46,32 +41,6 @@ const PRINT_STEPS = [
 ];
 
 const PRINT_SPECS = ["63 x 88 mm", "3 mm bleed", "Crop marks"];
-
-const RECORD = [
-  { label: "Released", Icon: SparkIcon },
-  { label: "Printed", Icon: PrintIcon },
-  { label: "Returned to digital", Icon: CheckIcon },
-];
-
-function Tile({ worry, icon, title, text, children }: {
-  worry: string;
-  icon: React.ReactNode;
-  title: string;
-  text: string;
-  children?: React.ReactNode;
-}) {
-  return (
-    <article className="panel p-6 overflow-hidden relative flex flex-col">
-      <div className="flex items-center gap-3">
-        <span className="grid place-items-center size-9 rounded-xl bg-white/[.07] border border-cn-line text-cn-lavender shrink-0">{icon}</span>
-        <p className="text-sm font-medium text-cn-text-3">{worry}</p>
-      </div>
-      <h3 className="mt-4 font-display font-semibold text-lg sm:text-xl leading-snug">{title}</h3>
-      <p className="mt-2 text-sm text-cn-text-2 leading-relaxed max-w-xl">{text}</p>
-      {children}
-    </article>
-  );
-}
 
 export default async function Home({ searchParams }: {
   searchParams: Promise<{ q?: string | string[]; category?: string | string[] }>;
@@ -153,69 +122,7 @@ export default async function Home({ searchParams }: {
         </div>
       </section>
 
-      {/* ---- Empathy and solution: each worry, answered ---- */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 mt-16 sm:mt-20" data-testid="worries">
-        <h2 className="font-display font-bold text-2xl sm:text-4xl max-w-3xl leading-tight [text-wrap:balance]">
-          You love them. Collecting them <span className="crystal-text">shouldn&apos;t be this hard.</span>
-        </h2>
-        <div className="mt-8 grid md:grid-cols-2 gap-4">
-          <Tile
-            worry="Stuck on one card?"
-            icon={<UserIcon />}
-            title="Know the odds, then get the card you want"
-            text="Every pack is five cards at one price, with its odds on show. Dismantle your duplicates for Crystal, and trade it for the card you are missing."
-          >
-            <div className="mt-6 grid grid-cols-5 gap-2 -mb-14" data-testid="home-crystal">
-              {["card-back.webp", "series/mochi-rare.jpg", "series/aika-epic.jpg", "card-back.webp", "card-back.webp"].map((file, i) => (
-                <CardImage key={i} src={`/cards/${file}`} alt="" rarity={file.includes("epic") ? "Epic" : file.includes("rare") ? "Rare" : undefined} />
-              ))}
-            </div>
-          </Tile>
-          <Tile
-            worry="Is it even real?"
-            icon={<ScanIcon />}
-            title="Check any card in one click"
-            text="Every card has a public record of who released it, who has held it and each time it was printed. Check it outside this site."
-          >
-            <ol className="mt-5 flex flex-wrap items-center gap-2 text-xs font-semibold">
-              {RECORD.map(({ label, Icon }, i) => (
-                <li key={label} className="flex items-center gap-2">
-                  {i ? <ArrowIcon width={14} height={14} className="text-cn-text-3" /> : null}
-                  <span className="inline-flex items-center gap-1.5 rounded-full border border-cn-line-strong bg-white/[.04] px-3 py-1.5">
-                    <Icon width={14} height={14} className="text-cn-lavender" /> {label}
-                  </span>
-                </li>
-              ))}
-            </ol>
-          </Tile>
-          <Tile
-            worry="A wallet, just to collect?"
-            icon={<CheckIcon />}
-            title="Nothing to set up"
-            text="Sign in the way you sign in anywhere else. Gachard handles the blockchain and pays its network fees."
-          >
-            <ul className="mt-5 flex flex-wrap gap-2 text-xs font-semibold">
-              {NOTHING_TO_SET_UP.map((item) => (
-                <li key={item} className="inline-flex items-center gap-1.5 rounded-full border border-cn-line-strong bg-white/[.04] px-3 py-1.5">
-                  <CheckIcon width={14} height={14} className="text-cn-crystal" /> {item}
-                </li>
-              ))}
-            </ul>
-          </Tile>
-          <Tile
-            worry="A card you can never hold?"
-            icon={<PrintIcon />}
-            title="Print any card you own"
-            text="Every digital card can become a physical one, with its own QR code. Send it back whenever you want it digital again."
-          >
-            <a href="#print" className="mt-5 inline-flex items-center gap-1.5 text-sm font-semibold text-cn-lavender hover:underline">
-              See how printing works <ArrowIcon width={15} height={15} />
-            </a>
-          </Tile>
-        </div>
-      </section>
-
-      {/* ---- Solution: the fourth worry, a card you can hold ---- */}
+      {/* ---- A card you can hold ---- */}
       <section id="print" className="max-w-7xl mx-auto px-4 sm:px-6 mt-16 sm:mt-24 scroll-mt-24">
         <div className="panel print-stage p-5 sm:p-10">
           <div className="grid lg:grid-cols-[1fr_1.15fr] gap-8 lg:gap-14 items-center">
