@@ -4,7 +4,7 @@ A platform where a creator or IP owner releases their own trading card game. Eve
 card is digital from birth, can be verified by anyone and can be printed. Their
 community collects it without meeting a wallet, a seed phrase or a gas fee.
 
-Built for NEAR HACKATHON. Tracks: `open`, `nfts`.
+Built for NEAR HACKATHON. Tracks: `games`, `nfts`, `open`.
 
 - **Hosted demo:** https://gachard-near.vercel.app (testnet, simulated payments)
 - **Contract:** [`cards-v2.gachard-demo-6b9aead4.testnet`](https://testnet.nearblocks.io/address/cards-v2.gachard-demo-6b9aead4.testnet)
@@ -51,7 +51,7 @@ The steps below work on the hosted demo too. To run your own copy, you need Node
 later and internet access. You need no account, key or funds:
 setup creates a throwaway testnet account from the public faucet, deploys the contract
 from the committed wasm, and publishes a demo series with real transactions. Allow
-about a minute.
+about three minutes.
 
 ```bash
 cd frontend
@@ -68,7 +68,7 @@ Open http://localhost:3000, or the hosted demo, then:
    account.
 4. **Open.** Open the sealed pack, then click Open all to turn the cards over. The rarest comes last.
 5. **Verify.** Click Print or verify the first card. You see the holder, who released it, and
-   whether the artwork file matches the public record. Click check independently: NearBlocks
+   whether the artwork file matches the public record. Click View on NearBlocks: it
    shows the same transaction, outside this app.
 6. **Print.** Click Print this card, read the simulation notice, then Print and create PDF. The status
    reads Printed (hackathon demo PDF). Click Download print PDF: it holds the card and a QR code. The address the QR opens is printed at the foot of each page.
@@ -81,8 +81,8 @@ Open http://localhost:3000, or the hosted demo, then:
    and destroyed. The same token id is digital again. Open the QR's address once more: it
    now reads VOID.
 9. **Dismantle a duplicate.** Open a digital card and click Dismantle, then Destroy. Its record stays and says it was destroyed, and My Cards shows your Crystal. The Crystal Shop, linked from My Cards, trades Crystal for a card you are missing or for a whole pack. On the All cards tab, Dismantle cards selects several at once, and the lock on a card keeps it from being dismantled.
-10. **Release your own.** Open For Creators, add a series, and add a card for each rarity that
-   has a rate. Cards stay drafts you can change until you click Publish series. It then goes live on the home page. On any of its cards, Released by links to your account on
+10. **Release your own.** Open For Creators and add a series. Add a card for each rarity that
+   has a rate: Gachard frames your image in the browser, and the card stays a draft you can edit or remove. Click Publish series: each card is written to the chain and can no longer change, and the series goes live on the home page. You can still edit the series, or delete it. On any of its cards, Released by links to your account on
    NearBlocks. After a sale, the series shows the 90/10 split in simulated Credits.
 
 ### Check each claim
@@ -94,9 +94,11 @@ Open http://localhost:3000, or the hosted demo, then:
 | Having the paper gives no power | `cargo test finder_of_a_printed_card` and `e2e.mjs` | Tests pass. `e2e.mjs` prints `Someone with the paper but not the account cannot move it` and `cannot return it` |
 | The platform cannot return a card nobody asked to return | `cargo test platform_cannot_return` | The test passes |
 | A returned card's old QR reads VOID | `cargo test print_state_follows_the_card` and `app-flow.mjs` | The test passes, and `app-flow.mjs` prints `The old QR reads VOID` |
-| A price stays hidden until every card is open | `app-flow.mjs` | `Price is still hidden at card four` |
+| A card cannot change once published, and a draft can | `app-flow.mjs` | `The creator renames a draft` and `A published card can no longer change` |
+| Odds that do not add up to 100% are refused | `app-flow.mjs` | `An edit with empty odds or values is refused` |
+| Another site cannot sign a visitor in | `app-flow.mjs` | `A sign-in sent from another site is refused` |
 | The art matches its hash on chain | `app-flow.mjs` | `Artwork matches the chain's hash` |
-| The Verify page can be checked outside this app | Click check independently on a history row | The transaction on NearBlocks. A row with no saved hash links to the contract instead |
+| The Verify page can be checked outside this app | Click View on NearBlocks on a history row | The transaction on NearBlocks. A row with no saved hash links to the contract instead |
 
 ### Prove it without a browser
 
@@ -121,8 +123,8 @@ cd near-e2e
 node app-flow.mjs http://localhost:3000
 ```
 
-It makes real transactions, and creates two accounts and a public series named `Flow <time>`
-on whichever copy it runs against, so prefer a local one.
+It makes real transactions, and creates two accounts and a series named `Flow <time>`, kept off the public lists,
+on whichever copy it runs against, so prefer a local one. Limits apply per visitor per hour (10 new accounts, 40 packs), so running it many times in an hour from one address will start to be refused.
 
 ### Contract tests
 
@@ -136,7 +138,7 @@ cargo near build non-reproducible-wasm --no-abi
 
 ## What is simulated, and what is not claimed
 
-- **Payments are simulated.** Credits are a number in a local file. The creator's share is a figure derived from sales: nobody is paid.
+- **Payments are simulated.** Credits are a number in the app's database. The creator's share is a figure derived from sales: nobody is paid.
 - **Crystal is a number the app holds.** Only the burn behind it can be checked on chain. Crystal trading between collectors is not built.
 - **Printing is simulated.** The PDF stands in for the card the platform would print and
   ship. It says so in its margin and on the card back, and the Verify page says so too.
@@ -177,6 +179,8 @@ cargo near build non-reproducible-wasm --no-abi
 - **Testnet only.** Cards have no cash value.
 - **Data stores.** Locally, app data is a JSON file for one Node process. Hosted, it is one
   MongoDB document with artwork alongside. Both are demo-sized.
+- **A card frame is drawn by the creator's browser.** The server does not check what it says. A published card keeps its frame, so renaming the series later leaves the old name on it.
+- **Deleting a series does not erase it.** It leaves Gachard, and a series with published cards stays open by its address, marked as retired. The chain keeps its entry and its cards.
 - **Uploads are open and unreviewed**, with caps per account and per hour. Do not read a
   series on a hosted demo as endorsed by anyone.
 - **`next build` downloads Google Fonts** and failed once on a transient network error. The
@@ -200,7 +204,7 @@ This is disclosed as the hackathon rules ask (Q-002, Q-003).
   `design/gachard.pen`, `docs/CREATOR-ASSET-GUIDE.md`, and the images in `frontend/public`,
   including the pack art, relabelled for this version. The "One card, two worlds" line, the
   scan steps and parts of the creator page's copy come from the Monad site.
-- Libraries: `near-sdk`, `near-api-js`, Next.js, React, Tailwind, `pdf-lib`, `qrcode`, `mongodb`,
+- Libraries: `near-sdk`, `near-api-js`, Next.js, React, Tailwind, `pdf-lib`, `qrcode`, `jsqr`, `mongodb`,
   `google-auth-library`, and `sharp` for the art scripts only.
 - Much of the code was written with AI coding agents under the author's direction: Claude Code
   here, and MiMoCode for the earlier Monad version (ADR-015).

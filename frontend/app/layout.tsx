@@ -39,6 +39,15 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
                 <a key={name} href={href} target="_blank" rel="noreferrer" className="hover:text-cn-text-1 transition">{name}</a>
               ))}
             </nav>
+            <p className="text-xs text-cn-text-3" data-testid="built-on-near">
+              Built at NEAR HACKATHON on NEAR testnet
+              {process.env.NEAR_CONTRACT ? (
+                <>
+                  {" · "}
+                  <a className="underline hover:text-cn-text-1 transition" href={`https://testnet.nearblocks.io/address/${process.env.NEAR_CONTRACT}`} target="_blank" rel="noreferrer">view the contract</a>
+                </>
+              ) : null}
+            </p>
             <p className="text-xs text-cn-text-3" data-testid="test-notice">
               Test version · cards have no cash value · payments are simulated · Gachard holds account keys
             </p>

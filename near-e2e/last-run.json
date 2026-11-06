@@ -1,8 +1,8 @@
 {
-  "ranAt": "2026-11-05T17:21:56.087Z",
+  "ranAt": "2026-11-06T21:30:06.767Z",
   "contract": "cards-v2.gachard-demo-6b9aead4.testnet",
-  "tokenId": "69",
-  "seriesId": 16,
+  "tokenId": "768",
+  "seriesId": 79,
   "failures": 0,
   "steps": [
     {
@@ -13,32 +13,32 @@
     {
       "name": "Platform approves the creator",
       "ok": true,
-      "detail": "https://testnet.nearblocks.io/txns/BUaCPEg5u1PU1okfDUgVMvDHu4gSoBYGrJubynqN9u4X"
+      "detail": "https://testnet.nearblocks.io/txns/223EQJHwCAKwW7zGDzdz3aZYkxZM5j2EST5qirXA5RBh"
     },
     {
       "name": "Creator creates a series, gas paid by the platform",
       "ok": true,
-      "detail": "https://testnet.nearblocks.io/txns/6WjiRts4q73ZX6hehdjfahLDyKMrfEhRu7z4WF1mPVkc"
+      "detail": "https://testnet.nearblocks.io/txns/4c9a3PaRbtAnxi1RJR6xzt1a8A9Ck7Zma2kEgjkx9Adj"
     },
     {
       "name": "Creator adds a card with its artwork hash",
       "ok": true,
-      "detail": "https://testnet.nearblocks.io/txns/As4QwyKrkMpTkubmwjFQ29GvTU6aPyc2gvUhsSioowUj"
+      "detail": "https://testnet.nearblocks.io/txns/3BcFqeMo3eRKu4vTcjQpPU4oh5AEoZh8CvugdSn6AzTZ"
     },
     {
       "name": "Chain names the creator as issuer",
       "ok": true,
-      "detail": "c-4858be5242a7.gachard-demo-6b9aead4.testnet"
+      "detail": "c-64bd188815b9.gachard-demo-6b9aead4.testnet"
     },
     {
       "name": "Platform mints a card to Alice",
       "ok": true,
-      "detail": "https://testnet.nearblocks.io/txns/6SX4TendWeQdV3opiE3D2ukMQGriK5zJj61ixF4GCAis"
+      "detail": "https://testnet.nearblocks.io/txns/E8TkDMtiLNnPLMWJn1bBuoeAorQbD5kHBZCFFtDN1c28"
     },
     {
       "name": "Card records its origin",
       "ok": true,
-      "detail": "token 69, series 16, template 1"
+      "detail": "token 768, series 79, template 1"
     },
     {
       "name": "Stored art hash matches the file",
@@ -53,7 +53,7 @@
     {
       "name": "Alice sends the card to Bob, with no NEAR of her own",
       "ok": true,
-      "detail": "https://testnet.nearblocks.io/txns/gMu36nDfCH8T7dnJSFqCrPWRtrHKhTtuFYEmhcCB7fk"
+      "detail": "https://testnet.nearblocks.io/txns/DhUdD5xoRhbkkNNpQV7BpgBmHE2GoZ2yzLmToaQjnnan"
     },
     {
       "name": "Bob now holds it",
@@ -63,7 +63,7 @@
     {
       "name": "Bob prints the card",
       "ok": true,
-      "detail": "https://testnet.nearblocks.io/txns/3TwvDVcBZASXR2EXVfSqg696UvM8LNoLEzsGLFJR3pyt"
+      "detail": "https://testnet.nearblocks.io/txns/6qNMXHS9jRsTMFmuU5zYHwjqQqsRgqoL5tbPReXHSWDn"
     },
     {
       "name": "Card reads Printed, still held by Bob",
@@ -98,7 +98,7 @@
     {
       "name": "Bob transfers the printed card to Alice",
       "ok": true,
-      "detail": "https://testnet.nearblocks.io/txns/8w4byVF7zaBTaj3ZEDej18yuiy4vYw8icYYUmZubQ4cw"
+      "detail": "https://testnet.nearblocks.io/txns/HemQaeVBcYL3ykYZyVMFdPLkGDEP3eD635M3Jf3WiJXd"
     },
     {
       "name": "Alice holds it, and it is still printed",
@@ -108,7 +108,7 @@
     {
       "name": "Alice asks to return it",
       "ok": true,
-      "detail": "https://testnet.nearblocks.io/txns/6Hcy8F5HRchJvqtyBT3tdjhML8XbUGRtJbiEaifbaDPd"
+      "detail": "https://testnet.nearblocks.io/txns/Dos7dh8Wox8c64u6wCGau8jABwD1pQz2MFen8Ws8VunY"
     },
     {
       "name": "A card on its way back cannot move",
@@ -123,7 +123,7 @@
     {
       "name": "The platform confirms the physical card arrived",
       "ok": true,
-      "detail": "https://testnet.nearblocks.io/txns/5jRHRddMwmReFD2D7SWv5iC4x69GkzzEenJmeBaQ5E2x"
+      "detail": "https://testnet.nearblocks.io/txns/B7horzYS59gARG6gnYT2LShWhVrbiUkMcb6kPaL7Gitw"
     },
     {
       "name": "Same token, digital again, still held by Alice",
@@ -148,7 +148,7 @@
     {
       "name": "Alice burns it, with no gas money",
       "ok": true,
-      "detail": "https://testnet.nearblocks.io/txns/G4Tj1spX4s2NBsuHTCn3zP5mYJRbtKhJsm4vnhSCsZ6w"
+      "detail": "https://testnet.nearblocks.io/txns/2RSeYdPP2ZuZpJN9if41UCvnuKZ5GUgszpZTdDvJTw4d"
     },
     {
       "name": "Its record stays, and says it burned",
@@ -171,17 +171,17 @@
       "detail": ""
     },
     {
-      "name": "c-4858be5242a7 paid nothing",
+      "name": "c-64bd188815b9 paid nothing",
       "ok": true,
       "detail": "balance change 0 yocto, expected 0"
     },
     {
-      "name": "c-9159ed189da1 paid nothing",
+      "name": "c-04f82d8dcd8f paid nothing",
       "ok": true,
       "detail": "balance change 3 yocto, expected 3"
     },
     {
-      "name": "c-d9792cd13726 paid nothing",
+      "name": "c-34bf0dcafb81 paid nothing",
       "ok": true,
       "detail": "balance change 1 yocto, expected 1"
     }
