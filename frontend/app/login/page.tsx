@@ -13,12 +13,12 @@ export default async function Login({ searchParams }: { searchParams: Promise<{ 
     <div className="max-w-5xl mx-auto px-4 sm:px-6 py-10 sm:py-20 grid md:grid-cols-2 gap-10 items-center">
       <div className="relative hidden md:block h-96" aria-hidden="true">
         {[
-          { n: "epic-1", r: -14, x: "4%", z: 1, rarity: "Epic" },
-          { n: "legendary-1", r: 0, x: "26%", z: 2, rarity: "Legendary" },
-          { n: "rare-1", r: 14, x: "48%", z: 1, rarity: "Rare" },
+          { n: "series/thornmaw-epic.jpg", r: -14, x: "4%", z: 1, rarity: "Epic" },
+          { n: "series/aika-legendary.jpg", r: 0, x: "26%", z: 2, rarity: "Legendary" },
+          { n: "series/mochi-rare.jpg", r: 14, x: "48%", z: 1, rarity: "Rare" },
         ].map((c) => (
           <div key={c.n} className="absolute top-8 w-48" style={{ left: c.x, transform: `rotate(${c.r}deg)`, zIndex: c.z }}>
-            <CardImage src={`/cards/${c.n}.webp`} alt="" rarity={c.rarity} />
+            <CardImage src={`/cards/${c.n}`} alt="" rarity={c.rarity} />
           </div>
         ))}
       </div>

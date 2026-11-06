@@ -11,7 +11,9 @@ const STEPS = [
 export default function Scan() {
   async function go(form: FormData) {
     "use server";
-    const id = String(form.get("id") ?? "").trim().replace(/^#/, "");
+    // The number as printed on a card's back, GCH-245-P1, or just 245.
+    const typed = String(form.get("id") ?? "").trim();
+    const id = typed.match(/^GCH-(\d+)(?:-P\d+)?$/i)?.[1] ?? typed.replace(/^#/, "");
     if (/^[0-9]+$/.test(id)) redirect(`/scan/${id}`);
     redirect("/scan");
   }
@@ -31,7 +33,7 @@ export default function Scan() {
           Point your camera at a card&apos;s QR code, or enter its number. See who released it and every hand it has passed through.
         </p>
         <form action={go} className="panel mt-7 p-3 flex gap-2 text-left">
-          <input name="id" inputMode="numeric" placeholder="Card number" aria-label="Card number" className={inputClass} required />
+          <input name="id" inputMode="numeric" placeholder="Card number, such as GCH-245-P1" aria-label="Card number" className={inputClass} required />
           <button className={primaryBtn}>Verify</button>
         </form>
         <ol className="mt-8 grid sm:grid-cols-3 gap-3 text-left">

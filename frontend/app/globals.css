@@ -250,6 +250,14 @@ input[type="number"] { -moz-appearance: textfield; }
   vertical-align: middle;
   white-space: nowrap;
 }
+.ip-logo.ip-logo-small { width: 4rem; height: 3.75rem; }
+.series-row[open] .series-preview { display: none; }
+.series-row summary::-webkit-details-marker { display: none; }
+.series-row summary:focus-visible { outline: 2px solid var(--cn-crystal-lavender); outline-offset: -2px; }
+.series-chevron { transition: transform 200ms ease; }
+.series-row[open] .series-chevron { transform: rotate(180deg); }
+.copies summary { list-style: none; }
+.copies summary::-webkit-details-marker { display: none; }
 .ip-logo { display: grid; place-items: center; width: 5.5rem; height: 5rem; }
 .ip-logo img {
   max-width: 100%;

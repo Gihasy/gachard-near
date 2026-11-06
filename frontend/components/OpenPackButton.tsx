@@ -40,6 +40,7 @@ export default function OpenPackButton({ seriesId, signedIn, price }: { seriesId
       >
         {busy ? "Buying..." : `Buy a pack: ${price.toLocaleString("en-US")} Credits`}
       </button>
+      {busy ? <p className="mt-2 text-center text-xs text-cn-text-2" role="status">Minting your cards. This takes a few seconds.</p> : null}
       <ErrorLine>{error}</ErrorLine>
     </>
   );

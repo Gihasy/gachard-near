@@ -14,7 +14,7 @@ export default function TradeButton({ seriesId, templateId, price, crystal }: { 
     <>
       <button
         type="button"
-        className="mt-1.5 w-full rounded-full border border-cn-line-strong px-2 py-1.5 text-xs font-semibold tabular transition enabled:hover:border-cn-lavender disabled:opacity-50"
+        className="mt-1.5 w-full rounded-full border border-cn-line-strong px-2 py-1.5 text-[11px] leading-tight font-semibold tabular transition enabled:hover:border-cn-lavender disabled:opacity-50"
         disabled={busy || crystal < price}
         data-testid="trade"
         data-template={templateId}
