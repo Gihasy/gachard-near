@@ -297,6 +297,51 @@ h1, h2 { text-wrap: balance; }
 
 .ip-logo.ip-logo-small { width: 4rem; height: 3.75rem; }
 .series-row[open] .series-preview { display: none; }
+.card-lock {
+  position: absolute;
+  top: 0.4rem;
+  left: 0.4rem;
+  z-index: 10;
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 999px;
+  border: 1px solid #ffffff33;
+  background: #0a0b14cc;
+  color: var(--cn-text-2);
+  backdrop-filter: blur(6px);
+  cursor: pointer;
+  transition: color 150ms ease, border-color 150ms ease;
+}
+.card-lock:hover { color: var(--cn-text-1); border-color: var(--cn-crystal-lavender); }
+.card-lock-on { color: var(--cn-text-on-crystal); background: var(--cn-credits); border-color: var(--cn-credits); }
+.card-lock-on:hover { color: var(--cn-text-on-crystal); }
+
+.select-bar {
+  position: fixed;
+  inset: auto 0 0;
+  z-index: 35;
+  padding: 0.75rem 1rem;
+  border-top: 1px solid var(--cn-line-strong);
+  background: #0a0b14f2;
+  backdrop-filter: blur(14px);
+}
+@media (max-width: 767px) {
+  .select-bar { bottom: calc(64px + env(safe-area-inset-bottom)); }
+}
+
+.dismantle-dialog {
+  margin: auto;
+  width: min(calc(100vw - 2rem), 28rem);
+  padding: 1.5rem;
+  border-radius: var(--cn-r-lg);
+  border: 1px solid var(--cn-line-strong);
+  background: var(--cn-surface-1);
+  color: var(--cn-text-1);
+}
+.dismantle-dialog::backdrop { background: #05060ce6; backdrop-filter: blur(6px); }
+
 .series-row summary::-webkit-details-marker { display: none; }
 .series-row summary:focus-visible { outline: 2px solid var(--cn-crystal-lavender); outline-offset: -2px; }
 .series-chevron { transition: transform 200ms ease; }

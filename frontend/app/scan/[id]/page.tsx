@@ -160,6 +160,7 @@ export default async function CardRecord({ params, searchParams }: {
             printNumber={card.print_cycle}
             crystalYield={CRYSTAL_BY_RARITY[RARITIES.indexOf(card.rarity)]}
             lastCopy={lastCopy}
+            locked={Boolean(user?.lockedDesigns?.includes(design))}
           />
 
           <Panel>

@@ -9,7 +9,7 @@ import { ErrorLine, Panel, inputClass, primaryBtn, secondaryBtn } from "@/compon
 
 const SPECS = ["63 x 88 mm", "Crop marks", "A QR for this print"];
 
-export default function CardActions({ tokenId, status, media, cardName, qr, isHolder, printNumber, crystalYield, lastCopy }: {
+export default function CardActions({ tokenId, status, media, cardName, qr, isHolder, printNumber, crystalYield, lastCopy, locked }: {
   tokenId: string;
   status: string;
   media: string;
@@ -19,6 +19,7 @@ export default function CardActions({ tokenId, status, media, cardName, qr, isHo
   printNumber: number;
   crystalYield: number;
   lastCopy: boolean;
+  locked: boolean;
 }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
@@ -200,8 +201,12 @@ export default function CardActions({ tokenId, status, media, cardName, qr, isHo
             </div>
           ) : (
             <>
-              <p className="mt-1 text-sm text-cn-text-2 leading-relaxed">Got a duplicate? Turn it into {crystalYield} Crystal, and trade that for a card you are missing.</p>
-              <button className={`${secondaryBtn} mt-4`} onClick={() => setConfirming("dismantle")} data-testid="dismantle" data-last-copy={lastCopy}>Dismantle</button>
+              {locked ? (
+                <p className="mt-1 text-sm text-cn-text-2 leading-relaxed" data-testid="card-locked">You locked this card, so it cannot be dismantled. Unlock it in <a href="/collection" className="font-semibold text-cn-lavender hover:underline">My Cards</a>.</p>
+              ) : (
+                <p className="mt-1 text-sm text-cn-text-2 leading-relaxed">Got a duplicate? Turn it into {crystalYield} Crystal, and trade that for a card you are missing.</p>
+              )}
+              {locked ? null : <button className={`${secondaryBtn} mt-4`} onClick={() => setConfirming("dismantle")} data-testid="dismantle" data-last-copy={lastCopy}>Dismantle</button>}
             </>
           )}
         </Panel>

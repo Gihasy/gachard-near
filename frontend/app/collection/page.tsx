@@ -8,7 +8,9 @@ import UsernameForm from "@/components/UsernameForm";
 import { ArrowIcon } from "@/components/icons";
 import { CardImage, Eyebrow, Page, primaryBtn } from "@/components/ui";
 import { cardsOf } from "@/lib/cards";
+import { RARITIES } from "@/lib/catalog";
 import { readDb } from "@/lib/db";
+import { CRYSTAL_BY_RARITY } from "@/lib/economy";
 import { defaultUsername } from "@/lib/near";
 import { splitSeriesName } from "@/lib/series-name";
 import { currentUser } from "@/lib/users";
@@ -26,6 +28,7 @@ export default async function Collection() {
   const spare = new Map<string, number>();
   for (const c of cards) if (c.status === "Digital") spare.set(c.design, (spare.get(c.design) ?? 0) + 1);
   const duplicates = [...spare].reduce((sum, [design, count]) => sum + Math.min(count, (copies.get(design) ?? 1) - 1), 0);
+  const crystalByRarity = Object.fromEntries(RARITIES.map((name, i) => [name, CRYSTAL_BY_RARITY[i]]));
   const seriesNames = Object.fromEntries(series.map((row) => [row.id, splitSeriesName(row.name).title]));
   return (
     <Page wide>
@@ -60,7 +63,7 @@ export default async function Collection() {
         <CollectionTabs
           cardCount={cards.length}
           seriesCount={startedSeries(series, cards).length}
-          cards={<CollectionGrid cards={cards} seriesNames={seriesNames} />}
+          cards={<CollectionGrid cards={cards} seriesNames={seriesNames} crystalByRarity={crystalByRarity} locked={user.lockedDesigns ?? []} />}
           series={<SeriesProgress series={series} cards={cards} crystal={user.crystal ?? 0} />}
         />
       )}

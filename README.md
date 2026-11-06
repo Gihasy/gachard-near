@@ -80,7 +80,7 @@ Open http://localhost:3000, or the hosted demo, then:
    Request return. A button stands in for posting the card: click Simulate: card received
    and destroyed. The same token id is digital again. Open the QR's address once more: it
    now reads VOID.
-9. **Dismantle a duplicate.** Open a digital card and click Dismantle, then Destroy. Its record stays and says it was destroyed, and My Cards shows your Crystal. Under Your series, trade Crystal for a card you are missing.
+9. **Dismantle a duplicate.** Open a digital card and click Dismantle, then Destroy. Its record stays and says it was destroyed, and My Cards shows your Crystal. Under the Series tab of My Cards, trade Crystal for a card you are missing. On the All cards tab, Dismantle cards selects several at once, and the lock on a card keeps it from being dismantled.
 10. **Release your own.** Open For Creators, publish a series, and add a card for each rarity that
    has a rate. It goes live on the home page. On any of its cards, Released by links to your account on
    NearBlocks. After a sale, the series shows the 90/10 split in simulated Credits.

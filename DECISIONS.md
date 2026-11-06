@@ -1629,3 +1629,5 @@ their community collects it without meeting a wallet, a gas fee or a chain word.
 - **No limit protects the platform's gas.** Credits limit one account, but demo accounts are free. The daily limit was per account and did not close this either.
 
 **Amendment, 6 November 2026: the home page drops its worries section.** The author removed the section that named collectors' worries and answered them, along with the amendment to ADR-043 that ordered the page as hook, empathy, solution, engage. The page now goes from the hero to printing, then to the series.
+
+**Amendment, 7 November 2026: several cards at once, and a lock.** My Cards can dismantle several cards in one go. The collector reviews what each rarity yields and a warning that it cannot be undone. Each card is still its own burn, signed in turn, so a failure partway leaves the earlier ones destroyed and says how many. A collector can also lock a card, for every copy of that design. The lock is in the app's data and only stops the app's dismantle: the holder's custodial account could still burn on chain, and a locked card can still be printed or sent.

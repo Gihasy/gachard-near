@@ -29,7 +29,8 @@ export interface User {
   credits: number;
   /** Made only by burning a card (ADR-046). Accounts from before it have none. */
   crystal?: number;
-  /** Bought with Crystal, and used once the day's pack limit is reached. */
+  /** Cards the collector has locked against dismantling, as "series:template". Off chain. */
+  lockedDesigns?: string[];
   approvedCreator: boolean;
   createdAt: string;
 }

@@ -63,6 +63,9 @@ export const ExternalIcon = (p: SVGProps<SVGSVGElement>) => (
 export const CheckIcon = (p: SVGProps<SVGSVGElement>) => (
   <Icon {...p}><path d="m5 12.5 4.5 4.5L19 7.5" /></Icon>
 );
+export const LockIcon = ({ open = false, ...p }: SVGProps<SVGSVGElement> & { open?: boolean }) => (
+  <Icon {...p}><rect x="5" y="11" width="14" height="10" rx="2" /><path d={open ? "M8 11V7a4 4 0 0 1 7.5-2" : "M8 11V7a4 4 0 0 1 8 0v4"} /></Icon>
+);
 export const PrintIcon = (p: SVGProps<SVGSVGElement>) => (
   <Icon {...p}><path d="M7 8V3h10v5M7 17H4v-7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v7h-3" /><rect x="7" y="14" width="10" height="7" rx="1" /></Icon>
 );

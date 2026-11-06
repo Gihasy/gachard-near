@@ -142,6 +142,9 @@ export async function dismantleCard(user: User, tokenId: string) {
     throw new ContractRefused("This card was already destroyed.");
   }
   if (card.status !== "Digital") throw new ContractRefused("A printed card must return to digital first.");
+  if (user.lockedDesigns?.includes(`${card.series_id}:${card.template_id}`)) {
+    throw new ContractRefused("This card is locked. Unlock it in My Cards to dismantle it.");
+  }
   const { hash } = await userCall(user, "burn", { token_id: tokenId }, 1n);
   await logTx(tokenId, hash);
   await creditDismantle(tokenId, user.id, crystal);

@@ -200,6 +200,19 @@ async function main() {
   check("Someone else cannot dismantle a card", (await bob.post(`/api/cards/${tokenIds[1]}/dismantle`)).status === 400);
   check("A printed card cannot be dismantled", (await bob.post(`/api/cards/${token}/dismantle`)).status === 400);
 
+  // A collector can lock a card against dismantling, and only their own lock counts.
+  check("A signed-out lock is refused", (await anon.post("/api/me/lock", { design: "1:1", locked: true })).status === 401);
+  check("A lock needs a real card reference", (await alice.post("/api/me/lock", { design: "nonsense", locked: true })).status === 400);
+  const lockedToken = tokenIds[1];
+  const designOf = (await alice.page("/collection")).html.split('data-design="').find((part) => part.includes(`href="/scan/${lockedToken}"`))?.split('"')[0];
+  check("A collection shows a lockable card", Boolean(designOf), designOf);
+  await alice.post("/api/me/lock", { design: designOf, locked: true });
+  const refused = await alice.post(`/api/cards/${lockedToken}/dismantle`);
+  check("A locked card cannot be dismantled", refused.status === 400 && (await refused.json()).error.includes("locked"));
+  check("Its page says it is locked", (await alice.page(`/scan/${lockedToken}`)).html.includes('data-testid="card-locked"'));
+  await alice.post("/api/me/lock", { design: designOf, locked: false });
+  check("An unlocked card is free again", !(await alice.page(`/scan/${lockedToken}`)).html.includes('data-testid="card-locked"'));
+
   const burnt = tokenIds[1];
   const gain = await alice.post(`/api/cards/${burnt}/dismantle`);
   const { crystal: firstYield } = await gain.json();
