@@ -132,7 +132,7 @@ export default async function Home({ searchParams }: {
                 One card. <span className="crystal-text">Two worlds.</span>
               </h2>
               <p className="mt-4 max-w-md text-cn-text-2 leading-relaxed">
-                Every card starts digital on the NEAR blockchain, so anyone can check who released it and who holds it. Print it to hold it, trade it in person, or send it back to make it digital again.
+                Every card starts digital on the NEAR blockchain, so anyone can check who released it and who holds it. There's no crypto jargon to learn: just sign in and collect.
               </p>
             </div>
             <figure className="m-0">
