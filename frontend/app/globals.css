@@ -365,6 +365,49 @@ h1, h2 { text-wrap: balance; }
   .card-view-art { width: min(100%, calc((100dvh - 5rem) * 63 / 88)); margin-inline: 0; }
 }
 
+/* ---- A card being read: a light passes down it, inside four corner brackets. ---- */
+.scan-beam {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border-radius: inherit;
+  pointer-events: none;
+}
+.scan-beam::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, transparent 55%, #c9b8ff24 82%, #e6dcff66 98%, #fff 99.4%, #fff);
+  box-shadow: 0 14px 16px -6px #c9b8ffcc;
+  animation: scan-sweep 2.8s cubic-bezier(.45, .05, .55, .95) infinite;
+}
+.scan-corners {
+  position: absolute;
+  inset: -0.75rem;
+  border: 2px solid var(--cn-crystal-lavender);
+  border-radius: 1rem;
+  pointer-events: none;
+  -webkit-mask-image: linear-gradient(to right, #000 20%, transparent 20% 80%, #000 80%), linear-gradient(to bottom, #000 16%, transparent 16% 84%, #000 84%);
+  mask-image: linear-gradient(to right, #000 20%, transparent 20% 80%, #000 80%), linear-gradient(to bottom, #000 16%, transparent 16% 84%, #000 84%);
+  -webkit-mask-composite: source-in;
+  mask-composite: intersect;
+  animation: scan-corners 2.8s ease-in-out infinite;
+}
+@keyframes scan-sweep {
+  0% { transform: translateY(-100%); opacity: 0; }
+  8% { opacity: 1; }
+  72% { opacity: 1; }
+  80%, 100% { transform: translateY(100%); opacity: 0; }
+}
+@keyframes scan-corners {
+  0%, 100% { opacity: 0.55; scale: 1; }
+  50% { opacity: 1; scale: 1.015; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .scan-beam { display: none; }
+  .scan-corners { animation: none !important; }
+}
+
 .scanner {
   margin: auto;
   width: min(calc(100vw - 2rem), 26rem);
@@ -383,6 +426,7 @@ h1, h2 { text-wrap: balance; }
   border-radius: 1rem;
   border: 3px solid var(--cn-crystal-lavender);
   box-shadow: 0 0 0 100vmax #05060c80;
+  overflow: hidden;
 }
 
 .dismantle-dialog {

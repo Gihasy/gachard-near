@@ -164,7 +164,7 @@ export default function QrScanner() {
       <dialog ref={dialog} className="scanner" aria-label="Scan a QR code" data-testid="scanner" onClose={stop}>
         <div className="scanner-view">
           <video ref={video} muted playsInline aria-hidden="true" />
-          <span className="scanner-frame" aria-hidden="true" />
+          <span className="scanner-frame" aria-hidden="true"><span className="scan-beam" /></span>
         </div>
         <p className="mt-3 min-h-5 text-sm text-cn-text-2 text-center" role="status" data-testid="scanner-status">{status}</p>
         {problem ? <p className="mt-1 text-sm font-medium text-cn-danger text-center" role="alert" data-testid="scanner-problem">{problem}</p> : null}
