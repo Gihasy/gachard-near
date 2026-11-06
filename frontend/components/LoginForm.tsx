@@ -3,7 +3,7 @@
 import Script from "next/script";
 import { useCallback, useRef, useState } from "react";
 import { post } from "@/lib/client";
-import { ErrorLine, primaryBtn } from "@/components/ui";
+import { ErrorLine, primaryBtn, secondaryBtn } from "@/components/ui";
 
 declare global {
   interface Window {
@@ -41,11 +41,6 @@ export default function LoginForm({ next, demo, googleClientId }: { next: string
 
   return (
     <div className="space-y-4">
-      {demo ? (
-        <button className={`${primaryBtn} w-full`} disabled={busy} onClick={() => signIn("/api/auth/demo")} data-testid="demo-login">
-          {busy ? "Setting up your account..." : "Continue with a demo account"}
-        </button>
-      ) : null}
       {googleClientId ? (
         <>
           <Script
@@ -62,6 +57,14 @@ export default function LoginForm({ next, demo, googleClientId }: { next: string
           />
           <div ref={googleBox} className="flex justify-center" />
         </>
+      ) : null}
+      {demo && googleClientId ? (
+        <p className="flex items-center gap-3 text-xs text-cn-text-3 before:h-px before:flex-1 before:bg-cn-line after:h-px after:flex-1 after:bg-cn-line">or try it first</p>
+      ) : null}
+      {demo ? (
+        <button className={`${googleClientId ? secondaryBtn : primaryBtn} w-full`} disabled={busy} onClick={() => signIn("/api/auth/demo")} data-testid="demo-login">
+          {busy ? "Setting up your account..." : "Continue with a demo account"}
+        </button>
       ) : null}
       {!demo && !googleClientId ? <p className="text-sm text-cn-text-2">Sign-in is not set up on this server.</p> : null}
       <ErrorLine>{error}</ErrorLine>

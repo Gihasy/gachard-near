@@ -61,8 +61,8 @@ npm run demo
 
 Open http://localhost:3000, or the hosted demo, then:
 
-1. **Sign in.** Click Sign in, then Continue with a demo account. You see 5,000 Credits and
-   no wallet prompt.
+1. **Sign in.** Click Sign in, then Continue with a demo account, which needs no details from you. You see 5,000 Credits and
+   no wallet prompt. The hosted demo also offers Google, for an account you can come back to. Only Google's id for you is kept, with no email or name.
 2. **Open a pack.** Open the Series tab, or search and filter on the home page. Open Thornmaw Wilds. You see its odds and one pack price.
 3. **Buy.** Click Buy a pack. Credits fall by that price, and five cards are minted to your
    account.
