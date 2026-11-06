@@ -161,8 +161,9 @@ cargo near build non-reproducible-wasm --no-abi
   [`make-series-art.mjs`](frontend/scripts/make-series-art.mjs) and published by
   [`seed-demo-ips.ts`](frontend/scripts/seed-demo-ips.ts). The monsters are new designs in a
   familiar genre, and a generator can still land near an existing design.
-- **Earlier demo series are retired, not gone.** Crystal Night and the first Mochi Puffs, Aika
-  Nova and Noa Vantor series are off the listing and sell no new packs. Their records stay on
+- **Earlier demo series are retired, not gone.** Crystal Night, the first Mochi Puffs, Aika
+  Nova and Noa Vantor series, and a first release of the current four are off the listing and
+  sell no new packs. Their records stay on
   chain, and their cards can still be held, scanned and printed.
 - **Rates are published, not proven.** The draw is a server-side random choice. A buyer sees
   what they pay for, so the purchase does not depend on it, but the rates are not provably

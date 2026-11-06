@@ -6,7 +6,9 @@
 // A printed card is trimmed 3 mm inside this image on every side, about 36 px, and the
 // print PDF puts its QR at x 591-730, y 906-1048. So the border sits inside the trim
 // and nothing but a faint star is in the QR zone. See lib/pdf.ts.
-import { mkdirSync, writeFileSync } from "node:fs";
+import { createHash } from "node:crypto";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import QRCode from "qrcode";
 import sharp from "sharp";
 import { FILES, SERIES } from "./series-data.mjs";
@@ -25,27 +27,17 @@ const source = new URL("../../design/demo-art/", import.meta.url);
 const out = new URL("../public/cards/series/", import.meta.url);
 const fromSource = (path) => decodeURIComponent(new URL(path.replaceAll(" ", "%20"), source).pathname.replace(/^\/([A-Za-z]:)/, "$1"));
 
-// A chip on white, because the logos are dark and drawn on white.
+// The logo, cut out for dark surfaces by make-series-logos.mjs. Run that first.
 async function logoChip(series) {
-  const trimmed = await sharp(fromSource(`${series.folder}/${series.logo}`)).trim({ threshold: 12 }).toBuffer();
-  const { width, height } = await sharp(trimmed).metadata();
-  const wide = width / height > 2;
-  const chip = wide ? { w: 200, h: 72 } : { w: 92, h: 92 };
-  const pad = wide ? 10 : 7;
-  const logo = await sharp(trimmed)
-    .resize(chip.w - pad * 2, chip.h - pad * 2, { fit: "contain", background: "#ffffff" })
-    .flatten({ background: "#ffffff" })
+  const path = new URL(`${series.prefix}-logo.png`, out);
+  const { width, height } = await sharp(fileURLToPath(path)).metadata();
+  const chip = width / height > 2 ? { w: 200, h: 72 } : { w: 92, h: 92 };
+  const logo = await sharp(fileURLToPath(path))
+    .resize(chip.w, chip.h, { fit: "contain", background: { r: 0, g: 0, b: 0, alpha: 0 } })
     .png()
     .toBuffer();
-  return { logo, pad, ...chip };
+  return { logo, pad: 0, ...chip };
 }
-
-const logoFile = (series) =>
-  sharp(fromSource(`${series.folder}/${series.logo}`))
-    .trim({ threshold: 12 })
-    .resize(640, 640, { fit: "inside" })
-    .png({ palette: true, quality: 90, compressionLevel: 9 })
-    .toBuffer();
 
 function frameSvg({ name, sub, rarity, flavor, chip }) {
   const [light, deep] = FRAME[rarity];
@@ -64,7 +56,6 @@ function frameSvg({ name, sub, rarity, flavor, chip }) {
 <rect x="${ART.x}" y="${ART.y}" width="${ART.w}" height="${ART.h}" rx="18" fill="none" stroke="${light}" stroke-width="3" opacity=".8"/>
 <text x="72" y="858" font-size="27" font-style="italic" fill="#E9E6F5">${flavor[0]}</text>
 <text x="72" y="896" font-size="27" font-style="italic" fill="#E9E6F5">${flavor[1]}</text>
-<rect x="72" y="${logoY}" width="${chip.w}" height="${chip.h}" rx="14" fill="#fff"/>
 <text x="${textX}" y="${logoY + 26}" font-size="19" font-weight="700" fill="${light}" letter-spacing="1.5">FICTIONAL DEMO IP</text>
 <text x="${textX}" y="${logoY + 56}" font-size="18" fill="#9C9BB5">Not a real person or brand.</text>
 <text x="${textX}" y="${logoY + 82}" font-size="18" fill="#9C9BB5">AI art made for this demo.</text>
@@ -176,7 +167,6 @@ mkdirSync(out, { recursive: true });
 const made = new Map();
 for (const series of SERIES) {
   const chip = await logoChip(series);
-  writeFileSync(new URL(`${series.prefix}-logo.png`, out), await logoFile(series));
   for (const [index, [file, rarity]] of FILES.entries()) {
     const jpeg = await makeCard(series, file, RARITY_NAMES[rarity], series.cards[index], chip);
     const name = `${series.prefix}-${file}.jpg`;
@@ -185,6 +175,12 @@ for (const series of SERIES) {
     console.log(`${name}  ${(jpeg.length / 1024).toFixed(0)} KB`);
   }
 }
+// How the app knows these cards by the path it stores for them (lib/framed-art.ts).
+// Earlier releases stay listed: cards already bought keep showing without a margin.
+const list = new URL("../lib/framed-art.json", import.meta.url);
+const earlier = existsSync(list) ? JSON.parse(readFileSync(list, "utf8")) : [];
+const released = [...made.values()].map((jpeg) => `/api/art/${createHash("sha256").update(jpeg).digest("hex")}.jpg`);
+writeFileSync(list, `${JSON.stringify([...new Set([...earlier, ...released])], null, 2)}\n`);
 const showcase = made.get("thornmaw-legendary.jpg");
 // The phone is made by make-phone-mockup.mjs, from a capture of the app's own screen.
 // The card in the hand runs to its border, with no dark margin around it.

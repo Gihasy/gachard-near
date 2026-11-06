@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import TiltCard from "@/components/TiltCard";
-import { Rarity } from "@/components/ui";
+import { CardImage, Rarity } from "@/components/ui";
 
 /** A card that opens large when clicked. Esc, the close button or the backdrop closes it. */
 export default function CardZoom({ src, alt, rarity, eager = false }: { src: string; alt: string; rarity?: string; eager?: boolean }) {
@@ -30,8 +30,7 @@ export default function CardZoom({ src, alt, rarity, eager = false }: { src: str
       >
         {open ? (
           <div className="card-zoom-body">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={src} alt={alt} draggable={false} />
+            <CardImage src={src} alt={alt} rarity={rarity} eager />
             <div className="card-zoom-bar">
               <div className="min-w-0">
                 <p className="font-display font-semibold truncate">{alt}</p>

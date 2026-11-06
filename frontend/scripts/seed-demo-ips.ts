@@ -4,7 +4,7 @@
 // valid and can still be scanned. Safe to run again: it adds only what is missing.
 // With MONGODB_URL set it seeds that database. Run from frontend:
 //   node --env-file=.env.local scripts/seed-demo-ips.ts
-import { randomBytes } from "node:crypto";
+import { createHash, randomBytes } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { addCard, createSeries } from "../lib/catalog.ts";
@@ -37,9 +37,22 @@ async function creatorFor(username: string): Promise<User> {
 }
 
 console.log(`Demo series: seeding ${usesMongo() ? "MongoDB" : "the local file"}...`);
+
+// A series under one of these names whose art is not the current art is an earlier
+// release. It is hidden first, so a new one can be published under the same name.
+const artPath = (prefix: string, file: unknown) => join(process.cwd(), "public", "cards", "series", `${prefix}-${file}.jpg`);
+const current = new Set(
+  SERIES.flatMap((ip) => FILES.map(([file]) => `/api/art/${createHash("sha256").update(readFileSync(artPath(ip.prefix, file))).digest("hex")}.jpg`)),
+);
+await withDb((d) => {
+  for (const row of d.series) {
+    if (SERIES.some((ip) => ip.name === row.name) && row.templates.some((t) => !current.has(t.media))) row.hidden = true;
+  }
+});
+
 for (const ip of SERIES) {
   const creator = await creatorFor(ip.username);
-  const existing = (await readDb()).series.find((s) => s.name === ip.name);
+  const existing = (await readDb()).series.find((s) => s.name === ip.name && !s.hidden);
   const series = existing ?? (await createSeries(creator, ip.name, [7000, 2000, 800, 200], [40, 120, 360, 1200], ip.category));
   const logo = `/cards/series/${ip.prefix}-logo.png`;
   await withDb((d) => {
@@ -49,7 +62,7 @@ for (const ip of SERIES) {
   for (const [index, [file, rarity]] of FILES.entries()) {
     const [name] = ip.cards[index];
     if (series.templates.some((t) => t.name === name)) continue;
-    const art = readFileSync(join(process.cwd(), "public", "cards", "series", `${ip.prefix}-${file}.jpg`));
+    const art = readFileSync(artPath(ip.prefix, file));
     await addCard((await readDb()).users.find((u) => u.id === creator.id)!, series.id, name, rarity as number, art);
     console.log(`Demo series: added ${name}`);
   }

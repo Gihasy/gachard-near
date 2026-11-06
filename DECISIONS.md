@@ -1590,7 +1590,7 @@ their community collects it without meeting a wallet, a gas fee or a chain word.
 
 1. **Four new series, released as new.** Mochi Puffs, Aika Nova, Luma Four and Thornmaw Wilds, each with 4 Common, 2 Rare, 1 Epic and 1 Legendary. Luma Four replaces Noa Vantor. Thornmaw Wilds replaces Crystal Night.
 2. **Old series are retired, not deleted.** A `hidden` flag in the app's data takes a series off the listing and stops new packs. Its page stays reachable, because cards already bought stay valid and link to it. Nothing changes on chain.
-3. **A new frame for print.** The border and text sit inside the 63 x 88 mm trim, and the QR zone in `lib/pdf.ts` is empty but for a faint star. Each card carries its series logo on a white chip, because the logos are dark and drawn on white.
+3. **A new frame for print.** The border and text sit inside the 63 x 88 mm trim, and the QR zone in `lib/pdf.ts` is empty but for a faint star. Each card carries its series logo, cut out of its white background by `make-series-logos.mjs`.
 4. **Only optimized images ship.** About 75 MB of originals stay out of the repository. The site gets 800 x 1120 JPEGs of about 120 KB.
 5. **Each card says "AI art made for this demo".** The old line, "Art drawn for this demo", would no longer be true.
 6. **A Gachard card back.** The old back carried the name "Eclipse Prime" from earlier artwork. The new one is drawn in code by `make-card-back.mjs`, and its mark and name stay above the panel the print PDF adds.
@@ -1599,3 +1599,6 @@ their community collects it without meeting a wallet, a gas fee or a chain word.
 - **Likeness cannot be proven absent.** The monsters are in a familiar genre, and a reverse image search lowers the risk of resembling an existing design without removing it.
 - **Retiring is the app's word.** The contract does not know about `hidden`, so a retired series could still be minted to by the platform.
 - **Open packs survive.** A pack opened before a series was retired can still be bought.
+- **Released twice.** The first release put each logo on a white chip inside the card image. The image is immutable on chain, so removing the chip took a second release under the same names. The first four series, 21 to 24, are retired, and only their ids tell them apart on chain.
+
+**On screen, a framed card shows from its border out.** The dark margin exists for the print trim. `lib/framed-art.ts` recognises Gachard's own framed cards and crops the display only, which stretches them about 4%. A creator's upload has no such margin and is shown whole. The image and its hash do not change.

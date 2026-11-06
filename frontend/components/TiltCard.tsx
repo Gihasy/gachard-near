@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, type PointerEvent } from "react";
+import { isFramedArt } from "@/lib/framed-art";
 
 const MAX_TILT = 11;
 
@@ -38,7 +39,7 @@ export default function TiltCard({ src, alt, rarity, eager = false }: { src: str
     <span ref={ref} className="tilt block" onPointerMove={move} onPointerLeave={leave}>
       <span className="card-frame" data-rarity={rarity}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={src} alt={alt} loading={eager ? "eager" : "lazy"} decoding={eager ? "sync" : "async"} draggable={false} />
+        <img src={src} alt={alt} loading={eager ? "eager" : "lazy"} decoding={eager ? "sync" : "async"} draggable={false} data-framed={isFramedArt(src) || undefined} />
         <span className="holo" />
       </span>
     </span>
