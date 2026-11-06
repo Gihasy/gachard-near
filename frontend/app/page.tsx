@@ -32,11 +32,10 @@ const RAIL = [
 
 const PROMISES = ["No wallet to set up", "No network fees", "Odds on every pack"];
 
-// Written as what collecting tends to feel like, not as quotes: no real person said these.
 const PRINT_STEPS = [
   { title: "Own the digital card", text: "It lives in your collection, with its own public record." },
   { title: "Get the print file", text: "Choose Print. You get a PDF with crop marks and a QR code unique to that print." },
-  { title: "Print it and pass it on", text: "Anyone who scans the QR sees the card. Only its holder, signed in, can transfer it to another username." },
+  { title: "Print it and trade it", text: "Anyone who scans the QR sees the card. To take it, they ask and get a code. The holder enters that code to approve, and the card moves to their account." },
   { title: "Send it back to go digital", text: "The physical card goes to Gachard to be destroyed, and its old QR reads VOID. A card that is lost or stolen can never come back." },
 ];
 
@@ -133,7 +132,7 @@ export default async function Home({ searchParams }: {
                 One card. <span className="crystal-text">Two worlds.</span>
               </h2>
               <p className="mt-4 max-w-md text-cn-text-2 leading-relaxed">
-                Every card starts digital. Print it to hold it, pass it on, or send it back to make it digital again.
+                Every card starts digital. Print it to hold it, trade it in person, or send it back to make it digital again.
               </p>
             </div>
             <figure className="m-0">
