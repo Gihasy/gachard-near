@@ -225,6 +225,32 @@ input[type="number"] { -moz-appearance: textfield; }
   will-change: transform;
 }
 .tilt[data-active="true"] { transition: transform 60ms linear; }
+.card-zoom-open { display: block; width: 100%; cursor: zoom-in; border-radius: var(--cn-r-lg); }
+.card-zoom-open:focus-visible { outline: 2px solid var(--cn-crystal-lavender); outline-offset: 4px; }
+.card-zoom {
+  margin: auto;
+  padding: 0;
+  max-width: none;
+  max-height: none;
+  border: 0;
+  background: transparent;
+  color: var(--cn-text-1);
+}
+.card-zoom::backdrop { background: #05060ce6; backdrop-filter: blur(6px); }
+html:has(.card-zoom[open]) { overflow: hidden; }
+.card-zoom-body { width: min(calc(100vw - 2rem), calc((100dvh - 7rem) * 5 / 7), 640px); }
+.card-zoom-body img { display: block; width: 100%; height: auto; border-radius: 3%; }
+.card-zoom-bar { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-top: 0.75rem; }
+.card-zoom-close {
+  flex: none;
+  min-height: 2.75rem;
+  padding: 0 1.25rem;
+  border: 1px solid var(--cn-line-strong);
+  border-radius: 999px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+}
 .holo {
   position: absolute;
   inset: 0;

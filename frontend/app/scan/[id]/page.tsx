@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import CardActions from "@/components/CardActions";
-import TiltCard from "@/components/TiltCard";
+import CardZoom from "@/components/CardZoom";
 import { CheckIcon, ExternalIcon, PrintIcon, SendIcon, SparkIcon } from "@/components/icons";
 import { Panel, Rarity } from "@/components/ui";
 import { cardsOf, printState, readCard, serialForHolder, type PrintState } from "@/lib/cards";
@@ -100,7 +100,7 @@ export default async function CardRecord({ params, searchParams }: {
     <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
       <div className="grid md:grid-cols-[minmax(240px,340px)_1fr] gap-8 lg:gap-12">
         <div className="md:sticky md:top-24 self-start max-w-[300px] md:max-w-none mx-auto w-full">
-          <TiltCard src={card.media} alt={card.cardName} rarity={card.rarity} eager />
+          <CardZoom src={card.media} alt={card.cardName} rarity={card.rarity} eager />
         </div>
 
         <div className="space-y-5 min-w-0">

@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import OpenPackButton from "@/components/OpenPackButton";
 import PackArt from "@/components/PackArt";
 import { PrintIcon } from "@/components/icons";
-import TiltCard from "@/components/TiltCard";
+import CardZoom from "@/components/CardZoom";
 import { Eyebrow, Page, Panel, Rarity, RARITY_COLOR } from "@/components/ui";
 import { missingRarities, RARITIES } from "@/lib/catalog";
 import { readDb } from "@/lib/db";
@@ -88,7 +88,7 @@ export default async function SeriesPage({ params }: { params: Promise<{ id: str
             <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-x-4 gap-y-6">
               {series.templates.map((t) => (
                 <div key={t.id}>
-                  <TiltCard src={t.media} alt={t.name} rarity={RARITIES[t.rarity]} />
+                  <CardZoom src={t.media} alt={t.name} rarity={RARITIES[t.rarity]} />
                   <p className="mt-3 text-sm font-semibold truncate">{t.name}</p>
                   <Rarity value={RARITIES[t.rarity]} />
                 </div>
