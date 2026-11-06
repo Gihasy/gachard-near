@@ -55,6 +55,7 @@ export default async function Home({ searchParams }: {
       name: s.name,
       category: s.category ?? DEFAULT_CATEGORY,
       creator: nameOf(s.creatorAccount, users),
+      logo: s.logo,
       cardCount: s.templates.length,
       covers: [...s.templates]
         .sort((a, b) => b.rarity - a.rarity)

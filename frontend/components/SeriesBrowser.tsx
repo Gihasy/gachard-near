@@ -10,6 +10,7 @@ export interface SeriesItem {
   name: string;
   category: string;
   creator: string;
+  logo?: string;
   cardCount: number;
   covers: { id: number; media: string; rarity: string }[];
 }
@@ -98,12 +99,20 @@ export default function SeriesBrowser({ items, categories, initialQuery, initial
                   ))}
                 </div>
               </div>
-              <p className="mt-4 text-xs font-semibold text-cn-lavender">{item.category}</p>
-              <h3 className="mt-1 font-display font-semibold text-base leading-snug"><SeriesName name={item.name} /></h3>
-              <p className="mt-1 text-sm text-cn-text-2 truncate">by {item.creator}</p>
-              <p className="mt-1 inline-flex items-center gap-1.5 text-sm text-cn-text-3">
-                {item.cardCount} {item.cardCount === 1 ? "card" : "cards"}, all printable <PrintIcon width={14} height={14} />
-              </p>
+              <div className="mt-4 flex items-end justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-xs font-semibold text-cn-lavender">{item.category}</p>
+                  <h3 className="mt-1 font-display font-semibold text-base leading-snug"><SeriesName name={item.name} /></h3>
+                  <p className="mt-1 text-sm text-cn-text-2 truncate">by {item.creator}</p>
+                  <p className="mt-1 inline-flex items-center gap-1.5 text-sm text-cn-text-3">
+                    {item.cardCount} {item.cardCount === 1 ? "card" : "cards"}, all printable <PrintIcon width={14} height={14} />
+                  </p>
+                </div>
+                {item.logo ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={item.logo} alt="" loading="lazy" decoding="async" className="w-20 h-16 object-contain object-right-bottom shrink-0" data-testid="series-card-logo" />
+                ) : null}
+              </div>
             </Link>
           ))}
         </div>
