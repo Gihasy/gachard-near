@@ -30,6 +30,20 @@ function imageType(bytes: Buffer): "jpg" | "png" | null {
   return null;
 }
 
+/**
+ * Refuses new uploads before the database fills. Writes would then stop for the whole
+ * site, not only for images. A free MongoDB Atlas cluster holds 512 MB.
+ */
+export async function assertArtRoom() {
+  if (!usesMongo()) return;
+  const limit = Number(process.env.ART_STORAGE_LIMIT_MB ?? 400) * 1_000_000;
+  const art = await mongoCollection<ArtDoc>("art");
+  const [stats] = await art.aggregate<{ storageStats?: { size?: number } }>([{ $collStats: { storageStats: {} } }]).toArray();
+  if ((stats?.storageStats?.size ?? 0) >= limit) {
+    throw new ContractRefused("This demo has run out of room for new images.");
+  }
+}
+
 export async function storeArt(bytes: Buffer) {
   if (bytes.length > MAX_ART_BYTES) throw new ContractRefused("Artwork must be under 4 MB.");
   const type = imageType(bytes);

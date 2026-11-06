@@ -79,11 +79,15 @@ async function main() {
   check("Signed-out pack request is refused", (await anon.post("/api/packs", { seriesId })).status === 401);
   const pitch = await anon.page("/creator");
   check("Signed-out creators see the pitch, and the plan is labelled", pitch.status === 200 && pitch.html.includes("not part of this demo"));
+  check("A login cannot redirect to another site", (await anon.page("/login?next=/%5Cexample.com")).html.includes('next\\":\\"/\\",\\"demo'));
   check("Signed-out collection redirects to sign-in", (await anon.request("/collection")).status === 307);
   check("Signed-out Crystal Shop redirects to sign-in", (await anon.request("/crystal")).status === 307);
 
   const [alice, bob] = [new Visitor(), new Visitor()];
   const logins = await Promise.all([alice.post("/api/auth/demo"), bob.post("/api/auth/demo")]);
+  const crossSite = await anon.request("/api/auth/demo", { method: "POST", headers: { Origin: "https://evil.example" } });
+  check("A sign-in sent from another site is refused", crossSite.status === 403);
+  check("A write sent from another site is refused", (await alice.request("/api/me/lock", { method: "POST", headers: { Origin: "https://evil.example", "Content-Type": "application/json" }, body: JSON.stringify({ design: "1:1", locked: true }) })).status === 403);
   check("Two people sign in at once", logins.every((r) => r.status === 200), logins.map((r) => r.status).join(","));
 
   const unbought = await alice.page(`/series/${seriesId}`);
@@ -181,6 +185,9 @@ async function main() {
   const edit = { name: editedName, description: "Changed after release.", category: "Athletes", ratesPct: [100, 0, 0, 0], prices: [10, 20, 30, 40] };
   check("Someone else cannot edit a series", (await alice.post(`/api/creator/series/${newSeries}`, edit)).status === 400);
   check("A signed-out edit is refused", (await anon.post(`/api/creator/series/${newSeries}`, edit)).status === 401);
+  for (const [label, bad] of [["empty", { ratesPct: [], prices: [] }], ["short", { ratesPct: [100] }], ["not 100%", { ratesPct: [50, 0, 0, 0] }], ["not a list", { prices: "free" }], ["zero value", { prices: [0, 20, 30, 40] }]]) {
+    check(`An edit with ${label} odds or values is refused`, (await bob.post(`/api/creator/series/${newSeries}`, { ...edit, ...bad })).status === 400);
+  }
   const edited = await bob.post(`/api/creator/series/${newSeries}`, edit);
   check("The creator edits their series", edited.status === 200);
   const upload = (bytes, name) => {
@@ -202,6 +209,8 @@ async function main() {
   const { id: draftId } = framedDraft;
   check("A framed card says so and keeps its original", framedDraft.media.endsWith("?framed") && !framedDraft.sourceMedia.endsWith("?framed"));
   check("A framed card's image is served", (await anon.request(framedDraft.media)).status === 200);
+  check("A small copy of it is served", (await anon.request(`/_next/image?url=${encodeURIComponent(framedDraft.media)}&w=384&q=75`)).status === 200);
+  check("A made-up query cannot use the image optimizer", (await anon.request(`/_next/image?url=${encodeURIComponent(`${framedDraft.media}x`)}&w=384&q=75`)).status === 400);
   const notYet = await anon.page(`/series/${newSeries}`);
   check("A draft does not put a series on sale", !notYet.html.includes("Sign in to buy a pack"));
   const emptySeries = await bob.post("/api/creator/series", { name: `Flow ${Date.now()}`, ratesPct: [100, 0, 0, 0], prices: [10, 20, 30, 40] });
@@ -254,6 +263,8 @@ async function main() {
   // A collector can lock a card against dismantling, and only their own lock counts.
   check("A signed-out lock is refused", (await anon.post("/api/me/lock", { design: "1:1", locked: true })).status === 401);
   check("A lock needs a real card reference", (await alice.post("/api/me/lock", { design: "nonsense", locked: true })).status === 400);
+  check("A very long lock is refused", (await alice.post("/api/me/lock", { design: `${"1".repeat(200_000)}:1`, locked: true })).status === 400);
+  check("A lock on a card that does not exist is refused", (await alice.post("/api/me/lock", { design: "999999:1", locked: true })).status === 400);
   const lockedToken = tokenIds[1];
   const designOf = (await alice.page("/collection")).html.split('data-design="').find((part) => part.includes(`href="/scan/${lockedToken}"`))?.split('"')[0];
   check("A collection shows a lockable card", Boolean(designOf), designOf);

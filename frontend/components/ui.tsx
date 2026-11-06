@@ -1,4 +1,4 @@
-import { isFramedArt } from "@/lib/framed-art";
+import { isFramedArt, smallCopy } from "@/lib/framed-art";
 import type { ReactNode } from "react";
 import { CrystalStar } from "@/components/icons";
 import { splitSeriesName } from "@/lib/series-name";
@@ -44,11 +44,11 @@ export function Panel({ children, className = "" }: { children: ReactNode; class
   return <section className={`panel p-5 sm:p-6 ${className}`}>{children}</section>;
 }
 
-export function CardImage({ src, alt, rarity, eager = false }: { src: string; alt: string; rarity?: string; eager?: boolean }) {
+export function CardImage({ src, alt, rarity, eager = false, full = false }: { src: string; alt: string; rarity?: string; eager?: boolean; full?: boolean }) {
   return (
     <span className="card-frame" data-rarity={rarity}>
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={src} alt={alt} loading={eager ? "eager" : "lazy"} decoding="async" data-framed={isFramedArt(src) || undefined} />
+      <img src={full ? src : smallCopy(src)} alt={alt} loading={eager ? "eager" : "lazy"} decoding="async" data-framed={isFramedArt(src) || undefined} />
     </span>
   );
 }

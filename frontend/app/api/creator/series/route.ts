@@ -1,5 +1,5 @@
 import { cleanCategory } from "@/lib/categories";
-import { createSeries } from "@/lib/catalog";
+import { asNumbers, createSeries } from "@/lib/catalog";
 import { currentUser, failure } from "@/lib/users";
 
 export async function POST(request: Request) {
@@ -8,8 +8,7 @@ export async function POST(request: Request) {
   try {
     const { name, ratesPct, prices, category, description } = await request.json();
     const about = typeof description === "string" ? description.trim().slice(0, 200) : "";
-    const ratesBps = (ratesPct as number[]).map((r) => Math.round(Number(r) * 100));
-    const series = await createSeries(user, String(name).trim(), ratesBps, (prices as number[]).map(Number), cleanCategory(category), about);
+    const series = await createSeries(user, String(name ?? "").trim(), asNumbers(ratesPct, 100), asNumbers(prices), cleanCategory(category), about);
     return Response.json({ id: series.id });
   } catch (error) {
     return failure(error);

@@ -8,6 +8,7 @@
  */
 import { randomBytes, randomInt } from "node:crypto";
 import { withDb, type PackOffer, type SeriesRow } from "./db.ts";
+import { spend } from "./limits.ts";
 import { missingRarities, RARITIES } from "./catalog.ts";
 import { CRYSTAL_PACK_PRICE } from "./economy.ts";
 import { ContractRefused, platformCall } from "./near.ts";
@@ -27,6 +28,9 @@ function drawTemplate(series: SeriesRow): number {
 }
 
 const STILL_MINTING_MS = 120_000;
+// Each card takes about 0.004 NEAR of storage from the contract, so packs are what drains it.
+const MAX_PACKS_PER_USER_PER_HOUR = 15;
+const MAX_PACKS_PER_VISITOR_PER_HOUR = 40;
 
 /** What the client may know: a card stays secret until it is turned over. */
 export function packView(offer: PackOffer, series: SeriesRow) {
@@ -59,7 +63,7 @@ export async function revealCard(userId: string, offerId: string, index: number)
   });
 }
 
-export async function buyPack(userId: string, seriesId: number, pay: "credits" | "crystal" = "credits") {
+export async function buyPack(userId: string, seriesId: number, pay: "credits" | "crystal" = "credits", visitor = "script") {
   // Credits leave and the pack is claimed in one step. A second click while it mints
   // is refused, so a double click buys once.
   const claim = await withDb((d) => {
@@ -73,6 +77,11 @@ export async function buyPack(userId: string, seriesId: number, pay: "credits" |
     if (busy) throw new ContractRefused("Your last pack is still on its way. Try again in a moment.");
     const user = d.users.find((u) => u.id === userId)!;
     const inCrystal = pay === "crystal";
+    const allowed = spend(d, [
+      { key: `pack:${userId}`, max: MAX_PACKS_PER_USER_PER_HOUR },
+      { key: `pack-visitor:${visitor}`, max: MAX_PACKS_PER_VISITOR_PER_HOUR },
+    ]);
+    if (!allowed) throw new ContractRefused("That is a lot of packs for one hour. Please try again later.");
     const price = inCrystal ? 0 : packPrice(series);
     if (inCrystal) {
       if ((user.crystal ?? 0) < CRYSTAL_PACK_PRICE) throw new ContractRefused(`A Crystal Pack takes ${CRYSTAL_PACK_PRICE} Crystal.`);

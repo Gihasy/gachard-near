@@ -1,4 +1,4 @@
-import { deleteSeries, updateSeries } from "@/lib/catalog";
+import { asNumbers, deleteSeries, updateSeries } from "@/lib/catalog";
 import { cleanCategory } from "@/lib/categories";
 import { currentUser, failure } from "@/lib/users";
 
@@ -8,9 +8,9 @@ export async function POST(request: Request, ctx: { params: Promise<{ id: string
   try {
     const { name, ratesPct, prices, category, description } = await request.json();
     await updateSeries(user, Number((await ctx.params).id), {
-      name: String(name).trim(),
-      ratesBps: (ratesPct as number[]).map((r) => Math.round(Number(r) * 100)),
-      prices: (prices as number[]).map(Number),
+      name: String(name ?? "").trim(),
+      ratesBps: asNumbers(ratesPct, 100),
+      prices: asNumbers(prices),
       category: cleanCategory(category),
       description: typeof description === "string" ? description.trim().slice(0, 200) : "",
     });

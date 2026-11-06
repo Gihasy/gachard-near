@@ -1,4 +1,4 @@
-import { storeArt } from "@/lib/art";
+import { storeUpload } from "@/lib/catalog";
 import { readDb, withDb } from "@/lib/db";
 import { currentUser, failure } from "@/lib/users";
 
@@ -14,7 +14,7 @@ export async function POST(request: Request, ctx: { params: Promise<{ id: string
   try {
     const file = (await request.formData()).get("logo");
     if (!(file instanceof File)) return Response.json({ error: "Choose an image." }, { status: 400 });
-    const { media } = await storeArt(Buffer.from(await file.arrayBuffer()));
+    const { media } = await storeUpload(user, Buffer.from(await file.arrayBuffer()));
     await withDb((d) => {
       const row = d.series.find((s) => s.id === seriesId);
       if (row) row.logo = media;

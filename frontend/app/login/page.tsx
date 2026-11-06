@@ -8,7 +8,8 @@ const POINTS = ["No wallet to set up", "No seed phrase to keep safe", "No networ
 
 export default async function Login({ searchParams }: { searchParams: Promise<{ next?: string }> }) {
   const { next } = await searchParams;
-  const safeNext = next?.startsWith("/") && !next.startsWith("//") ? next : "/";
+  // A browser reads a backslash as a slash, so "/\example.com" is another site.
+  const safeNext = next && /^\/(?![/\\])[^\\\s]*$/.test(next) ? next : "/";
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 py-10 sm:py-20 grid md:grid-cols-2 gap-10 items-center">
       <div className="relative hidden md:block h-96" aria-hidden="true">

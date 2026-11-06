@@ -4,6 +4,14 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   reactStrictMode: true,
   serverExternalPackages: ["near-api-js", "mongodb"],
+  images: {
+    // Exactly the addresses cards use, so a made-up query cannot spend the optimizer's quota.
+    localPatterns: [
+      { pathname: "/cards/**", search: "" },
+      { pathname: "/api/art/**", search: "" },
+      { pathname: "/api/art/**", search: "?framed" },
+    ],
+  },
   async headers() {
     return [
       {

@@ -3,9 +3,10 @@
  * them as the issuer. The database row is a cache for listing pages.
  */
 import { DEFAULT_CATEGORY } from "./categories.ts";
-import { storeArt } from "./art.ts";
+import { assertArtRoom, storeArt } from "./art.ts";
 import { randomUUID } from "node:crypto";
 import { readDb, withDb, type DraftCard, type SeriesRow, type TemplateRow, type User } from "./db.ts";
+import { spend } from "./limits.ts";
 import { ContractRefused, platformCall, userCall, view } from "./near.ts";
 
 export const RARITIES = ["Common", "Rare", "Epic", "Legendary"];
@@ -13,10 +14,15 @@ export const RARITIES = ["Common", "Rare", "Epic", "Legendary"];
 // A public URL with open uploads and no review (ADR-044). The caps limit how much
 // can be published, and how fast it spends the platform's funds.
 const MAX_SERIES_PER_USER = 3;
-const MAX_SERIES_PER_HOUR = 10;
+const MAX_SERIES_PER_HOUR = 20;
+const MAX_SERIES_PER_USER_PER_HOUR = 5;
 const MAX_CARDS_PER_SERIES = 20;
-const MAX_CARDS_PER_HOUR = 60;
-const MAX_UPLOADS_PER_HOUR = 300;
+const MAX_CARDS_PER_HOUR = 200;
+const MAX_CARDS_PER_USER_PER_HOUR = 60;
+const MAX_UPLOADS_PER_HOUR = 600;
+const MAX_UPLOADS_PER_USER_PER_HOUR = 80;
+const MAX_UPLOAD_KB_PER_HOUR = 400_000;
+const MAX_UPLOAD_KB_PER_USER_PER_HOUR = 60_000;
 // A request stops starting new cards after this, and the browser sends the next one (Vercel limits a function to 30 s).
 const PUBLISH_BUDGET_MS = 18_000;
 // Longer than a function can live, so an older claim means the publish that made it has ended.
@@ -24,6 +30,27 @@ const CLAIM_MS = 60_000;
 const HOUR = 3_600_000;
 
 const withinHour = (iso: string) => Date.now() - Date.parse(iso) < HOUR;
+
+/** A form's list of numbers. Anything else becomes an empty list, which checkSeries refuses. */
+export const asNumbers = (value: unknown, scale = 1) =>
+  Array.isArray(value) ? value.map((item) => Math.round(Number(item) * scale)) : [];
+
+/**
+ * The contract's own rules. They are checked here too, because an edit that seems to
+ * change nothing on chain never reaches the contract, and the database is what sets a
+ * pack's price and draws its cards.
+ */
+function checkSeries(name: string, ratesBps: number[], prices: number[]) {
+  const bytes = Buffer.byteLength(name);
+  if (bytes < 1 || bytes > 64) throw new ContractRefused("A series' title must be 1 to 64 characters.");
+  if (ratesBps.length !== RARITIES.length || !ratesBps.every((rate) => Number.isInteger(rate) && rate >= 0 && rate <= 10_000)
+    || ratesBps.reduce((sum, rate) => sum + rate, 0) !== 10_000) {
+    throw new ContractRefused("The odds must add up to 100%.");
+  }
+  if (prices.length !== RARITIES.length || !prices.every((price) => Number.isInteger(price) && price > 0 && price <= 1_000_000)) {
+    throw new ContractRefused("Each card's value must be a whole number above zero.");
+  }
+}
 
 export async function createSeries(
   user: User,
@@ -33,13 +60,17 @@ export async function createSeries(
   category: string = DEFAULT_CATEGORY,
   description?: string,
 ): Promise<SeriesRow> {
+  checkSeries(name, ratesBps, prices);
   const { series: all } = await readDb();
   if (all.filter((s) => s.ownerUserId === user.id && !s.deletedAt).length >= MAX_SERIES_PER_USER) {
     throw new ContractRefused(`An account can release ${MAX_SERIES_PER_USER} series in this demo.`);
   }
-  if (all.filter((s) => withinHour(s.createdAt)).length >= MAX_SERIES_PER_HOUR) {
-    throw new ContractRefused("Too many new series this hour. Please try again later.");
-  }
+  // Counted here, not from the list: a deleted series still cost its transaction.
+  const allowed = await withDb((d) => spend(d, [
+    { key: `series:${user.id}`, max: MAX_SERIES_PER_USER_PER_HOUR },
+    { key: "series", max: MAX_SERIES_PER_HOUR },
+  ]));
+  if (!allowed) throw new ContractRefused("Too many new series this hour. Please try again later.");
   if (!user.approvedCreator) {
     await platformCall("approve_creator", { creator: user.accountId });
     await withDb((d) => {
@@ -74,6 +105,7 @@ export async function updateSeries(
   changes: { name: string; ratesBps: number[]; prices: number[]; category: string; description: string },
 ): Promise<void> {
   const series = await ownSeries(user, seriesId);
+  checkSeries(changes.name, changes.ratesBps, changes.prices);
   const oddsChanged = changes.ratesBps.some((rate, i) => rate !== series.ratesBps[i]);
   const onChainChanged = oddsChanged || changes.name !== series.name || changes.prices.some((price, i) => price !== series.prices[i]);
   if (onChainChanged) {
@@ -129,26 +161,26 @@ function checkCard(name: string, rarity: number) {
   if (!Number.isInteger(rarity) || rarity < 0 || rarity >= RARITIES.length) throw new ContractRefused("Choose a rarity.");
 }
 
-async function storeUpload(art: Buffer) {
-  const allowed = await withDb((d) => {
-    const recent = (d.artUploads ?? []).filter(withinHour);
-    if (recent.length >= MAX_UPLOADS_PER_HOUR) {
-      d.artUploads = recent;
-      return false;
-    }
-    d.artUploads = [...recent, new Date().toISOString()];
-    return true;
-  });
+/** Stores an image a user sent, within what they and everyone may upload this hour. */
+export async function storeUpload(user: User, art: Buffer) {
+  const kb = Math.ceil(art.length / 1024);
+  const allowed = await withDb((d) => spend(d, [
+    { key: `upload:${user.id}`, max: MAX_UPLOADS_PER_USER_PER_HOUR },
+    { key: `upload-kb:${user.id}`, max: MAX_UPLOAD_KB_PER_USER_PER_HOUR, amount: kb },
+    { key: "upload", max: MAX_UPLOADS_PER_HOUR },
+    { key: "upload-kb", max: MAX_UPLOAD_KB_PER_HOUR, amount: kb },
+  ]));
   if (!allowed) throw new ContractRefused("Too many uploads this hour. Please try again later.");
+  await assertArtRoom();
   return storeArt(art);
 }
 
 /** How a draft is framed: `null` for a creator's own design. */
 export type DraftFrame = { source?: Buffer; flavor: string; frameKey: string } | null;
 
-async function storeFramed(art: Buffer, source: Buffer) {
-  const stored = await storeUpload(art);
-  return { ...stored, media: `${stored.media}?framed`, sourceMedia: (await storeUpload(source)).media };
+async function storeFramed(user: User, art: Buffer, source: Buffer) {
+  const stored = await storeUpload(user, art);
+  return { ...stored, media: `${stored.media}?framed`, sourceMedia: (await storeUpload(user, source)).media };
 }
 
 /** Adds a card to a series as a draft. Nothing reaches the chain until the series is published. */
@@ -163,7 +195,7 @@ export async function addDraft(user: User, seriesId: number, name: string, rarit
     id: randomUUID(),
     name,
     rarity,
-    ...(frame ? { ...(await storeFramed(art, frame.source!)), flavor: frame.flavor, frameKey: frame.frameKey } : await storeUpload(art)),
+    ...(frame ? { ...(await storeFramed(user, art, frame.source!)), flavor: frame.flavor, frameKey: frame.frameKey } : await storeUpload(user, art)),
     createdAt: new Date().toISOString(),
   };
   await withDb((d) => {
@@ -190,8 +222,8 @@ export async function updateDraft(
   const before = changeableDraft(await ownSeries(user, seriesId), draftId);
   checkCard(changes.name, changes.rarity);
   const { frame } = changes;
-  const stored = changes.art ? await storeUpload(changes.art) : null;
-  const source = frame?.source ? (await storeUpload(frame.source)).media : before.sourceMedia ?? before.media;
+  const stored = changes.art ? await storeUpload(user, changes.art) : null;
+  const source = frame?.source ? (await storeUpload(user, frame.source)).media : before.sourceMedia ?? before.media;
   const changed = await withDb((d) => {
     const draft = d.series.find((s) => s.id === seriesId)?.drafts?.find((c) => c.id === draftId);
     if (!draft || draft.claimedAt) return false;
@@ -250,7 +282,8 @@ export async function publishSeries(user: User, seriesId: number): Promise<{ pub
   const missing = missingToPublish(series);
   if (missing.length) throw new ContractRefused(`Add a card for: ${missing.join(", ")}.`);
   const recent = all.flatMap((s) => s.templates).filter((t) => withinHour(t.createdAt)).length;
-  if (recent + drafts.length > MAX_CARDS_PER_HOUR) {
+  const mine = all.filter((s) => s.ownerUserId === user.id).flatMap((s) => s.templates).filter((t) => withinHour(t.createdAt)).length;
+  if (recent + drafts.length > MAX_CARDS_PER_HOUR || mine + drafts.length > MAX_CARDS_PER_USER_PER_HOUR) {
     throw new ContractRefused("Too many new cards this hour. Please try again later.");
   }
 

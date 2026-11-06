@@ -30,7 +30,7 @@ export default function CardZoom({ src, alt, rarity, eager = false }: { src: str
       >
         {open ? (
           <div className="card-zoom-body">
-            <CardImage src={src} alt={alt} rarity={rarity} eager />
+            <CardImage src={src} alt={alt} rarity={rarity} eager full />
             <div className="card-zoom-bar">
               <div className="min-w-0">
                 <p className="font-display font-semibold truncate">{alt}</p>

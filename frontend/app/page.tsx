@@ -117,7 +117,7 @@ export default async function Home({ searchParams }: {
         <div className="rail-track">
           {[...RAIL, ...RAIL].map((file, i) => (
             <div key={i} className="w-28 sm:w-36 shrink-0 opacity-80">
-              <CardImage src={`/cards/${file}`} alt="" eager />
+              <CardImage src={`/cards/${file}`} alt="" />
             </div>
           ))}
         </div>

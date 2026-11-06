@@ -39,7 +39,7 @@ export default function CardViewDialog({ card, seriesName, copies, locked, onClo
       {card ? (
         <div className="card-view-body">
           <div className="card-view-art">
-            <CardImage src={card.media} alt={card.name} rarity={card.rarity} eager />
+            <CardImage src={card.media} alt={card.name} rarity={card.rarity} eager full />
           </div>
           <div className="min-w-0 flex flex-col">
             <div className="flex items-start justify-between gap-3">

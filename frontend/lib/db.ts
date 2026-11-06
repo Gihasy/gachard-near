@@ -125,8 +125,8 @@ export interface Data {
   txs: Record<string, string[]>;
   /** token id -> the Crystal it gave. Makes crediting a burn safe to repeat. */
   dismantled: Record<string, DismantleRow>;
-  /** When recent card images were uploaded. Drafts can be replaced freely, so uploads have their own cap. */
-  artUploads?: string[];
+  /** Recent use of each hourly limit, as [unix seconds, amount]. See lib/limits.ts. */
+  limits?: Record<string, [number, number][]>;
 }
 
 const emptyData = (): Data => ({ users: [], series: [], offers: [], prints: {}, txs: {}, dismantled: {} });

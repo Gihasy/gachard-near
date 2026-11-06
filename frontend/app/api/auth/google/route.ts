@@ -1,6 +1,6 @@
 import { OAuth2Client } from "google-auth-library";
 import { readDb } from "@/lib/db";
-import { createUser, failure, withSession } from "@/lib/users";
+import { createUser, failure, visitorKey, withSession } from "@/lib/users";
 
 export async function POST(request: Request) {
   const clientId = process.env.GOOGLE_CLIENT_ID;
@@ -12,7 +12,7 @@ export async function POST(request: Request) {
     if (!sub) return Response.json({ error: "Sign-in failed." }, { status: 400 });
     // The Google id is all that is kept: no email, no name (ADR-032).
     const existing = (await readDb()).users.find((u) => u.googleSub === sub);
-    const user = existing ?? (await createUser("google", sub));
+    const user = existing ?? (await createUser("google", await visitorKey(), sub));
     return withSession({ ok: true }, user.id);
   } catch (error) {
     return failure(error);
