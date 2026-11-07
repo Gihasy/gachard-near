@@ -45,7 +45,7 @@ export default function LoginForm({ next, demo, googleClientId }: { next: string
         <>
           <Script
             src="https://accounts.google.com/gsi/client"
-            onLoad={() => {
+            onReady={() => {
               window.google?.accounts.id.initialize({
                 client_id: googleClientId,
                 callback: (r) => signIn("/api/auth/google", { token: r.credential }),
