@@ -86,7 +86,7 @@ export default function SeriesBrowser({ items, categories, initialQuery, initial
           </button>
         </div>
       ) : (
-        <div className="mt-6 grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {shown.map((item) => (
             <Link key={item.id} href={`/series/${item.id}`} data-testid="series-card" className="panel panel-link group block p-5 overflow-hidden">
               <div className="relative h-52 flex items-center justify-center">

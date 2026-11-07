@@ -29,7 +29,7 @@ export default async function AllSeries() {
           <Link className={`${primaryBtn} mt-5`} href="/creator">Release a series</Link>
         </div>
       ) : (
-        <div className="grid md:grid-cols-2 gap-4" data-testid="all-series">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4" data-testid="all-series">
           {live.map((s) => (
             <Link key={s.id} href={`/series/${s.id}`} className="panel panel-link group block p-5 sm:p-6" data-testid="ip-card">
               <div className="flex items-center gap-4 sm:gap-5">
