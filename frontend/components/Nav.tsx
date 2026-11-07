@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Suspense } from "react";
 import Logo from "@/components/Logo";
 import LogoutButton from "@/components/LogoutButton";
 import { TabBar, TopLinks } from "@/components/NavLinks";
@@ -15,7 +16,7 @@ export default async function Nav() {
           <Link href="/" aria-label="Gachard home" className="shrink-0">
             <Logo size={30} showWordmark />
           </Link>
-          <TopLinks />
+          <Suspense fallback={null}><TopLinks /></Suspense>
           <div className="ml-auto flex items-center gap-3 text-sm">
             {user ? (
               <>
@@ -32,7 +33,7 @@ export default async function Nav() {
           </div>
         </div>
       </header>
-      <TabBar />
+      <Suspense fallback={null}><TabBar /></Suspense>
     </>
   );
 }
