@@ -16,7 +16,7 @@ card view in the app already uses (`aspectRatio: "5/7"` in `CardItem.tsx`,
 | Bleed (file size) | 69 × 94 mm | 1630 × 2220 px | 815 × 1110 px |
 | Trim (cut line, what the app shows) | 63 × 88 mm, 3 mm corner radius | 1488 × 2079 px | 744 × 1039 px |
 | Safe area | 57 × 82 mm, 3 mm inside trim | 1346 × 1937 px | 673 × 969 px |
-| Gachard zone | 12 × 12 mm, bottom-right corner of the safe area | 283 × 283 px | 142 × 142 px |
+| Gachard zone | 12 × 12 mm, in the bottom-right corner, 1 mm inside the safe area | 283 × 283 px | 142 × 142 px |
 
 - **Bleed**: the artwork's background continues to the file edge. Nothing
   inside the bleed band survives the cut.
@@ -24,9 +24,8 @@ card view in the app already uses (`aspectRatio: "5/7"` in `CardItem.tsx`,
 - **Gachard zone**: kept plain, a solid background or a soft texture.
   - **In print**, Gachard puts the per-card QR (`/scan` provenance) and serial
     number here.
-  - **In the app**, the album lock icon sits here. It is the only platform
-    element allowed on top of a card face.
-- **Format**: PNG or JPG, sRGB, at most 25 MB.
+- **With the Gachard frame**, on by default in the studio, upload art only, with no text or border. These zones are for a creator's own design, with the frame switched off.
+- **Format**: PNG, JPG or WebP, sRGB. The browser converts it to a JPEG before upload.
   - 600 dpi is recommended; 300 dpi is the minimum.
   - Smallest text is 6 pt, and the thinnest line is 0.25 mm.
 - **Never on the card face**: price, Credits, Crystal, a serial number, the

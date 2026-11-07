@@ -11,7 +11,3 @@ prompt.
 | `icon-512.webp` | smaller variant for surfaces that do not need PNG |
 | `gachard-logo.*`, `gachard-logo-full.*` | full lockups, PNG and WebP |
 
-Third-party marks live in `public/brand/` instead, kept separate because they
-belong to other people: `monad.webp` on `/wallet` (moved there from the footer on
-15 October 2026) and `privy.webp` on `/profile` and `/wallet`. Both are used as
-supplied — scaled only, never recoloured.

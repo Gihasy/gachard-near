@@ -4,9 +4,9 @@ A platform where a creator or IP owner releases their own trading card game. Eve
 card is digital from birth, can be verified by anyone and can be printed. Their
 community collects it without meeting a wallet, a seed phrase or a gas fee.
 
-Built for NEAR HACKATHON. Tracks: `games`, `nfts`, `open`.
+Built at NEAR HACKATHON. Tracks: `games`, `nfts`, `open` ([how it fits each one](#tracks)).
 
-- **Hosted demo:** https://gachard-near.vercel.app (testnet, simulated payments)
+- **Hosted demo:** https://gachard-near.vercel.app (testnet, simulated payments), kept up through judging
 - **Contract:** [`cards-v2.gachard-demo-6b9aead4.testnet`](https://testnet.nearblocks.io/address/cards-v2.gachard-demo-6b9aead4.testnet)
 - **Prior work is disclosed** [below](#prior-work). What is simulated is listed [here](#what-is-simulated-and-what-is-not-claimed).
 
@@ -21,6 +21,37 @@ can be copied, lost or stolen. Here the paper never carries ownership. A QR code
 the card's record, only the holder's account can transfer it, and returning it to digital
 takes the physical card, so one that is lost or stolen stays lost.
 
+## Try it in two minutes
+
+On the hosted demo, with no account and no install:
+
+| Do this | See this |
+|---|---|
+| Click Sign in, then Continue with a demo account | 5,000 simulated Credits, and no wallet prompt |
+| Open the Series tab, open a series, and click Buy a pack | Five cards in your account, and Credits fall by the pack's price |
+| Click Open all, then Print or verify on a card | Who holds it and who released it, read live from the contract |
+| Click View on NearBlocks on a history row | The same transaction, outside this app |
+
+The [full walkthrough](#try-it) covers printing, trading, returning, dismantling and releasing your own series.
+
+## Why NEAR
+
+Gachard needs every fan to have an account that acts for itself, without the fan ever handling a wallet or gas. NEAR provides the parts of that in the protocol:
+
+- **Accounts.** A named sub-account is created at sign-in for 0.002 NEAR, so each fan and creator acts as themselves on chain.
+- **Meta transactions (NEP-366).** The user's account signs and the platform pays, so `e2e.mjs` can show from exact balances that users pay nothing.
+- **NEP-245.** One contract holds every card of every series.
+
+The earlier version of this product ran on Monad and used Privy for accounts ([prior work](#prior-work)). Other chains can reach a similar result with account abstraction, so this is not a claim that only NEAR can do it. Here it took less around the protocol. The cost of "no wallet" is that Gachard holds the keys, as [listed below](#what-is-simulated-and-what-is-not-claimed).
+
+## Tracks
+
+| Track | What fits | What is not built |
+|---|---|---|
+| `games` | NEP-245 items and social login, with no wallet or gas prompt in the loop: buy a pack, get duplicates, dismantle them for Crystal, and trade Crystal for a missing card. Players pass printed cards to each other in person | NPC agents, a priced market between players, NEAR Intents |
+| `nfts` | Cards with behaviour: each can be printed, traded, returned or burned, and its print's QR follows that state and reads VOID once returned | NEP-171, cards as accounts, cards that hold money or earn |
+| `open` | A digital token and a physical card that stay linked, where the paper never carries ownership | Real printing, shipping or payments |
+
 ## How NEAR is used
 
 | What | How | Where |
@@ -30,6 +61,7 @@ takes the physical card, so one that is lost or stolen stays lost.
 | No gas for users | NEP-366 meta transactions: the user signs, the platform pays gas and the 1 yocto deposit | [`frontend/lib/near.ts`](frontend/lib/near.ts) |
 | No wallet | A named sub-account per user, created at sign-in | same |
 | No method lets the platform move a card | Only the holder's own call moves one. See the limit on the contract's key [below](#what-is-simulated-and-what-is-not-claimed) | contract tests |
+| Trading a printed card | The new owner asks, and the holder's own account signs `mt_transfer` after entering their code | [`frontend/lib/handoff.ts`](frontend/lib/handoff.ts) |
 | Print and return | A printed card stays with its holder's account. Returning takes the holder's request and the platform's confirmation, under the same token id | contract, `print_lock`, `request_return`, `confirm_return` |
 | Dismantle | The holder's own account burns a digital card. Its supply becomes 0 and its record stays. A printed card has to come back first, so a physical card never outlives its token | contract, `burn` |
 | A QR for each print | The chain keeps a hash of each print's serial, so anyone can tell a current print from a cancelled one | contract, `print_state` |
@@ -59,7 +91,7 @@ npm install
 npm run demo
 ```
 
-Open http://localhost:3000, or the hosted demo, then:
+Open http://localhost:3000, or the hosted demo, then follow these steps. Each step says what you should see:
 
 1. **Sign in.** Click Sign in, then Continue with a demo account, which needs no details from you. You see 5,000 Credits and
    no wallet prompt. The hosted demo also offers Google, for an account you can come back to. Only Google's id for you is kept, with no email or name.
@@ -205,10 +237,12 @@ This is disclosed as the hackathon rules ask (Q-002, Q-003).
   `design/gachard.pen`, `docs/CREATOR-ASSET-GUIDE.md`, and the images in `frontend/public`,
   including the pack art, relabelled for this version. The "One card, two worlds" line, the
   scan steps and parts of the creator page's copy come from the Monad site.
-- Libraries: `near-sdk`, `near-api-js`, Next.js, React, Tailwind, `pdf-lib`, `qrcode`, `jsqr`, `mongodb`,
+- Libraries, none of them written for this project: `near-sdk`, `near-api-js`, Next.js, React, Tailwind, `pdf-lib`, `qrcode`, `jsqr`, `mongodb`,
   `google-auth-library`, and `sharp` for the art scripts only.
 - Much of the code was written with AI coding agents under the author's direction: Claude Code
   here, and MiMoCode for the earlier Monad version (ADR-015).
+
+The public testnet RPCs are FastNEAR, with dRPC as a fallback when one answers 429.
 
 Why each decision was made is in [`DECISIONS.md`](DECISIONS.md). ADR-041 to ADR-048 cover this
 version. Older ADRs describe the Monad product.
