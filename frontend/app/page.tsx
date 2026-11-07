@@ -74,7 +74,7 @@ export default async function Home({ searchParams }: {
             <span className="crystal-text whitespace-nowrap">Collect them!</span>
           </h1>
           <p className="mt-5 max-w-xl text-cn-text-2 text-base sm:text-lg leading-relaxed">
-            Characters, VTubers, entertainers, athletes and more, all in one place.
+            Characters, VTubers, boy bands, athletes and more, all in one place.
             Open a pack, keep what you love, and print any card you own.
           </p>
           <form action="/#series" method="get" className="mt-7 flex gap-2 max-w-xl">

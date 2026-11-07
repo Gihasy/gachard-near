@@ -41,7 +41,7 @@ export const SERIES = [
   },
   {
     prefix: "luma", folder: "Luma Four", sub: "Luma Four", logo: "luma-logo.png",
-    name: "Luma Four (fictional boy band)", category: "Entertainers", username: "luma_four_demo",
+    name: "Luma Four (fictional boy band)", category: "Boy bands", username: "luma_four_demo",
     description: "Four friends and one stage: Kai, Theo, Arlo and Sami.",
     cards: [
       ["Kai: Soundcheck", "Kai hears the flat note", "before anyone plays it."],
