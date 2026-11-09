@@ -41,12 +41,15 @@ export default async function AllSeries({ searchParams }: {
           <Link className={`${primaryBtn} mt-5`} href="/creator">Release a series</Link>
         </div>
       ) : (
-        <SeriesDirectory
-          items={items}
-          categories={categories}
-          initialQuery={typeof q === "string" ? q : ""}
-          initialCategory={typeof category === "string" ? category : ""}
-        />
+        <>
+          <SeriesDirectory
+            items={items}
+            categories={categories}
+            initialQuery={typeof q === "string" ? q : ""}
+            initialCategory={typeof category === "string" ? category : ""}
+          />
+          <p className="mt-6 text-xs text-cn-text-3">Demo series. Mochi Puffs, Aika Nova, Luma Four and Thornmaw Wilds are invented, and are not real people or brands. Their art is AI generated.</p>
+        </>
       )}
     </Page>
   );

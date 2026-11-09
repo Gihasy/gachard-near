@@ -1,7 +1,6 @@
 import Link from "next/link";
 import PackArt from "@/components/PackArt";
 import PrintSheet from "@/components/PrintSheet";
-import SeriesBrowser, { type SeriesItem } from "@/components/SeriesBrowser";
 import TiltCard from "@/components/TiltCard";
 import {
   ArrowIcon,
@@ -14,11 +13,10 @@ import {
   SwapIcon,
 } from "@/components/icons";
 import { CardImage, Eyebrow, primaryBtn } from "@/components/ui";
-import { CATEGORIES, DEFAULT_CATEGORY } from "@/lib/categories";
 import { isListed, RARITIES } from "@/lib/catalog";
 import { readDb } from "@/lib/db";
 import { qrDataUrl, siteOrigin } from "@/lib/qr";
-import { nameOf } from "@/lib/users";
+import { splitSeriesName } from "@/lib/series-name";
 
 export const dynamic = "force-dynamic";
 
@@ -28,10 +26,7 @@ const FAVORITES = [
   { src: "/cards/series/mochi-legendary.jpg", rarity: "Legendary", r: "0deg", x: "0%", y: "-10px" },
 ];
 
-const RAIL = [
-  "series/mochi-epic.jpg", "series/thornmaw-rare-2.jpg", "series/aika-epic.jpg", "series/luma-legendary.jpg", "series/thornmaw-legendary.jpg", "series/mochi-common-3.jpg",
-  "series/luma-rare.jpg", "series/aika-rare-2.jpg", "series/thornmaw-common-2.jpg", "series/mochi-rare-2.jpg", "series/luma-epic.jpg", "series/aika-legendary.jpg",
-];
+const RAIL_SIZE = 14;
 
 // The whole loop at a glance. The last step links to how printing works.
 const FLOW: { label: string; Icon: typeof SeriesIcon; href?: string }[] = [
@@ -80,27 +75,19 @@ const FORMS = [
   },
 ];
 
-export default async function Home({ searchParams }: {
-  searchParams: Promise<{ q?: string | string[]; category?: string | string[] }>;
-}) {
-  const [{ series, users }, { q, category }, origin] = await Promise.all([readDb(), searchParams, siteOrigin()]);
+export default async function Home() {
+  const [{ series }, origin] = await Promise.all([readDb(), siteOrigin()]);
   const sampleQr = await qrDataUrl(`${origin}/scan`);
 
-  const items: SeriesItem[] = series
-    .filter(isListed)
-    .map((s) => ({
-      id: s.id,
-      name: s.name,
-      category: s.category ?? DEFAULT_CATEGORY,
-      creator: nameOf(s.creatorAccount, users),
-      logo: s.logo,
-      cardCount: s.templates.length,
-      covers: [...s.templates]
-        .sort((a, b) => b.rarity - a.rarity)
-        .slice(0, 3)
-        .map((t) => ({ id: t.id, media: t.media, rarity: RARITIES[t.rarity] })),
-    }));
-  const categories = CATEGORIES.filter((name) => items.some((item) => item.category === name));
+  // Cards from every live series, taken in turn and rarest first, each leading to its series.
+  const pools = series.filter(isListed).map((s) => [...s.templates]
+    .sort((a, b) => b.rarity - a.rarity || a.id - b.id)
+    .map((t) => ({ seriesId: s.id, series: splitSeriesName(s.name).title, name: t.name, media: t.media, rarity: RARITIES[t.rarity] })));
+  const rail: (typeof pools)[number] = [];
+  for (let round = 0; rail.length < RAIL_SIZE && pools.some((pool) => pool[round]); round += 1) {
+    for (const pool of pools) if (pool[round] && rail.length < RAIL_SIZE) rail.push(pool[round]);
+  }
+
 
   return (
     <>
@@ -147,15 +134,29 @@ export default async function Home({ searchParams }: {
       </section>
 
       {/* ---- A moving rail of art ---- */}
-      <section className="rail mt-10 sm:mt-14" aria-hidden="true">
-        <div className="rail-track">
-          {[...RAIL, ...RAIL].map((file, i) => (
-            <div key={i} className="w-28 sm:w-36 shrink-0 opacity-80">
-              <CardImage src={`/cards/${file}`} alt="" />
-            </div>
-          ))}
-        </div>
-      </section>
+      {rail.length ? (
+        <section className="rail mt-6 sm:mt-10" aria-label="Cards from every series">
+          <div className="rail-track">
+            {/* Drawn twice so the loop is seamless. The second copy is for the eye only. */}
+            {[...rail, ...rail].map((card, i) => {
+              const copy = i >= rail.length;
+              return (
+                <Link
+                  key={i}
+                  href={`/series/${card.seriesId}`}
+                  className="rail-card w-28 sm:w-36 shrink-0"
+                  title={`${card.name}, from ${card.series}`}
+                  aria-hidden={copy || undefined}
+                  tabIndex={copy ? -1 : undefined}
+                  data-testid={copy ? undefined : "rail-card"}
+                >
+                  <CardImage src={card.media} alt={copy ? "" : `${card.name}, from ${card.series}`} rarity={card.rarity} />
+                </Link>
+              );
+            })}
+          </div>
+        </section>
+      ) : null}
 
       {/* ---- A card you can hold ---- */}
       <section id="print" className="max-w-7xl mx-auto px-4 sm:px-6 mt-16 sm:mt-24 scroll-mt-24">
@@ -255,30 +256,6 @@ export default async function Home({ searchParams }: {
           </div>
           </div>
         </div>
-      </section>
-
-      {/* ---- Engage: find your favorite ---- */}
-      <section id="series" className="max-w-7xl mx-auto px-4 sm:px-6 mt-16 sm:mt-24 scroll-mt-24">
-        <h2 className="font-display font-bold text-2xl sm:text-4xl">Who do you collect?</h2>
-        {items.length === 0 ? (
-          <div className="panel mt-6 p-8 sm:p-10 text-center">
-            <p className="font-display font-semibold text-lg">Nothing is live yet.</p>
-            <p className="mt-2 text-cn-text-2">Be the first to release a series.</p>
-            <Link className={`${primaryBtn} mt-5`} href="/creator">Release a series</Link>
-          </div>
-        ) : (
-          <>
-            <SeriesBrowser
-              items={items}
-              categories={categories}
-              initialQuery={typeof q === "string" ? q : ""}
-              initialCategory={typeof category === "string" ? category : ""}
-            />
-            <p className="mt-4 text-xs text-cn-text-3">
-              Demo series. Mochi Puffs, Aika Nova, Luma Four and Thornmaw Wilds are invented, and are not real people or brands. Their art is AI generated.
-            </p>
-          </>
-        )}
       </section>
 
       {/* ---- Creator call ---- */}
