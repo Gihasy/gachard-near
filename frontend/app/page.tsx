@@ -6,11 +6,14 @@ import TiltCard from "@/components/TiltCard";
 import {
   ArrowIcon,
   CheckIcon,
+  CollectionIcon,
+  SeriesIcon,
+  SparkIcon,
+  UserIcon,
   PrintIcon,
-  SearchIcon,
   SwapIcon,
 } from "@/components/icons";
-import { CardImage, Eyebrow, inputClass, primaryBtn } from "@/components/ui";
+import { CardImage, Eyebrow, primaryBtn } from "@/components/ui";
 import { CATEGORIES, DEFAULT_CATEGORY } from "@/lib/categories";
 import { isListed, RARITIES } from "@/lib/catalog";
 import { readDb } from "@/lib/db";
@@ -30,7 +33,13 @@ const RAIL = [
   "series/luma-rare.jpg", "series/aika-rare-2.jpg", "series/thornmaw-common-2.jpg", "series/mochi-rare-2.jpg", "series/luma-epic.jpg", "series/aika-legendary.jpg",
 ];
 
-const PROMISES = ["Sign in with Google", "Odds on every pack"];
+// The whole loop at a glance. The last step links to how printing works.
+const FLOW: { label: string; Icon: typeof SeriesIcon; href?: string }[] = [
+  { label: "Sign in with Google", Icon: UserIcon },
+  { label: "Pick a series", Icon: SeriesIcon },
+  { label: "Open a pack", Icon: SparkIcon },
+  { label: "Collect or print", Icon: PrintIcon, href: "#print" },
+];
 
 const PRINT_STEPS = [
   { title: "Own the digital card", text: "It lives in your collection, with its own public record." },
@@ -40,6 +49,36 @@ const PRINT_STEPS = [
 ];
 
 const PRINT_SPECS = ["63 x 88 mm", "3 mm bleed", "Crop marks"];
+
+// What each form of a card is good for. Every line is something the demo really does.
+const FORMS = [
+  {
+    name: "Digital card",
+    tagline: "Always in your pocket",
+    Icon: CollectionIcon,
+    accent: "var(--cn-crystal-lavender)",
+    points: [
+      "Send it to any collector by username, in seconds",
+      "Turn duplicates into Crystal, and trade Crystal for the cards you're missing",
+      "Lock your favorites, so they can't be dismantled or sent by mistake",
+      "Can't bend, fade or get left behind on a train",
+      "Print it whenever you want to hold it",
+    ],
+  },
+  {
+    name: "Physical card",
+    tagline: "Something to hold and show",
+    Icon: PrintIcon,
+    accent: "var(--cn-credits)",
+    points: [
+      "Hold it, frame it, or bring it to show your friends",
+      "A QR unique to this print shows who holds it and whether it's still valid",
+      "Trade in person: the buyer asks, and you approve with their code",
+      "A copy or a photo of it can't take the card from you",
+      "Send it back anytime to make it digital again, and its old QR reads VOID",
+    ],
+  },
+];
 
 export default async function Home({ searchParams }: {
   searchParams: Promise<{ q?: string | string[]; category?: string | string[] }>;
@@ -77,28 +116,24 @@ export default async function Home({ searchParams }: {
             Characters, VTubers, boy bands, athletes and more, all in one place.
             Open a pack, keep what you love, and print any card you own.
           </p>
-          <form action="/#series" method="get" className="mt-7 flex gap-2 max-w-xl">
-            <label className="relative flex-1 min-w-0">
-              <span className="sr-only">Search series</span>
-              <SearchIcon width={18} height={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-cn-text-3" />
-              <input className={`${inputClass} !pl-11`} type="search" name="q" placeholder="Search your favorite" />
-            </label>
-            <button className={`${primaryBtn} shrink-0`}>
-              Find <ArrowIcon width={16} height={16} />
-            </button>
-          </form>
-          <ul className="mt-6 grid grid-cols-2 sm:flex sm:flex-wrap gap-x-5 gap-y-2 text-sm text-cn-text-2">
-            {PROMISES.map((p) => (
-              <li key={p} className="inline-flex items-center gap-1.5">
-                <CheckIcon width={15} height={15} className="text-cn-crystal shrink-0" /> {p}
+          <Link href="/series" className={`${primaryBtn} mt-7`} data-testid="explore-series">
+            Explore series <ArrowIcon width={16} height={16} />
+          </Link>
+          <ol className="mt-6 flex flex-wrap items-center gap-x-2 gap-y-2 text-sm" aria-label="How it works" data-testid="user-flow">
+            {FLOW.map((step, i) => (
+              <li key={step.label} className="inline-flex items-center gap-2">
+                <span className="inline-flex items-center gap-2 rounded-full border border-cn-line-strong bg-white/[.04] py-1 pl-1 pr-3">
+                  <span className="grid place-items-center size-6 rounded-full crystal-calm" style={{ boxShadow: "none" }} aria-hidden="true"><step.Icon width={13} height={13} /></span>
+                  {step.href ? (
+                    <a href={step.href} className="font-medium text-cn-text-1 underline decoration-cn-lavender underline-offset-4 hover:text-cn-lavender transition">{step.label}</a>
+                  ) : (
+                    <span className="font-medium text-cn-text-1">{step.label}</span>
+                  )}
+                </span>
+                {i < FLOW.length - 1 ? <ArrowIcon width={14} height={14} className="text-cn-text-3 shrink-0" aria-hidden="true" /> : null}
               </li>
             ))}
-            <li>
-              <a href="#print" className="inline-flex items-center gap-1.5 font-semibold text-cn-text-1 underline decoration-cn-lavender underline-offset-4 hover:text-cn-lavender transition">
-                <PrintIcon width={15} height={15} className="text-cn-lavender shrink-0" /> Print any card
-              </a>
-            </li>
-          </ul>
+          </ol>
         </div>
 
         <div className="trio" aria-hidden="true">
@@ -157,6 +192,29 @@ export default async function Home({ searchParams }: {
                 Illustration of a production print. In this hackathon demo, you print a PDF yourself.
               </figcaption>
             </figure>
+          </div>
+          <div className="mt-8 lg:mt-10 grid grid-cols-1 md:grid-cols-2 gap-4" data-testid="card-forms">
+            {FORMS.map(({ name, tagline, Icon, accent, points }) => (
+              <div key={name} className="min-w-0 rounded-3xl border border-cn-line bg-white/[.03] p-5 sm:p-6" style={{ boxShadow: `inset 0 1px 0 ${accent}33` }}>
+                <div className="flex items-center gap-3">
+                  <span className="grid place-items-center size-10 rounded-2xl border border-cn-line-strong bg-white/[.05] shrink-0" style={{ color: accent }}>
+                    <Icon width={20} height={20} />
+                  </span>
+                  <div>
+                    <h3 className="font-display font-semibold text-lg leading-tight">{name}</h3>
+                    <p className="text-xs text-cn-text-3">{tagline}</p>
+                  </div>
+                </div>
+                <ul className="mt-4 space-y-2.5">
+                  {points.map((point) => (
+                    <li key={point} className="flex gap-2.5 text-sm text-cn-text-2 leading-relaxed">
+                      <CheckIcon width={16} height={16} className="mt-0.5 shrink-0" style={{ color: accent }} />
+                      {point}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
           </div>
           <div className="mt-10 lg:mt-14 pt-10 lg:pt-14 border-t border-cn-line grid lg:grid-cols-[1fr_1.05fr] gap-10 lg:gap-14 items-center">
           <div className="print-show">
