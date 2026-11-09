@@ -37,10 +37,9 @@ const FLOW: { label: string; Icon: typeof SeriesIcon; href?: string }[] = [
 ];
 
 const PRINT_STEPS = [
-  { title: "Own the digital card", text: "It lives in your collection, with its own public record." },
-  { title: "Get the print file", text: "Choose Print. You get a PDF with crop marks and a QR code unique to that print." },
-  { title: "Print it and trade it", text: "Anyone who scans the QR sees the card. To take it, they ask and get a code. The holder enters that code to approve, and the card moves to their account." },
-  { title: "Send it back to go digital", text: "The physical card goes to Gachard to be destroyed, and its old QR reads VOID. A card that is lost or stolen can never come back." },
+  { title: "Choose Print", text: "You get a PDF with crop marks and a QR code made for that print." },
+  { title: "Trade it in person", text: "The buyer scans the QR and gets a code. You enter that code to approve, and the card moves to their account." },
+  { title: "Send it back to go digital", text: "The card goes to Gachard to be destroyed, and its old QR reads VOID. A card that is lost or stolen can never come back." },
 ];
 
 const PRINT_SPECS = ["63 x 88 mm", "3 mm bleed", "Crop marks"];
@@ -67,10 +66,10 @@ const FORMS = [
     accent: "var(--cn-credits)",
     points: [
       "Hold it, frame it, or bring it to show your friends",
-      "A QR unique to this print shows who holds it and whether it's still valid",
-      "Trade in person: the buyer asks, and you approve with their code",
-      "A copy or a photo of it can't take the card from you",
-      "Send it back anytime to make it digital again, and its old QR reads VOID",
+      "Anyone can scan it to see who holds it and if it's still valid",
+      "A copy or a photo can't take it from you",
+      "Pass it on in person, and both of you have to agree",
+      "Turn it back into a digital card whenever you like",
     ],
   },
 ];
@@ -231,7 +230,7 @@ export default async function Home() {
           </div>
           <div>
             <h3 className="font-display font-bold text-2xl sm:text-3xl leading-tight">
-              Every digital card can also be <span className="crystal-text">printed.</span>
+              How <span className="crystal-text">printing</span> works
             </h3>
             <ol className="mt-7 space-y-5">
               {PRINT_STEPS.map((step, i) => (
