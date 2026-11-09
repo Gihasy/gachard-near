@@ -6,7 +6,7 @@ import { useEffect, useMemo, useRef, useState, type MouseEvent } from "react";
 import CardViewDialog from "@/components/CardViewDialog";
 import TiltCard from "@/components/TiltCard";
 import { CrystalGem, LockIcon, SearchIcon } from "@/components/icons";
-import { ErrorLine, inputClass, primaryBtn, Rarity, RARITY_COLOR, secondaryBtn } from "@/components/ui";
+import { CardImage, ErrorLine, inputClass, primaryBtn, Rarity, RARITY_COLOR, secondaryBtn } from "@/components/ui";
 import { post } from "@/lib/client";
 import type { OwnedCard } from "@/lib/cards";
 
@@ -230,12 +230,22 @@ export default function CollectionGrid({ cards, seriesNames, crystalByRarity, lo
                     data-testid="select-card"
                     onClick={() => pick(copies, count ? 0 : 1)}
                   >
-                    <TiltCard src={first.media} alt={first.name} rarity={first.rarity} />
+                    <div className="card-stack">
+                      {copies.length > 1 ? copies.slice(1, 3).map((c) => (
+                        <span key={c.tokenId} className="card-stack-layer" aria-hidden="true"><CardImage src={first.media} alt="" rarity={first.rarity} /></span>
+                      )) : null}
+                      <TiltCard src={first.media} alt={first.name} rarity={first.rarity} />
+                    </div>
                     <p className="mt-2.5 text-sm font-semibold truncate">{first.name}</p>
                   </button>
                 ) : (
                   <Link href={`/scan/${first.tokenId}`} className="group block rounded-lg" onClick={(event) => view(event, first)} data-testid="open-card">
-                    <TiltCard src={first.media} alt={first.name} rarity={first.rarity} />
+                    <div className="card-stack">
+                      {copies.length > 1 ? copies.slice(1, 3).map((c) => (
+                        <span key={c.tokenId} className="card-stack-layer" aria-hidden="true"><CardImage src={first.media} alt="" rarity={first.rarity} /></span>
+                      )) : null}
+                      <TiltCard src={first.media} alt={first.name} rarity={first.rarity} />
+                    </div>
                     <p className="mt-2.5 text-sm font-semibold truncate transition group-hover:text-cn-lavender">{first.name}</p>
                   </Link>
                 )}
@@ -244,20 +254,22 @@ export default function CollectionGrid({ cards, seriesNames, crystalByRarity, lo
                     <span className="sr-only">Copies: </span>×{copies.length}
                   </span>
                 ) : null}
-                <button
-                  type="button"
-                  className={`card-lock ${isLocked ? "card-lock-on" : ""}`}
-                  aria-pressed={isLocked}
-                  aria-label={`${isLocked ? "Unlock" : "Lock"} ${first.name}`}
-                  title={isLocked ? "Locked: cannot be dismantled or transferred" : "Lock so it cannot be dismantled or transferred"}
-                  data-testid="lock-card"
-                  onClick={() => toggleLock(first.design)}
-                >
-                  <LockIcon width={14} height={14} open={!isLocked} />
-                </button>
                 <div className="mt-0.5 flex items-center justify-between gap-2">
-                  <Rarity value={first.rarity} />
-                  {isLocked ? <span className="text-[11px] font-semibold text-cn-credits">Locked</span> : printed ? <span className="text-[11px] font-semibold text-cn-text-2">{printed} printed</span> : null}
+                  <span className="inline-flex items-center gap-2 min-w-0">
+                    <Rarity value={first.rarity} />
+                    {printed ? <span className="text-[11px] font-semibold text-cn-text-2 truncate">{printed} printed</span> : null}
+                  </span>
+                  <button
+                    type="button"
+                    className={`card-lock ${isLocked ? "card-lock-on" : ""}`}
+                    aria-pressed={isLocked}
+                    aria-label={`${isLocked ? "Unlock" : "Lock"} ${first.name}`}
+                    title={isLocked ? "Locked: cannot be dismantled or transferred" : "Lock so it cannot be dismantled or transferred"}
+                    data-testid="lock-card"
+                    onClick={() => toggleLock(first.design)}
+                  >
+                    <LockIcon width={14} height={14} open={!isLocked} />
+                  </button>
                 </div>
                 {selecting ? (
                   available ? (

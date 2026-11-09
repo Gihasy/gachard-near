@@ -298,11 +298,23 @@ h1, h2 { text-wrap: balance; }
 .ip-logo.ip-logo-small { width: 4rem; height: 3.75rem; }
 .series-row[open] .series-preview { display: none; }
 .crystal-gem { filter: drop-shadow(0 0 5px #8ff0e680); }
-.card-lock {
+/* Copies of one card, shown as a small stack behind it. */
+.card-stack { position: relative; isolation: isolate; }
+.card-stack-layer {
   position: absolute;
-  top: 0.4rem;
-  left: 0.4rem;
-  z-index: 10;
+  inset: 0;
+  z-index: -1;
+  filter: brightness(0.5) saturate(0.8);
+  transition: transform 260ms var(--ease-out);
+}
+.card-stack-layer:nth-child(1) { transform: translate(7px, -5px) rotate(4deg); }
+.card-stack-layer:nth-child(2) { transform: translate(-6px, -3px) rotate(-3.5deg); }
+.group:hover .card-stack-layer:nth-child(1) { transform: translate(11px, -7px) rotate(6deg); }
+.group:hover .card-stack-layer:nth-child(2) { transform: translate(-10px, -4px) rotate(-5.5deg); }
+
+.card-lock {
+  position: relative;
+  flex-shrink: 0;
   display: grid;
   place-items: center;
   width: 2rem;
@@ -707,6 +719,18 @@ html:has(.card-zoom[open]) { overflow: hidden; }
 .rail-track { display: flex; gap: 1rem; width: max-content; animation: rail 55s linear infinite; }
 /* Room above and below, so a card can grow on hover without being cut off. */
 .rail { padding-block: 1.5rem; }
+/* The line joining the steps of How it works, from one icon to the next. */
+@media (min-width: 640px) {
+  .flow-step:not(:last-child)::after {
+    content: "";
+    position: absolute;
+    top: 1.5rem;
+    left: calc(50% + 2rem);
+    width: calc(100% - 4rem + 1rem);
+    height: 1px;
+    background: linear-gradient(90deg, var(--cn-crystal-lavender), #ffffff26);
+  }
+}
 .rail-card { position: relative; display: block; opacity: 0.8; transition: transform 280ms var(--ease-out), opacity 280ms; }
 .rail-card:hover, .rail-card:focus-visible { opacity: 1; transform: translateY(-6px) scale(1.12); z-index: 2; }
 .rail-card:focus-visible { outline: 2px solid var(--cn-crystal-lavender); outline-offset: 4px; border-radius: 10px; }

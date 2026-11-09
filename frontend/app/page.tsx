@@ -105,21 +105,6 @@ export default async function Home() {
           <Link href="/series" className={`${primaryBtn} mt-7`} data-testid="explore-series">
             Explore series <ArrowIcon width={16} height={16} />
           </Link>
-          <ol className="mt-6 flex flex-wrap items-center gap-x-2 gap-y-2 text-sm" aria-label="How it works" data-testid="user-flow">
-            {FLOW.map((step, i) => (
-              <li key={step.label} className="inline-flex items-center gap-2">
-                <span className="inline-flex items-center gap-2 rounded-full border border-cn-line-strong bg-white/[.04] py-1 pl-1 pr-3">
-                  <span className="grid place-items-center size-6 rounded-full crystal-calm" style={{ boxShadow: "none" }} aria-hidden="true"><step.Icon width={13} height={13} /></span>
-                  {step.href ? (
-                    <a href={step.href} className="font-medium text-cn-text-1 underline decoration-cn-lavender underline-offset-4 hover:text-cn-lavender transition">{step.label}</a>
-                  ) : (
-                    <span className="font-medium text-cn-text-1">{step.label}</span>
-                  )}
-                </span>
-                {i < FLOW.length - 1 ? <ArrowIcon width={14} height={14} className="text-cn-text-3 shrink-0" aria-hidden="true" /> : null}
-              </li>
-            ))}
-          </ol>
         </div>
 
         <div className="trio" aria-hidden="true">
@@ -156,6 +141,25 @@ export default async function Home() {
           </div>
         </section>
       ) : null}
+
+      {/* ---- How it works ---- */}
+      <section className="max-w-5xl mx-auto px-4 sm:px-6 mt-6 sm:mt-10" aria-labelledby="how-it-works">
+        <h2 id="how-it-works" className="text-center font-display font-semibold text-lg sm:text-xl">How it works</h2>
+        <ol className="flow mt-6 grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-7" data-testid="user-flow">
+          {FLOW.map((step) => (
+            <li key={step.label} className="flow-step relative flex flex-col items-center text-center">
+              <span className="relative z-10 grid place-items-center size-12 rounded-full crystal-calm" style={{ boxShadow: "none" }} aria-hidden="true">
+                <step.Icon width={20} height={20} />
+              </span>
+              {step.href ? (
+                <a href={step.href} className="mt-3 text-sm font-semibold text-cn-text-1 underline decoration-cn-lavender underline-offset-4 hover:text-cn-lavender transition">{step.label}</a>
+              ) : (
+                <span className="mt-3 text-sm font-semibold text-cn-text-1">{step.label}</span>
+              )}
+            </li>
+          ))}
+        </ol>
+      </section>
 
       {/* ---- A card you can hold ---- */}
       <section id="print" className="max-w-7xl mx-auto px-4 sm:px-6 mt-16 sm:mt-24 scroll-mt-24">
